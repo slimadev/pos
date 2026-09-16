@@ -1,7 +1,10 @@
-// Package di assembles the Fx dependency graph shared by cmd/app and
-// cmd/admin (SDD secção 8.2). It is used as a builder only — fx.Populate
-// extracts the finished *api.App once, it never keeps the container running,
-// because wails.Run owns the process lifecycle instead.
+// Package di assembles the Fx dependency graph for a single loja (SDD
+// secção 8.2). It is used as a builder only — fx.Populate extracts the
+// finished *api.App once, it never keeps the container running, because
+// something else owns the process lifecycle instead: wails.Run for
+// cmd/app, or admin.AbrirLoja's caller for cmd/admin (Fase 9, SDD 8.5),
+// which opens one of these containers per loja per dashboard refresh and
+// closes it again afterwards.
 package di
 
 import (
@@ -13,8 +16,11 @@ import (
 )
 
 // CoreModule provides every repository, usecase and the api.App on top of
-// them. cmd/app and cmd/admin only differ in how they provide config.DBPath
-// (one loja vs. many), everything else is 100% shared.
+// them for one loja's database. cmd/app wires it once, for its own
+// config.DBPath, and keeps it running for the process lifetime. cmd/admin
+// (Fase 9) never wires it directly — it goes through admin.AbrirLoja, which
+// wires a fresh instance of this same module per loja, every time the
+// dashboard aggregates data, and tears it down right after.
 var CoreModule = fx.Options(
 	fx.Provide(repository.NewSQLiteConn),
 

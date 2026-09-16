@@ -16,7 +16,7 @@ endif
 UNSET_SNAP_GTK_ENV := env -u GTK_PATH -u GTK_EXE_PREFIX -u GDK_PIXBUF_MODULEDIR \
 	-u GDK_PIXBUF_MODULE_FILE -u GIO_MODULE_DIR -u GTK_IM_MODULE_FILE -u LOCPATH
 
-.PHONY: dev-app build-app run-app vet lint
+.PHONY: dev-app build-app run-app dev-admin build-admin run-admin vet lint
 
 dev-app:
 	cd cmd/app && $(UNSET_SNAP_GTK_ENV) wails dev $(WAILS_TAGS)
@@ -26,6 +26,15 @@ build-app:
 
 run-app: build-app
 	$(UNSET_SNAP_GTK_ENV) ./cmd/app/build/bin/gestao-retalho
+
+dev-admin:
+	cd cmd/admin && $(UNSET_SNAP_GTK_ENV) wails dev $(WAILS_TAGS)
+
+build-admin:
+	cd cmd/admin && wails build $(WAILS_TAGS)
+
+run-admin: build-admin
+	$(UNSET_SNAP_GTK_ENV) ./cmd/admin/build/bin/gestao-retalho-admin
 
 vet:
 	go vet ./...

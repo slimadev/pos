@@ -11,7 +11,13 @@ import (
 // DBPath is the filesystem path to a loja's SQLite database file.
 type DBPath string
 
+// AdminDBPath is the filesystem path to the admin executable's own
+// registry database (Fase 9, SDD 8.5) — distinct type from DBPath so Fx
+// never wires one in place of the other by mistake.
+type AdminDBPath string
+
 const appDirName = "gestao-retalho"
+const adminDirName = "gestao-retalho-admin"
 
 // ResolveLocalDBPath returns the path to the current loja's database file,
 // creating the containing directory if needed. It lives under the OS user
@@ -74,4 +80,21 @@ func dataDir() (string, error) {
 		return "", err
 	}
 	return filepath.Join(base, appDirName), nil
+}
+
+// ResolveAdminDBPath returns the path to the admin executable's own
+// registry database, creating the containing directory if needed. It lives
+// in a sibling folder to any loja's data dir (never inside one) — the
+// admin can run on the same machine as a loja without the two databases
+// colliding.
+func ResolveAdminDBPath() (AdminDBPath, error) {
+	base, err := os.UserConfigDir()
+	if err != nil {
+		return "", err
+	}
+	dir := filepath.Join(base, adminDirName)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return "", err
+	}
+	return AdminDBPath(filepath.Join(dir, "admin.db")), nil
 }
