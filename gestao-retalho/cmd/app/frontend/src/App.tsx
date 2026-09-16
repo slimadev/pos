@@ -3,6 +3,7 @@ import { Ping, EstaConfigurado, ObterEstadoConfig } from "../wailsjs/go/api/App"
 import { usecase } from "../wailsjs/go/models";
 import { THEMES, useTheme, type Theme } from "./hooks/useTheme";
 import Wizard from "./wizard/Wizard";
+import VendaDireta from "./pos/VendaDireta";
 import FaseUm from "./FaseUm";
 import "./App.css";
 
@@ -35,9 +36,9 @@ function App() {
 }
 
 /**
- * Ecrã pós-wizard. Ainda não é o PDV/admin reais (Fase 3+) — por agora
- * mostra o cabeçalho da loja já configurada e reaproveita o scaffolding
- * funcional da Fase 1 para gerir produtos/armazéns/stock.
+ * Ecrã pós-wizard. O PDV direto (VendaDireta, Fase 3) já é o ecrã real
+ * — o resto (produtos/armazéns/stock via FaseUm) continua scaffolding
+ * até as Fases 4+ trazerem os ecrãs de admin definitivos.
  */
 function AppPrincipal({ config }: { config: usecase.EstadoConfig }) {
   const { theme, setTheme } = useTheme(config.Tema as Theme);
@@ -69,6 +70,8 @@ function AppPrincipal({ config }: { config: usecase.EstadoConfig }) {
         <button onClick={testPing}>Testar Ping() → SQLite</button>
         <span>{status}</span>
       </div>
+
+      <VendaDireta />
 
       <FaseUm />
     </div>

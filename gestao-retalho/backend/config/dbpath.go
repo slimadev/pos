@@ -40,6 +40,20 @@ func ResolveConfigPath() (string, error) {
 	return filepath.Join(dir, "config.json"), nil
 }
 
+// ResolveRecibosDir returns the folder recibos (receipt PDFs) are written
+// to, creating it if needed.
+func ResolveRecibosDir() (string, error) {
+	dir, err := dataDir()
+	if err != nil {
+		return "", err
+	}
+	recibosDir := filepath.Join(dir, "recibos")
+	if err := os.MkdirAll(recibosDir, 0o755); err != nil {
+		return "", err
+	}
+	return recibosDir, nil
+}
+
 func dataDir() (string, error) {
 	base, err := os.UserConfigDir()
 	if err != nil {

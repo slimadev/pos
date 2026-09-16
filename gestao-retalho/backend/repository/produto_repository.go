@@ -49,6 +49,14 @@ func (r *ProdutoRepository) ListarUnidades(ctx context.Context, produtoID int64)
 	return unidadesFromRows(rows), nil
 }
 
+func (r *ProdutoRepository) ObterUnidade(ctx context.Context, id int64) (domain.UnidadeProduto, error) {
+	row, err := r.q.ObterUnidadeProduto(ctx, id)
+	if err != nil {
+		return domain.UnidadeProduto{}, err
+	}
+	return unidadeFromRow(row), nil
+}
+
 // Criar grava o produto e as suas unidades de venda/compra numa única
 // transação: um produto sem pelo menos uma unidade não é vendável, por
 // isso não faz sentido existir um sem o outro (SDD 3.2/4.1).

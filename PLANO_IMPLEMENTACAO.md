@@ -105,6 +105,15 @@ Mapeia à Fase 1 do roadmap do SDD (secção 11) e às entidades da secção 3.2
 
 **Testes:** cálculo de subtotal/desconto/total, bloqueio de venda sem stock suficiente, `custo_unitario_no_momento` gravado corretamente em `itens_venda`.
 
+> **Estado: concluída.** Decisões tomadas durante a implementação:
+> - SDD 3.2 contradiz-se sobre o cliente anónimo: a tabela `clientes` diz "registo fixo (id=0 ou is_anonimo)", mas `contas`/`vendas` dizem "cliente_id FK nullable | null = anónimo". Fiquei com o **registo fixo** (`clientes.id=1`, `is_anonimo=true`, semeado na migration): `cliente_id` é `NOT NULL` em `contas`/`vendas`, nunca precisa de tratamento especial para NULL em relatórios/joins futuros.
+> - Confirmei ao implementar o fluxo que stock só desce **ao fechar a conta**, não ao adicionar item — 4.10 (bottlestore) diz isso explicitamente ("ao fechar, baixa stock"); a venda direta (Fase 3) só passa por lá porque abre+fecha na mesma chamada, mas o mecanismo é o mesmo que a Fase 4 vai reaproveitar sem alterações.
+> - Não criei uma `ContaService` pública separada — `VendaService.RegistarVendaDireta` já orquestra abrir→lançar itens→fechar→gerar venda internamente via `VendaRepository` (contas+itens_conta+vendas+itens_venda+pagamentos, todos numa única transação partilhada com o `StockRepository`). A Fase 4 (contas abertas ao longo da noite) estende isto com métodos novos no mesmo repositório, não reescreve nada.
+> - Venda direta em Fase 3 **exige pagamento integral** (soma dos pagamentos == total, com tolerância de arredondamento): a tabela `dividas` só existe a partir da Fase 4/7, e o fluxo 4.10 da ferragem nunca menciona dívida (isso é só descrito no fecho de conta da bottlestore, 4.10 ponto 5).
+> - Descontos limitados por role (SDD 4.13: "operador POS... desconto limitado ou nulo") ainda não são impostos — não há sessão/login real (isso é Fase 7); o campo de desconto existe e é validado (não pode ser negativo, não pode exceder o total), só não há ainda "quem" para aplicar o limite.
+> - Recibo: em vez de um diálogo "guardar como", `GerarRecibo` escreve o PDF numa pasta `recibos/` ao lado da base e abre-o com `runtime.BrowserOpenURL` no leitor de PDF por omissão do sistema — mais simples e já cobre "imprimir/gerar recibo" (SDD 4.10) sem construir UI de diálogo de ficheiros ainda.
+> - A grelha de produtos do ecrã de venda direta não tem os chips de categoria do mock `2c` — não há API de categorias exposta ainda (só existe o repositório, sem usecase/binding); ficou uma pesquisa por nome em vez disso. Indicador de stock por cor também ficou simplificado (só destaca `stock ≤ 0`, sem o limiar amarelo do `stock_minimo`) para não bloquear a fase nisso — ambos os refinamentos são baratos de acrescentar quando a Fase 6/10 tocar de novo neste ecrã.
+
 ---
 
 ## 5. Fase 4 — Bottlestore: contas abertas — telas `2a` e `2b`

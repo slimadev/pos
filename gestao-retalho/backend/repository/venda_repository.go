@@ -1,0 +1,264 @@
+package repository
+
+import (
+	"context"
+	"database/sql"
+	"time"
+
+	"gestao-retalho/backend/domain"
+	"gestao-retalho/backend/repository/sqlcgen"
+)
+
+// VendaRepository junta contas/itens_conta/vendas/itens_venda/pagamentos —
+// as cinco tabelas que uma venda direta (SDD 3.5) ou o fecho de uma conta
+// (Fase 4) têm de escrever atomicamente, incluindo os movimentos de stock
+// resultantes. Por isso carrega um StockRepository sempre ligado à mesma
+// transação que as suas próprias queries (ver WithTx).
+type VendaRepository struct {
+	db    *sql.DB
+	q     *sqlcgen.Queries
+	Stock *StockRepository
+}
+
+func NewVendaRepository(db *sql.DB, stock *StockRepository) *VendaRepository {
+	return &VendaRepository{db: db, q: sqlcgen.New(db), Stock: stock}
+}
+
+func (r *VendaRepository) WithTx(ctx context.Context, fn func(*VendaRepository) error) error {
+	return runInTx(ctx, r.db, func(tx *sql.Tx) error {
+		txRepo := &VendaRepository{
+			db:    r.db,
+			q:     r.q.WithTx(tx),
+			Stock: &StockRepository{db: r.db, q: sqlcgen.New(tx)},
+		}
+		return fn(txRepo)
+	})
+}
+
+// --- Contas --------------------------------------------------------------
+
+func (r *VendaRepository) CriarConta(ctx context.Context, negocioID, clienteID int64, identificador string, utilizadorAberturaID int64) (domain.Conta, error) {
+	row, err := r.q.CriarConta(ctx, sqlcgen.CriarContaParams{
+		NegocioID:            negocioID,
+		ClienteID:            clienteID,
+		Identificador:        identificador,
+		UtilizadorAberturaID: utilizadorAberturaID,
+	})
+	if err != nil {
+		return domain.Conta{}, err
+	}
+	return contaFromRow(row), nil
+}
+
+func (r *VendaRepository) FecharConta(ctx context.Context, contaID, utilizadorFechoID int64) (domain.Conta, error) {
+	row, err := r.q.FecharConta(ctx, sqlcgen.FecharContaParams{
+		UtilizadorFechoID: sql.NullInt64{Int64: utilizadorFechoID, Valid: true},
+		ID:                contaID,
+	})
+	if err != nil {
+		return domain.Conta{}, err
+	}
+	return contaFromRow(row), nil
+}
+
+func (r *VendaRepository) CriarItemConta(ctx context.Context, item domain.ItemConta) (domain.ItemConta, error) {
+	row, err := r.q.CriarItemConta(ctx, sqlcgen.CriarItemContaParams{
+		ContaID:               item.ContaID,
+		ProdutoID:             item.ProdutoID,
+		UnidadeProdutoID:      item.UnidadeProdutoID,
+		Quantidade:            item.Quantidade,
+		PrecoUnitarioAplicado: item.PrecoUnitarioAplicado,
+		Desconto:              item.Desconto,
+		UtilizadorID:          item.UtilizadorID,
+	})
+	if err != nil {
+		return domain.ItemConta{}, err
+	}
+	return itemContaFromRow(row), nil
+}
+
+func (r *VendaRepository) ListarItensConta(ctx context.Context, contaID int64) ([]domain.ItemConta, error) {
+	rows, err := r.q.ListarItensConta(ctx, contaID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.ItemConta, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, itemContaFromRow(row))
+	}
+	return out, nil
+}
+
+// --- Vendas ----------------------------------------------------------------
+
+func (r *VendaRepository) CriarVenda(ctx context.Context, v domain.Venda) (domain.Venda, error) {
+	row, err := r.q.CriarVenda(ctx, sqlcgen.CriarVendaParams{
+		NegocioID:     v.NegocioID,
+		ArmazemID:     v.ArmazemID,
+		ClienteID:     v.ClienteID,
+		ContaID:       ptrToNullInt64(v.ContaID),
+		TipoVenda:     string(v.TipoVenda),
+		Subtotal:      v.Subtotal,
+		DescontoTotal: v.DescontoTotal,
+		Total:         v.Total,
+		Status:        string(v.Status),
+		UtilizadorID:  v.UtilizadorID,
+	})
+	if err != nil {
+		return domain.Venda{}, err
+	}
+	return vendaFromRow(row), nil
+}
+
+func (r *VendaRepository) ObterVenda(ctx context.Context, id int64) (domain.Venda, error) {
+	row, err := r.q.ObterVenda(ctx, id)
+	if err != nil {
+		return domain.Venda{}, err
+	}
+	return vendaFromRow(row), nil
+}
+
+func (r *VendaRepository) ListarPorPeriodo(ctx context.Context, negocioID int64, desde, ate time.Time) ([]domain.Venda, error) {
+	rows, err := r.q.ListarVendasPorPeriodo(ctx, sqlcgen.ListarVendasPorPeriodoParams{
+		NegocioID:  negocioID,
+		CriadoEm:   desde.UTC().Format(timestampLayout),
+		CriadoEm_2: ate.UTC().Format(timestampLayout),
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.Venda, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, vendaFromRow(row))
+	}
+	return out, nil
+}
+
+func (r *VendaRepository) CriarItemVenda(ctx context.Context, item domain.ItemVenda) (domain.ItemVenda, error) {
+	row, err := r.q.CriarItemVenda(ctx, sqlcgen.CriarItemVendaParams{
+		VendaID:                item.VendaID,
+		ProdutoID:              item.ProdutoID,
+		UnidadeProdutoID:       item.UnidadeProdutoID,
+		Quantidade:             item.Quantidade,
+		PrecoUnitario:          item.PrecoUnitario,
+		CustoUnitarioNoMomento: item.CustoUnitarioNoMomento,
+		Desconto:               item.Desconto,
+		Subtotal:               item.Subtotal,
+	})
+	if err != nil {
+		return domain.ItemVenda{}, err
+	}
+	return itemVendaFromRow(row), nil
+}
+
+func (r *VendaRepository) ListarItensVenda(ctx context.Context, vendaID int64) ([]domain.ItemVenda, error) {
+	rows, err := r.q.ListarItensVenda(ctx, vendaID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.ItemVenda, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, itemVendaFromRow(row))
+	}
+	return out, nil
+}
+
+func (r *VendaRepository) CriarPagamento(ctx context.Context, p domain.Pagamento) (domain.Pagamento, error) {
+	row, err := r.q.CriarPagamento(ctx, sqlcgen.CriarPagamentoParams{
+		VendaID: p.VendaID,
+		Metodo:  string(p.Metodo),
+		Valor:   p.Valor,
+	})
+	if err != nil {
+		return domain.Pagamento{}, err
+	}
+	return pagamentoFromRow(row), nil
+}
+
+func (r *VendaRepository) ListarPagamentos(ctx context.Context, vendaID int64) ([]domain.Pagamento, error) {
+	rows, err := r.q.ListarPagamentos(ctx, vendaID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.Pagamento, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, pagamentoFromRow(row))
+	}
+	return out, nil
+}
+
+// --- conversões ------------------------------------------------------------
+
+func contaFromRow(row sqlcgen.Contas) domain.Conta {
+	var fechadaEm *time.Time
+	if row.FechadaEm.Valid {
+		t := parseTimestamp(row.FechadaEm.String)
+		fechadaEm = &t
+	}
+	return domain.Conta{
+		ID:                   row.ID,
+		NegocioID:            row.NegocioID,
+		ClienteID:            row.ClienteID,
+		Identificador:        row.Identificador,
+		Status:               domain.StatusConta(row.Status),
+		AbertaEm:             parseTimestamp(row.AbertaEm),
+		FechadaEm:            fechadaEm,
+		UtilizadorAberturaID: row.UtilizadorAberturaID,
+		UtilizadorFechoID:    nullInt64ToPtr(row.UtilizadorFechoID),
+	}
+}
+
+func itemContaFromRow(row sqlcgen.ItensConta) domain.ItemConta {
+	return domain.ItemConta{
+		ID:                    row.ID,
+		ContaID:               row.ContaID,
+		ProdutoID:             row.ProdutoID,
+		UnidadeProdutoID:      row.UnidadeProdutoID,
+		Quantidade:            row.Quantidade,
+		PrecoUnitarioAplicado: row.PrecoUnitarioAplicado,
+		Desconto:              row.Desconto,
+		CriadoEm:              parseTimestamp(row.CriadoEm),
+		UtilizadorID:          row.UtilizadorID,
+	}
+}
+
+func vendaFromRow(row sqlcgen.Vendas) domain.Venda {
+	return domain.Venda{
+		ID:            row.ID,
+		NegocioID:     row.NegocioID,
+		ArmazemID:     row.ArmazemID,
+		ClienteID:     row.ClienteID,
+		ContaID:       nullInt64ToPtr(row.ContaID),
+		TipoVenda:     domain.TipoVenda(row.TipoVenda),
+		Subtotal:      row.Subtotal,
+		DescontoTotal: row.DescontoTotal,
+		Total:         row.Total,
+		Status:        domain.StatusVenda(row.Status),
+		CriadoEm:      parseTimestamp(row.CriadoEm),
+		UtilizadorID:  row.UtilizadorID,
+	}
+}
+
+func itemVendaFromRow(row sqlcgen.ItensVenda) domain.ItemVenda {
+	return domain.ItemVenda{
+		ID:                     row.ID,
+		VendaID:                row.VendaID,
+		ProdutoID:              row.ProdutoID,
+		UnidadeProdutoID:       row.UnidadeProdutoID,
+		Quantidade:             row.Quantidade,
+		PrecoUnitario:          row.PrecoUnitario,
+		CustoUnitarioNoMomento: row.CustoUnitarioNoMomento,
+		Desconto:               row.Desconto,
+		Subtotal:               row.Subtotal,
+	}
+}
+
+func pagamentoFromRow(row sqlcgen.Pagamentos) domain.Pagamento {
+	return domain.Pagamento{
+		ID:       row.ID,
+		VendaID:  row.VendaID,
+		Metodo:   domain.MetodoPagamento(row.Metodo),
+		Valor:    row.Valor,
+		CriadoEm: parseTimestamp(row.CriadoEm),
+	}
+}

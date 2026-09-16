@@ -8,7 +8,12 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"os"
+	"path/filepath"
 
+	"github.com/wailsapp/wails/v2/pkg/runtime"
+
+	"gestao-retalho/backend/config"
 	"gestao-retalho/backend/domain"
 	"gestao-retalho/backend/usecase"
 )
@@ -28,6 +33,9 @@ type App struct {
 	ArmazemService *usecase.ArmazemService
 	StockService   *usecase.StockService
 	ConfigService  *usecase.ConfigService
+	ClienteService *usecase.ClienteService
+	VendaService   *usecase.VendaService
+	ReciboService  *usecase.ReciboService
 }
 
 func NewApp(
@@ -35,9 +43,21 @@ func NewApp(
 	produto *usecase.ProdutoService,
 	armazem *usecase.ArmazemService,
 	stock *usecase.StockService,
-	config *usecase.ConfigService,
+	cfg *usecase.ConfigService,
+	cliente *usecase.ClienteService,
+	venda *usecase.VendaService,
+	recibo *usecase.ReciboService,
 ) *App {
-	return &App{db: db, ProdutoService: produto, ArmazemService: armazem, StockService: stock, ConfigService: config}
+	return &App{
+		db:             db,
+		ProdutoService: produto,
+		ArmazemService: armazem,
+		StockService:   stock,
+		ConfigService:  cfg,
+		ClienteService: cliente,
+		VendaService:   venda,
+		ReciboService:  recibo,
+	}
 }
 
 // OnStartup is called by Wails once the frontend is ready to receive
@@ -224,4 +244,65 @@ func (a *App) ObterTodosModulos() []domain.Modulo {
 
 func (a *App) FinalizarWizard(p usecase.FinalizarWizardParams) error {
 	return a.ConfigService.FinalizarWizard(a.ctx, p)
+}
+
+// --- Clientes (SDD 4.9) -----------------------------------------------------
+
+func (a *App) ListarClientes() ([]domain.Cliente, error) {
+	return a.ClienteService.Listar(a.ctx, domain.NegocioID)
+}
+
+func (a *App) ObterCliente(id int64) (domain.Cliente, error) {
+	return a.ClienteService.Obter(a.ctx, id)
+}
+
+func (a *App) CriarCliente(c domain.Cliente) (domain.Cliente, error) {
+	return a.ClienteService.Criar(a.ctx, c)
+}
+
+func (a *App) AtualizarCliente(c domain.Cliente) error {
+	return a.ClienteService.Atualizar(a.ctx, c)
+}
+
+func (a *App) DesativarCliente(id int64) error {
+	return a.ClienteService.Desativar(a.ctx, id)
+}
+
+// --- Vendas / PDV direto (SDD 4.10) -----------------------------------------
+
+func (a *App) RegistarVendaDireta(p usecase.VendaDiretaParams) (usecase.VendaCompleta, error) {
+	p.UtilizadorID = UtilizadorAtualID
+	return a.VendaService.RegistarVendaDireta(a.ctx, p)
+}
+
+func (a *App) ObterVendaCompleta(vendaID int64) (usecase.VendaCompleta, error) {
+	return a.VendaService.ObterVendaCompleta(a.ctx, vendaID)
+}
+
+// ListarVendasDoDia cobre o "Histórico de vendas do dia" da tela de
+// ferragem (SDD 5.3).
+func (a *App) ListarVendasDoDia() ([]domain.Venda, error) {
+	return a.VendaService.ListarVendasDoDia(a.ctx, domain.NegocioID)
+}
+
+// GerarRecibo grava o PDF em disco e abre-o no visualizador por omissão do
+// sistema — mais simples do que construir um diálogo "guardar como" só
+// para este passo (SDD 4.10, "imprimir/gerar recibo").
+func (a *App) GerarRecibo(vendaID int64) (string, error) {
+	pdfBytes, err := a.ReciboService.GerarPDF(a.ctx, vendaID)
+	if err != nil {
+		return "", err
+	}
+
+	dir, err := config.ResolveRecibosDir()
+	if err != nil {
+		return "", err
+	}
+	path := filepath.Join(dir, fmt.Sprintf("recibo-%d.pdf", vendaID))
+	if err := os.WriteFile(path, pdfBytes, 0o644); err != nil {
+		return "", fmt.Errorf("gravar recibo: %w", err)
+	}
+
+	runtime.BrowserOpenURL(a.ctx, "file://"+path)
+	return path, nil
 }

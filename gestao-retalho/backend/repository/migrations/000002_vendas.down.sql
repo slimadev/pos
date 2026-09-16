@@ -1,0 +1,6 @@
+DROP TABLE IF EXISTS pagamentos;
+DROP TABLE IF EXISTS itens_venda;
+DROP TABLE IF EXISTS vendas;
+DROP TABLE IF EXISTS itens_conta;
+DROP TABLE IF EXISTS contas;
+DROP TABLE IF EXISTS clientes;

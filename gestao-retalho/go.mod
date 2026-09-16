@@ -3,6 +3,7 @@ module gestao-retalho
 go 1.25.11
 
 require (
+	github.com/go-pdf/fpdf v0.9.0
 	github.com/golang-migrate/migrate/v4 v4.20.1
 	github.com/wailsapp/wails/v2 v2.15.0
 	go.uber.org/fx v1.24.0
