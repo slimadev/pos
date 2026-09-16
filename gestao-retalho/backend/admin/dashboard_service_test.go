@@ -176,3 +176,56 @@ func TestDashboardService_AlertaStockAbaixoDoMinimo(t *testing.T) {
 		t.Errorf("alertas = %+v, want um alerta alta para a farmácia", d.Alertas)
 	}
 }
+
+// TestDashboardService_CamposNuncaSaoNilMesmoSemLojasNemDados apanha uma
+// classe de bug real: em Go, um slice construído só por `append` fica nil
+// se nunca crescer, e nil marshalla para `null` em JSON, não `[]`. O
+// frontend faz `d.Alertas.length`/`.map()` sem guarda nenhuma — um `null`
+// aí não é "lista vazia", é um ecrã inteiro em branco (sem error boundary).
+// Isto tem de valer tanto com zero lojas registadas como com uma loja sem
+// nenhum dado (o caso mais comum: nenhum alerta a apresentar).
+func TestDashboardService_CamposNuncaSaoNilMesmoSemLojasNemDados(t *testing.T) {
+	ctx := context.Background()
+	repo := novoLojaRepositoryTeste(t)
+	dashboardSvc := admin.NewDashboardService(repo)
+
+	d, err := dashboardSvc.ObterDashboard(ctx)
+	if err != nil {
+		t.Fatalf("obter dashboard sem lojas: %v", err)
+	}
+	if d.Lojas == nil {
+		t.Error("Lojas é nil (want slice vazio) sem nenhuma loja registada")
+	}
+	if d.Alertas == nil {
+		t.Error("Alertas é nil (want slice vazio) sem nenhuma loja registada")
+	}
+	if d.SerieVendasPorLoja == nil {
+		t.Error("SerieVendasPorLoja é nil (want slice vazio) sem nenhuma loja registada")
+	}
+	if d.MaisVendidosHoje == nil {
+		t.Error("MaisVendidosHoje é nil (want slice vazio) sem nenhuma loja registada")
+	}
+	if d.TiposNegocio == nil {
+		t.Error("TiposNegocio é nil (want slice vazio) sem nenhuma loja registada")
+	}
+
+	// Uma loja registada mas sem nenhuma venda/stock-mínimo/dívida tem
+	// exatamente zero alertas — o caso normal do dia a dia, não uma
+	// exceção.
+	lojasSvc := admin.NewLojasService(repo)
+	loja := novaLojaTeste(t, "loja-silenciosa.db", "Mercearia Silenciosa", domain.TipoNegocioMercearia)
+	if _, err := lojasSvc.Criar(ctx, "Mercearia Silenciosa", loja.Caminho); err != nil {
+		t.Fatalf("registar loja: %v", err)
+	}
+
+	d, err = dashboardSvc.ObterDashboard(ctx)
+	if err != nil {
+		t.Fatalf("obter dashboard com loja sem dados: %v", err)
+	}
+	if d.Alertas == nil {
+		t.Error("Alertas é nil (want slice vazio) com loja sem nenhum alerta a disparar")
+	}
+	if d.MaisVendidosHoje == nil {
+		t.Error("MaisVendidosHoje é nil (want slice vazio) com loja sem vendas hoje")
+	}
+}

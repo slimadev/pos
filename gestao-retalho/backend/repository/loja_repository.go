@@ -38,7 +38,7 @@ func (r *LojaRepository) Listar(ctx context.Context) ([]Loja, error) {
 	}
 	defer rows.Close()
 
-	var out []Loja
+	out := make([]Loja, 0)
 	for rows.Next() {
 		l, err := scanLoja(rows)
 		if err != nil {
@@ -56,7 +56,7 @@ func (r *LojaRepository) ListarAtivas(ctx context.Context) ([]Loja, error) {
 	}
 	defer rows.Close()
 
-	var out []Loja
+	out := make([]Loja, 0)
 	for rows.Next() {
 		l, err := scanLoja(rows)
 		if err != nil {

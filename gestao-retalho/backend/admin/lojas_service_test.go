@@ -9,6 +9,24 @@ import (
 	"gestao-retalho/backend/domain"
 )
 
+// TestLojasService_ListarNuncaDevolveNil apanha a mesma classe de bug do
+// TestDashboardService_CamposNuncaSaoNilMesmoSemLojasNemDados: sem nenhuma
+// loja registada, `ListarLojas()` marshalla para `null` em JSON se o
+// slice Go for nil, e Lojas.tsx faz `.map()` sem guarda nenhuma.
+func TestLojasService_ListarNuncaDevolveNil(t *testing.T) {
+	ctx := context.Background()
+	repo := novoLojaRepositoryTeste(t)
+	svc := admin.NewLojasService(repo)
+
+	lojas, err := svc.Listar(ctx)
+	if err != nil {
+		t.Fatalf("listar lojas: %v", err)
+	}
+	if lojas == nil {
+		t.Error("Listar devolveu nil (want slice vazio) sem nenhuma loja registada")
+	}
+}
+
 func TestLojasService_CriarRejeitaFicheiroInexistente(t *testing.T) {
 	ctx := context.Background()
 	repo := novoLojaRepositoryTeste(t)

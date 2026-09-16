@@ -102,7 +102,18 @@ func (s *DashboardService) ObterDashboard(ctx context.Context) (Dashboard, error
 	inicioOntem := inicioHoje.Add(-24 * time.Hour)
 	inicio14Dias := inicioHoje.AddDate(0, 0, -13)
 
-	var d Dashboard
+	// Campos que só se enchem por append começam como slice vazio, nunca
+	// nil — um "sem alertas, tudo em ordem" é um estado normal, e um nil
+	// marshalla para `null` em JSON em vez de `[]`; o frontend faz
+	// `d.Alertas.length` sem guarda nenhuma, o que rebenta o ecrã inteiro
+	// (sem error boundary) assim que não há nenhum alerta.
+	d := Dashboard{
+		SerieVendasPorLoja: []PontoSerieDia{},
+		TiposNegocio:       []string{},
+		Lojas:              []CartaoLoja{},
+		Alertas:            []Alerta{},
+		MaisVendidosHoje:   []ItemMaisVendido{},
+	}
 	var totalOntem, totalVendido14DiasGrupo float64
 	seriePorDia := map[string]map[string]float64{}
 

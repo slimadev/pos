@@ -72,7 +72,10 @@ func (s *ConfigService) ObterEstado(ctx context.Context) (EstadoConfig, error) {
 		return EstadoConfig{}, err
 	}
 
-	var modulos []domain.Modulo
+	// Nunca nil mesmo com zero módulos ativos (ex: "Personalizado" sem
+	// nenhum escolhido) — um slice nil marshalla para `null` em JSON, e o
+	// frontend faz `config.ModulosAtivos.includes(...)` sem guarda nenhuma.
+	modulos := make([]domain.Modulo, 0)
 	for _, m := range domain.TodosModulos {
 		if todas["modulo_"+string(m)] == "true" {
 			modulos = append(modulos, m)
