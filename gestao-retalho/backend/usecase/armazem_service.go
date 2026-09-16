@@ -28,6 +28,9 @@ func (s *ArmazemService) Criar(ctx context.Context, a domain.Armazem) (domain.Ar
 	if a.Nome == "" {
 		return domain.Armazem{}, fmt.Errorf("nome do armazém é obrigatório")
 	}
+	// Sempre a mesma loja (SDD 2.1) — forçado aqui, não confiado a cada
+	// chamador, para nunca haver um armazém órfão por esquecimento.
+	a.NegocioID = domain.NegocioID
 	a.Ativo = true
 	return s.repo.Criar(ctx, a)
 }

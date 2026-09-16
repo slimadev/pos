@@ -1,0 +1,273 @@
+/* Wizard de 1º arranque — paleta fixa (não segue o tema em pré-visualização
+   no painel principal), como na tela `1b` do design aprovado. */
+
+.wizard {
+  display: flex;
+  min-height: 100vh;
+  font-family: "Inter", sans-serif;
+  background: #ffffff;
+}
+
+.wizard-sidebar {
+  width: 300px;
+  flex-shrink: 0;
+  background: #1a1d23;
+  color: #fff;
+  padding: 40px 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.wizard-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-bottom: 38px;
+}
+
+.wizard-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #2f6fed;
+}
+
+.wizard-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+.wizard-subtitle {
+  font-size: 12.5px;
+  color: #9ca3af;
+}
+
+.wizard-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.wizard-step {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 0;
+  font-size: 13.5px;
+  color: #9ca3af;
+}
+
+.wizard-step--atual {
+  color: #fff;
+  font-weight: 600;
+}
+
+.wizard-step--feito {
+  color: #fff;
+}
+
+.wizard-step-bullet {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid #4a5059;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11.5px;
+  flex-shrink: 0;
+}
+
+.wizard-step--atual .wizard-step-bullet,
+.wizard-step--feito .wizard-step-bullet {
+  background: #2f6fed;
+  border-color: #2f6fed;
+  color: #fff;
+}
+
+.wizard-footnote {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #9ca3af;
+}
+
+.wizard-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.wizard-content {
+  flex: 1;
+  padding: 48px 56px;
+  max-width: 640px;
+}
+
+.wizard-eyebrow {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #6b7280;
+  margin-bottom: 7px;
+}
+
+.wizard-content h1 {
+  margin: 0 0 26px;
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #1a1d23;
+}
+
+.wizard-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 13px;
+  color: #4b5563;
+  margin-bottom: 16px;
+}
+
+.wizard-field input {
+  padding: 12px 14px;
+  font-size: 14px;
+  border: 1px solid #e1e4ea;
+  border-radius: 8px;
+}
+
+.wizard-erro {
+  background: #fcecec;
+  color: #a33;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.wizard-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.wizard-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 18px;
+  background: #fff;
+  border: 1px solid #e1e4ea;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.wizard-card--tracejado {
+  border-style: dashed;
+}
+
+.wizard-card--ativo {
+  background: #f7faff;
+  border: 2px solid #2f6fed;
+  padding: 14px 17px;
+}
+
+.wizard-radio {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid #c4c9d2;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.wizard-card--ativo .wizard-radio {
+  border: 5px solid #2f6fed;
+  background: #fff;
+}
+
+.wizard-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wizard-card-title {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #1a1d23;
+}
+
+.wizard-card-desc {
+  font-size: 12.5px;
+  color: #6b7280;
+}
+
+.wizard-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.wizard-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+  color: #1a1d23;
+}
+
+.wizard-readonly-modulos {
+  background: #f7f8fa;
+  border: 1px solid #e7e9ee;
+  border-radius: 9px;
+  padding: 16px 18px;
+  margin-bottom: 20px;
+}
+
+.wizard-readonly-modulos ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+  color: #374151;
+}
+
+.wizard-nav {
+  height: 76px;
+  border-top: 1px solid #e7e9ee;
+  padding: 0 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.wizard-nav-back {
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.wizard-nav-next {
+  padding: 12px 26px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  background: #2f6fed;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.wizard-nav-next:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

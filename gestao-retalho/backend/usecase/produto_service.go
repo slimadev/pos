@@ -53,6 +53,9 @@ func (s *ProdutoService) Criar(ctx context.Context, np NovoProduto) (domain.Prod
 		}
 	}
 
+	// Sempre a mesma loja (SDD 2.1) — forçado aqui, não confiado a cada
+	// chamador, para nunca haver um produto órfão por esquecimento.
+	np.Produto.NegocioID = domain.NegocioID
 	// SDD 3.2: produto composto nunca guarda stock próprio — é sempre
 	// inferido via ficha técnica (Fase 5); simples/semi_elaborado controlam.
 	np.Produto.ControlaStock = np.Produto.TipoProduto != domain.TipoProdutoComposto

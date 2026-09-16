@@ -84,6 +84,13 @@ Mapeia à Fase 1 do roadmap do SDD (secção 11) e às entidades da secção 3.2
 
 **Saída:** primeira execução da app cai sempre no wizard; ao terminar, abre já com o menu e tema corretos para o tipo escolhido, sem reiniciar o processo.
 
+> **Estado: concluída.** Notas sobre decisões tomadas durante a implementação:
+> - `EstaConfigurado` é decidido pela chave `wizard_concluido` em `configuracoes` (SQLite), não por `config.json` — este continua a ser gravado como espelho (SDD 9.3), mas nunca é relido pela app; como a Fase 0 já garante que a base está sempre aberta antes do frontend arrancar, não há vantagem prática em depender do ficheiro para decidir o routing.
+> - "Aplica migrations de módulo condicionalmente" (9.4) ainda não tem o que aplicar: as tabelas de `lotes_produto`, `receitas_medicas`, `contas`, `fichas_tecnicas` etc. só nascem nas Fases 4-6. Por agora `configuracoes` grava só as flags `modulo_*` (todas, mesmo as `false`, para o menu dinâmico nunca ter de tratar "chave ausente" como caso especial) — o painel "migrations a aplicar" do mock da tela `1b` foi substituído por uma lista real dos módulos ativados, para o wizard nunca mostrar algo que a app ainda não faz.
+> - Menu dinâmico (9.5) ainda não tem itens condicionais para mostrar/esconder — os ecrãs de Fichas Técnicas/Contas Abertas/etc. só existem a partir da Fase 4+. `ConfigService.ObterEstado` já expõe `ModulosAtivos` prontos a consumir quando esses ecrãs chegarem.
+> - Passo 4 do wizard (utilizador administrador) grava username/password reais com bcrypt no utilizador semente da Fase 1 — mas ainda não há ecrã de login a pedir essas credenciais; `UtilizadorAtualID` em `api.App` continua fixo até a sessão real chegar (Fase 7 trata utilizadores/permissões por completo).
+> - Bug apanhado pelos testes antes de chegar à UI: `ConfigService.FinalizarWizard` esquecia-se de propagar `NegocioID` ao criar o armazém principal, violando a FK. Corrigido movendo a atribuição de `NegocioID` para dentro de `ProdutoService.Criar`/`ArmazemService.Criar` (fonte única, não confiada a cada chamador) em vez de a repetir em cada binding do `api.App`.
+
 ---
 
 ## 4. Fase 3 — PDV direto (Ferragem / Mercearia / Farmácia) — tela `2c`

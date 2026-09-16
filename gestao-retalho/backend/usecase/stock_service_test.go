@@ -3,28 +3,19 @@ package usecase_test
 import (
 	"context"
 	"errors"
-	"path/filepath"
 	"testing"
 
-	"gestao-retalho/backend/config"
 	"gestao-retalho/backend/domain"
 	"gestao-retalho/backend/repository"
 	"gestao-retalho/backend/usecase"
 )
 
-// newTestServices abre uma base SQLite num ficheiro temporário, corre as
-// migrations reais (via repository.NewSQLiteConn, o mesmo caminho que
-// cmd/app usa) e devolve os três services de Fase 1 já ligados a ela.
+// newTestServices devolve os três services de Fase 1 já ligados a uma base
+// de teste (ver newTestDB em testutil_test.go).
 func newTestServices(t *testing.T) (*usecase.ProdutoService, *usecase.ArmazemService, *usecase.StockService) {
 	t.Helper()
 
-	dbPath := config.DBPath(filepath.Join(t.TempDir(), "test.db"))
-	db, err := repository.NewSQLiteConn(dbPath)
-	if err != nil {
-		t.Fatalf("abrir base de teste: %v", err)
-	}
-	t.Cleanup(func() { _ = db.Close() })
-
+	db := newTestDB(t)
 	produtoRepo := repository.NewProdutoRepository(db)
 	armazemRepo := repository.NewArmazemRepository(db)
 	stockRepo := repository.NewStockRepository(db)

@@ -13,15 +13,12 @@ import (
 	"gestao-retalho/backend/usecase"
 )
 
-// NegocioID é fixo em 1 porque cada executável cmd/app serve sempre uma
-// única loja (SDD secção 2.1) — a linha semeada pela migration core.
-// UtilizadorAtualID fica fixo no utilizador de arranque até a Fase 2 trazer
-// sessão/login reais; a partir daí este valor passa a vir do contexto de
-// autenticação em vez de uma constante.
-const (
-	NegocioID         int64 = 1
-	UtilizadorAtualID int64 = 1
-)
+// UtilizadorAtualID fica fixo no utilizador semente (domain.UtilizadorAdminSeedID)
+// até existir sessão/login reais — a partir daí este valor passa a vir do
+// contexto de autenticação em vez de uma constante. O wizard (Fase 2)
+// já preenche os dados reais desse utilizador, só o mecanismo de "sessão
+// atual" é que continua adiado.
+const UtilizadorAtualID = domain.UtilizadorAdminSeedID
 
 type App struct {
 	ctx context.Context
@@ -30,10 +27,17 @@ type App struct {
 	ProdutoService *usecase.ProdutoService
 	ArmazemService *usecase.ArmazemService
 	StockService   *usecase.StockService
+	ConfigService  *usecase.ConfigService
 }
 
-func NewApp(db *sql.DB, produto *usecase.ProdutoService, armazem *usecase.ArmazemService, stock *usecase.StockService) *App {
-	return &App{db: db, ProdutoService: produto, ArmazemService: armazem, StockService: stock}
+func NewApp(
+	db *sql.DB,
+	produto *usecase.ProdutoService,
+	armazem *usecase.ArmazemService,
+	stock *usecase.StockService,
+	config *usecase.ConfigService,
+) *App {
+	return &App{db: db, ProdutoService: produto, ArmazemService: armazem, StockService: stock, ConfigService: config}
 }
 
 // OnStartup is called by Wails once the frontend is ready to receive
@@ -55,11 +59,11 @@ func (a *App) Ping() (string, error) {
 // --- Produtos (SDD 4.1) ---------------------------------------------------
 
 func (a *App) ListarProdutos() ([]domain.Produto, error) {
-	return a.ProdutoService.Listar(a.ctx, NegocioID)
+	return a.ProdutoService.Listar(a.ctx, domain.NegocioID)
 }
 
 func (a *App) ListarTodosProdutos() ([]domain.Produto, error) {
-	return a.ProdutoService.ListarTodos(a.ctx, NegocioID)
+	return a.ProdutoService.ListarTodos(a.ctx, domain.NegocioID)
 }
 
 func (a *App) ObterProduto(id int64) (domain.Produto, error) {
@@ -83,7 +87,6 @@ type CriarProdutoResponse struct {
 }
 
 func (a *App) CriarProduto(req CriarProdutoRequest) (CriarProdutoResponse, error) {
-	req.Produto.NegocioID = NegocioID
 	produto, unidades, err := a.ProdutoService.Criar(a.ctx, usecase.NovoProduto{
 		Produto:  req.Produto,
 		Unidades: req.Unidades,
@@ -117,11 +120,10 @@ func (a *App) DuplicarProduto(produtoID int64) (CriarProdutoResponse, error) {
 // --- Armazéns (SDD 4.3) ----------------------------------------------------
 
 func (a *App) ListarArmazens() ([]domain.Armazem, error) {
-	return a.ArmazemService.Listar(a.ctx, NegocioID)
+	return a.ArmazemService.Listar(a.ctx, domain.NegocioID)
 }
 
 func (a *App) CriarArmazem(arm domain.Armazem) (domain.Armazem, error) {
-	arm.NegocioID = NegocioID
 	return a.ArmazemService.Criar(a.ctx, arm)
 }
 
@@ -179,7 +181,7 @@ type IniciarInventarioResponse struct {
 }
 
 func (a *App) IniciarInventario(armazemID int64) (IniciarInventarioResponse, error) {
-	inv, itens, err := a.StockService.IniciarInventario(a.ctx, NegocioID, armazemID, UtilizadorAtualID)
+	inv, itens, err := a.StockService.IniciarInventario(a.ctx, domain.NegocioID, armazemID, UtilizadorAtualID)
 	if err != nil {
 		return IniciarInventarioResponse{}, err
 	}
@@ -196,4 +198,30 @@ func (a *App) RegistarContagemInventario(itemID int64, quantidadeContada float64
 
 func (a *App) FecharInventario(inventarioID int64) ([]domain.MovimentoStock, error) {
 	return a.StockService.FecharInventario(a.ctx, inventarioID, UtilizadorAtualID)
+}
+
+// --- Configuração / wizard de 1º arranque (SDD secção 9) -------------------
+
+func (a *App) EstaConfigurado() (bool, error) {
+	return a.ConfigService.EstaConfigurado(a.ctx)
+}
+
+func (a *App) ObterEstadoConfig() (usecase.EstadoConfig, error) {
+	return a.ConfigService.ObterEstado(a.ctx)
+}
+
+// ObterPresetsNegocio devolve a tabela de tipos de negócio pré-configurados
+// (SDD 9.1) para o passo 2 do wizard — dados estáticos, sem estado.
+func (a *App) ObterPresetsNegocio() []domain.PresetNegocio {
+	return domain.PresetsNegocio
+}
+
+// ObterTodosModulos devolve o checklist completo usado quando o tipo
+// escolhido é "Personalizado" (SDD 9.2).
+func (a *App) ObterTodosModulos() []domain.Modulo {
+	return domain.TodosModulos
+}
+
+func (a *App) FinalizarWizard(p usecase.FinalizarWizardParams) error {
+	return a.ConfigService.FinalizarWizard(a.ctx, p)
 }

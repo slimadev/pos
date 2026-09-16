@@ -22,10 +22,15 @@ var CoreModule = fx.Options(
 	fx.Provide(repository.NewArmazemRepository),
 	fx.Provide(repository.NewStockRepository),
 	fx.Provide(repository.NewInventarioRepository),
+	fx.Provide(repository.NewNegocioRepository),
+	fx.Provide(repository.NewConfigRepository),
+	fx.Provide(repository.NewUtilizadorRepository),
+	fx.Provide(repository.NewCategoriaRepository),
 
 	fx.Provide(usecase.NewProdutoService),
 	fx.Provide(usecase.NewArmazemService),
 	fx.Provide(usecase.NewStockService),
+	fx.Provide(usecase.NewConfigService),
 
 	fx.Provide(api.NewApp),
 )
