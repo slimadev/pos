@@ -39,6 +39,7 @@ type App struct {
 	ContaService        *usecase.ContaService
 	FichaTecnicaService *usecase.FichaTecnicaService
 	FarmaciaService     *usecase.FarmaciaService
+	DividaService       *usecase.DividaService
 }
 
 func NewApp(
@@ -53,6 +54,7 @@ func NewApp(
 	conta *usecase.ContaService,
 	fichas *usecase.FichaTecnicaService,
 	farmacia *usecase.FarmaciaService,
+	dividas *usecase.DividaService,
 ) *App {
 	return &App{
 		db:                  db,
@@ -66,6 +68,7 @@ func NewApp(
 		ContaService:        conta,
 		FichaTecnicaService: fichas,
 		FarmaciaService:     farmacia,
+		DividaService:       dividas,
 	}
 }
 
@@ -273,6 +276,10 @@ func (a *App) AtualizarCliente(c domain.Cliente) error {
 	return a.ClienteService.Atualizar(a.ctx, c)
 }
 
+func (a *App) AtivarCliente(id int64) error {
+	return a.ClienteService.Ativar(a.ctx, id)
+}
+
 func (a *App) DesativarCliente(id int64) error {
 	return a.ClienteService.Desativar(a.ctx, id)
 }
@@ -352,9 +359,18 @@ func (a *App) CancelarConta(contaID int64, motivo string) (domain.Conta, error) 
 	return a.ContaService.CancelarConta(a.ctx, contaID, UtilizadorAtualID, motivo)
 }
 
-func (a *App) FecharContaAberta(contaID int64, p usecase.FecharContaParams) (usecase.VendaCompleta, error) {
+type FecharContaResponse struct {
+	Venda  usecase.VendaCompleta
+	Alerta usecase.AlertaLimiteCredito
+}
+
+func (a *App) FecharContaAberta(contaID int64, p usecase.FecharContaParams) (FecharContaResponse, error) {
 	p.UtilizadorID = UtilizadorAtualID
-	return a.ContaService.FecharConta(a.ctx, contaID, p)
+	venda, alerta, err := a.ContaService.FecharConta(a.ctx, contaID, p)
+	if err != nil {
+		return FecharContaResponse{}, err
+	}
+	return FecharContaResponse{Venda: venda, Alerta: alerta}, nil
 }
 
 // --- Fichas técnicas / produtos compostos e semi-elaborados (SDD 3.3) ------
@@ -415,4 +431,44 @@ func (a *App) RegistarReceitaMedica(p usecase.ReceitaMedicaInput) (domain.Receit
 
 func (a *App) ListarReceitasPorVenda(vendaID int64) ([]domain.ReceitaMedica, error) {
 	return a.FarmaciaService.ListarReceitasPorVenda(a.ctx, vendaID)
+}
+
+// --- Clientes e dívidas (SDD 4.9/4.11) --------------------------------------
+
+// ListarVendasPorCliente cobre o "histórico de compras" do SDD 4.9.
+func (a *App) ListarVendasPorCliente(clienteID int64) ([]domain.Venda, error) {
+	return a.VendaService.ListarVendasPorCliente(a.ctx, clienteID)
+}
+
+func (a *App) ListarDividasPorCliente(clienteID int64) ([]domain.Divida, error) {
+	return a.DividaService.ListarPorCliente(a.ctx, clienteID)
+}
+
+func (a *App) ListarDividasAbertas() ([]domain.Divida, error) {
+	return a.DividaService.ListarAbertas(a.ctx, domain.NegocioID)
+}
+
+// ListarDividasAntigas cobre o "alerta de dívidas antigas (> 30 dias)" do
+// SDD 4.11 — o mesmo painel que o dashboard admin (tela `1c`) reutiliza.
+func (a *App) ListarDividasAntigas(diasMinimos int) ([]domain.Divida, error) {
+	return a.DividaService.ListarAntigas(a.ctx, domain.NegocioID, diasMinimos)
+}
+
+func (a *App) ListarPagamentosDivida(dividaID int64) ([]domain.PagamentoDivida, error) {
+	return a.DividaService.ListarPagamentos(a.ctx, dividaID)
+}
+
+type RegistarPagamentoDividaResponse struct {
+	Divida    domain.Divida
+	Pagamento domain.PagamentoDivida
+}
+
+// RegistarPagamentoDivida é o fluxo independente de nova venda do SDD 4.11.
+func (a *App) RegistarPagamentoDivida(p usecase.RegistarPagamentoDividaParams) (RegistarPagamentoDividaResponse, error) {
+	p.UtilizadorID = UtilizadorAtualID
+	divida, pagamento, err := a.DividaService.RegistarPagamento(a.ctx, p)
+	if err != nil {
+		return RegistarPagamentoDividaResponse{}, err
+	}
+	return RegistarPagamentoDividaResponse{Divida: divida, Pagamento: pagamento}, nil
 }

@@ -203,6 +203,19 @@ func (r *VendaRepository) ObterVenda(ctx context.Context, id int64) (domain.Vend
 	return vendaFromRow(row), nil
 }
 
+// ListarPorCliente cobre o "histórico de compras" do SDD 4.9.
+func (r *VendaRepository) ListarPorCliente(ctx context.Context, clienteID int64) ([]domain.Venda, error) {
+	rows, err := r.q.ListarVendasPorCliente(ctx, clienteID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.Venda, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, vendaFromRow(row))
+	}
+	return out, nil
+}
+
 func (r *VendaRepository) ListarPorPeriodo(ctx context.Context, negocioID int64, desde, ate time.Time) ([]domain.Venda, error) {
 	rows, err := r.q.ListarVendasPorPeriodo(ctx, sqlcgen.ListarVendasPorPeriodoParams{
 		NegocioID:  negocioID,

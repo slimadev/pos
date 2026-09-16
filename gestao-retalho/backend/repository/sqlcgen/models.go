@@ -157,6 +157,15 @@ type Pagamentos struct {
 	CriadoEm string  `json:"criado_em"`
 }
 
+type PagamentosDivida struct {
+	ID           int64   `json:"id"`
+	DividaID     int64   `json:"divida_id"`
+	Valor        float64 `json:"valor"`
+	Metodo       string  `json:"metodo"`
+	CriadoEm     string  `json:"criado_em"`
+	UtilizadorID int64   `json:"utilizador_id"`
+}
+
 type ProdutoCustoMedio struct {
 	ProdutoID           int64   `json:"produto_id"`
 	ArmazemID           int64   `json:"armazem_id"`

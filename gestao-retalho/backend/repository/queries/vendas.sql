@@ -8,6 +8,12 @@ SELECT id, negocio_id, armazem_id, cliente_id, conta_id, tipo_venda, subtotal, d
 FROM vendas
 WHERE id = ?;
 
+-- name: ListarVendasPorCliente :many
+SELECT id, negocio_id, armazem_id, cliente_id, conta_id, tipo_venda, subtotal, desconto_total, total, status, criado_em, utilizador_id
+FROM vendas
+WHERE cliente_id = ?
+ORDER BY criado_em DESC;
+
 -- name: ListarVendasPorPeriodo :many
 SELECT id, negocio_id, armazem_id, cliente_id, conta_id, tipo_venda, subtotal, desconto_total, total, status, criado_em, utilizador_id
 FROM vendas

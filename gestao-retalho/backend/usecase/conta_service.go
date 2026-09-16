@@ -19,6 +19,7 @@ type ContaService struct {
 	produto *repository.ProdutoRepository
 	armazem *repository.ArmazemRepository
 	fichas  *repository.FichaTecnicaRepository
+	dividas *DividaService
 }
 
 func NewContaService(
@@ -26,8 +27,9 @@ func NewContaService(
 	produto *repository.ProdutoRepository,
 	armazem *repository.ArmazemRepository,
 	fichas *repository.FichaTecnicaRepository,
+	dividas *DividaService,
 ) *ContaService {
-	return &ContaService{vendas: vendas, produto: produto, armazem: armazem, fichas: fichas}
+	return &ContaService{vendas: vendas, produto: produto, armazem: armazem, fichas: fichas, dividas: dividas}
 }
 
 func (s *ContaService) ListarAbertas(ctx context.Context, negocioID int64) ([]domain.Conta, error) {
@@ -169,29 +171,33 @@ type FecharContaParams struct {
 // 6). Ao contrário da venda direta (Fase 3), o pagamento não precisa de
 // cobrir o total — a diferença vira dívida, mas só se o cliente da conta
 // estiver identificado (não for o anónimo).
-func (s *ContaService) FecharConta(ctx context.Context, contaID int64, p FecharContaParams) (VendaCompleta, error) {
+// FecharConta devolve, além da venda, um AlertaLimiteCredito — nunca
+// bloqueia o fecho (SDD 4.9: "bloqueio opcional... alerta, não
+// obrigatório"), só informa se a nova dívida deixa o cliente acima do
+// limite combinado, para o operador decidir se quer mesmo fechar assim.
+func (s *ContaService) FecharConta(ctx context.Context, contaID int64, p FecharContaParams) (VendaCompleta, AlertaLimiteCredito, error) {
 	conta, err := s.vendas.ObterConta(ctx, contaID)
 	if err != nil {
-		return VendaCompleta{}, err
+		return VendaCompleta{}, AlertaLimiteCredito{}, err
 	}
 	if conta.Status != domain.StatusContaAberta {
-		return VendaCompleta{}, domain.ErrContaNaoAberta
+		return VendaCompleta{}, AlertaLimiteCredito{}, domain.ErrContaNaoAberta
 	}
 
 	armazem, err := s.armazem.Obter(ctx, p.ArmazemID)
 	if err != nil {
-		return VendaCompleta{}, err
+		return VendaCompleta{}, AlertaLimiteCredito{}, err
 	}
 	if !armazem.Ativo {
-		return VendaCompleta{}, domain.ErrArmazemInativo
+		return VendaCompleta{}, AlertaLimiteCredito{}, domain.ErrArmazemInativo
 	}
 
 	itensConta, err := s.vendas.ListarItensConta(ctx, contaID)
 	if err != nil {
-		return VendaCompleta{}, err
+		return VendaCompleta{}, AlertaLimiteCredito{}, err
 	}
 	if len(itensConta) == 0 {
-		return VendaCompleta{}, fmt.Errorf("conta sem itens lançados")
+		return VendaCompleta{}, AlertaLimiteCredito{}, fmt.Errorf("conta sem itens lançados")
 	}
 
 	linhas := make([]linhaResolvida, 0, len(itensConta))
@@ -199,11 +205,11 @@ func (s *ContaService) FecharConta(ctx context.Context, contaID int64, p FecharC
 	for _, item := range itensConta {
 		produto, err := s.produto.Obter(ctx, item.ProdutoID)
 		if err != nil {
-			return VendaCompleta{}, err
+			return VendaCompleta{}, AlertaLimiteCredito{}, err
 		}
 		unidade, err := s.produto.ObterUnidade(ctx, item.UnidadeProdutoID)
 		if err != nil {
-			return VendaCompleta{}, err
+			return VendaCompleta{}, AlertaLimiteCredito{}, err
 		}
 
 		subtotal += item.Quantidade * item.PrecoUnitarioAplicado
@@ -233,24 +239,24 @@ func (s *ContaService) FecharConta(ctx context.Context, contaID int64, p FecharC
 	descontoTotal := descontoLinhas + p.DescontoTotal
 	total := subtotal - descontoTotal
 	if total < 0 {
-		return VendaCompleta{}, fmt.Errorf("desconto maior que o total da conta")
+		return VendaCompleta{}, AlertaLimiteCredito{}, fmt.Errorf("desconto maior que o total da conta")
 	}
 
 	var somaPagamentos float64
 	for _, pag := range p.Pagamentos {
 		if pag.Valor <= 0 {
-			return VendaCompleta{}, fmt.Errorf("valor de pagamento deve ser positivo")
+			return VendaCompleta{}, AlertaLimiteCredito{}, fmt.Errorf("valor de pagamento deve ser positivo")
 		}
 		somaPagamentos += pag.Valor
 	}
 	if somaPagamentos > total+toleranciaPagamento {
-		return VendaCompleta{}, fmt.Errorf("pagamentos (%.2f) excedem o total da conta (%.2f)", somaPagamentos, total)
+		return VendaCompleta{}, AlertaLimiteCredito{}, fmt.Errorf("pagamentos (%.2f) excedem o total da conta (%.2f)", somaPagamentos, total)
 	}
 
 	faltaPagar := total - somaPagamentos
 	temDivida := faltaPagar > toleranciaPagamento
 	if temDivida && conta.ClienteID == domain.ClienteAnonimoID {
-		return VendaCompleta{}, domain.ErrClienteAnonimoNaoPodeDivida
+		return VendaCompleta{}, AlertaLimiteCredito{}, domain.ErrClienteAnonimoNaoPodeDivida
 	}
 
 	status := domain.StatusVendaPaga
@@ -323,7 +329,20 @@ func (s *ContaService) FecharConta(ctx context.Context, contaID int64, p FecharC
 		return nil
 	})
 	if err != nil {
-		return VendaCompleta{}, err
+		return VendaCompleta{}, AlertaLimiteCredito{}, err
 	}
-	return resultado, nil
+
+	var alerta AlertaLimiteCredito
+	if temDivida {
+		// A dívida já foi criada acima — verifica com o valor que ela
+		// já deixou em aberto (0 extra, ListarPorCliente já inclui a
+		// que acabou de nascer).
+		alerta, err = s.dividas.VerificarLimiteCredito(ctx, conta.ClienteID, 0)
+		if err != nil {
+			// A venda já está fechada e gravada — um erro aqui é só na
+			// verificação informativa, não desfaz o fecho.
+			return resultado, AlertaLimiteCredito{}, nil
+		}
+	}
+	return resultado, alerta, nil
 }

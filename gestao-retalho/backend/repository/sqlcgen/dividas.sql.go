@@ -9,6 +9,41 @@ import (
 	"context"
 )
 
+const atualizarDivida = `-- name: AtualizarDivida :one
+UPDATE dividas
+SET valor_pago = ?, valor_em_aberto = ?, status = ?
+WHERE id = ?
+RETURNING id, cliente_id, venda_id, valor_original, valor_pago, valor_em_aberto, status, criado_em
+`
+
+type AtualizarDividaParams struct {
+	ValorPago     float64 `json:"valor_pago"`
+	ValorEmAberto float64 `json:"valor_em_aberto"`
+	Status        string  `json:"status"`
+	ID            int64   `json:"id"`
+}
+
+func (q *Queries) AtualizarDivida(ctx context.Context, arg AtualizarDividaParams) (Dividas, error) {
+	row := q.db.QueryRowContext(ctx, atualizarDivida,
+		arg.ValorPago,
+		arg.ValorEmAberto,
+		arg.Status,
+		arg.ID,
+	)
+	var i Dividas
+	err := row.Scan(
+		&i.ID,
+		&i.ClienteID,
+		&i.VendaID,
+		&i.ValorOriginal,
+		&i.ValorPago,
+		&i.ValorEmAberto,
+		&i.Status,
+		&i.CriadoEm,
+	)
+	return i, err
+}
+
 const criarDivida = `-- name: CriarDivida :one
 INSERT INTO dividas (cliente_id, venda_id, valor_original, valor_pago, valor_em_aberto, status)
 VALUES (?, ?, ?, ?, ?, ?)
@@ -45,6 +80,78 @@ func (q *Queries) CriarDivida(ctx context.Context, arg CriarDividaParams) (Divid
 		&i.CriadoEm,
 	)
 	return i, err
+}
+
+const criarPagamentoDivida = `-- name: CriarPagamentoDivida :one
+INSERT INTO pagamentos_divida (divida_id, valor, metodo, utilizador_id)
+VALUES (?, ?, ?, ?)
+RETURNING id, divida_id, valor, metodo, criado_em, utilizador_id
+`
+
+type CriarPagamentoDividaParams struct {
+	DividaID     int64   `json:"divida_id"`
+	Valor        float64 `json:"valor"`
+	Metodo       string  `json:"metodo"`
+	UtilizadorID int64   `json:"utilizador_id"`
+}
+
+func (q *Queries) CriarPagamentoDivida(ctx context.Context, arg CriarPagamentoDividaParams) (PagamentosDivida, error) {
+	row := q.db.QueryRowContext(ctx, criarPagamentoDivida,
+		arg.DividaID,
+		arg.Valor,
+		arg.Metodo,
+		arg.UtilizadorID,
+	)
+	var i PagamentosDivida
+	err := row.Scan(
+		&i.ID,
+		&i.DividaID,
+		&i.Valor,
+		&i.Metodo,
+		&i.CriadoEm,
+		&i.UtilizadorID,
+	)
+	return i, err
+}
+
+const listarDividasAbertas = `-- name: ListarDividasAbertas :many
+SELECT d.id, d.cliente_id, d.venda_id, d.valor_original, d.valor_pago, d.valor_em_aberto, d.status, d.criado_em
+FROM dividas d
+JOIN clientes c ON c.id = d.cliente_id
+WHERE c.negocio_id = ? AND d.status IN ('aberta', 'parcial')
+ORDER BY d.criado_em ASC
+`
+
+func (q *Queries) ListarDividasAbertas(ctx context.Context, negocioID int64) ([]Dividas, error) {
+	rows, err := q.db.QueryContext(ctx, listarDividasAbertas, negocioID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Dividas
+	for rows.Next() {
+		var i Dividas
+		if err := rows.Scan(
+			&i.ID,
+			&i.ClienteID,
+			&i.VendaID,
+			&i.ValorOriginal,
+			&i.ValorPago,
+			&i.ValorEmAberto,
+			&i.Status,
+			&i.CriadoEm,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listarDividasPorCliente = `-- name: ListarDividasPorCliente :many
@@ -84,4 +191,63 @@ func (q *Queries) ListarDividasPorCliente(ctx context.Context, clienteID int64) 
 		return nil, err
 	}
 	return items, nil
+}
+
+const listarPagamentosDivida = `-- name: ListarPagamentosDivida :many
+SELECT id, divida_id, valor, metodo, criado_em, utilizador_id
+FROM pagamentos_divida
+WHERE divida_id = ?
+ORDER BY id
+`
+
+func (q *Queries) ListarPagamentosDivida(ctx context.Context, dividaID int64) ([]PagamentosDivida, error) {
+	rows, err := q.db.QueryContext(ctx, listarPagamentosDivida, dividaID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PagamentosDivida
+	for rows.Next() {
+		var i PagamentosDivida
+		if err := rows.Scan(
+			&i.ID,
+			&i.DividaID,
+			&i.Valor,
+			&i.Metodo,
+			&i.CriadoEm,
+			&i.UtilizadorID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const obterDivida = `-- name: ObterDivida :one
+SELECT id, cliente_id, venda_id, valor_original, valor_pago, valor_em_aberto, status, criado_em
+FROM dividas
+WHERE id = ?
+`
+
+func (q *Queries) ObterDivida(ctx context.Context, id int64) (Dividas, error) {
+	row := q.db.QueryRowContext(ctx, obterDivida, id)
+	var i Dividas
+	err := row.Scan(
+		&i.ID,
+		&i.ClienteID,
+		&i.VendaID,
+		&i.ValorOriginal,
+		&i.ValorPago,
+		&i.ValorEmAberto,
+		&i.Status,
+		&i.CriadoEm,
+	)
+	return i, err
 }

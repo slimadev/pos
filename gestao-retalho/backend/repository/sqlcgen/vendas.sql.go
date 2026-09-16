@@ -204,6 +204,49 @@ func (q *Queries) ListarPagamentos(ctx context.Context, vendaID int64) ([]Pagame
 	return items, nil
 }
 
+const listarVendasPorCliente = `-- name: ListarVendasPorCliente :many
+SELECT id, negocio_id, armazem_id, cliente_id, conta_id, tipo_venda, subtotal, desconto_total, total, status, criado_em, utilizador_id
+FROM vendas
+WHERE cliente_id = ?
+ORDER BY criado_em DESC
+`
+
+func (q *Queries) ListarVendasPorCliente(ctx context.Context, clienteID int64) ([]Vendas, error) {
+	rows, err := q.db.QueryContext(ctx, listarVendasPorCliente, clienteID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Vendas
+	for rows.Next() {
+		var i Vendas
+		if err := rows.Scan(
+			&i.ID,
+			&i.NegocioID,
+			&i.ArmazemID,
+			&i.ClienteID,
+			&i.ContaID,
+			&i.TipoVenda,
+			&i.Subtotal,
+			&i.DescontoTotal,
+			&i.Total,
+			&i.Status,
+			&i.CriadoEm,
+			&i.UtilizadorID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listarVendasPorPeriodo = `-- name: ListarVendasPorPeriodo :many
 SELECT id, negocio_id, armazem_id, cliente_id, conta_id, tipo_venda, subtotal, desconto_total, total, status, criado_em, utilizador_id
 FROM vendas

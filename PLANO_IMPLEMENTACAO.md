@@ -190,6 +190,13 @@ Cobre secção 3.3 do SDD por completo — é a parte mais delicada do domínio.
 - Alertas de dívidas antigas (> 30 dias) — reutilizados depois no painel "Alertas" do dashboard admin (`1c`).
 - Pagamento parcial/total de dívida como fluxo independente.
 
+> **Estado: concluída.** Decisões tomadas durante a implementação:
+> - O bloqueio de `limite_credito` é mesmo só um alerta, nunca um erro: `ContaService.FecharConta` passou a devolver um terceiro valor, `AlertaLimiteCredito{Excedido, LimiteCredito, TotalEmAberto}`, computado **depois** de a venda/dívida já estar confirmada — nunca impede o fecho de conta, mesmo que a dívida resultante ultrapasse o limite do cliente. `ContaService` passou a depender diretamente de `*DividaService` (não só de repositórios) para reutilizar `VerificarLimiteCredito` sem duplicar a soma de dívidas em aberto.
+> - `DividaRepository` tem o seu próprio `WithTx` independente, sem compor `StockRepository` (ao contrário de `VendaRepository`/`LoteRepository`) — pagar uma dívida nunca toca stock nem vendas, só `dividas` e a nova tabela `pagamentos_divida` (migração 000006), por isso não precisa da mesma composição transacional.
+> - `RegistarPagamentoDivida` recalcula o novo `status` a partir do saldo (`aberta` → `parcial` → `paga`), com a mesma tolerância de arredondamento (0.01) já usada para pagamentos de venda; paga acima do saldo em aberto é rejeitado, tal como registar pagamento numa dívida já `paga`.
+> - Não existe (nem deve existir) uma forma pela API pública de simular uma dívida "antiga" para testar o alerta de >30 dias — o teste correspondente (`TestListarDividasAntigas_RespeitaJanelaDeDias`) usa uma escrita SQL direta ao `*sql.DB` do teste só para recuar `criado_em`, técnica exclusiva de teste, nunca exposta em produção.
+> - Frontend ficou em `Clientes.tsx`, integrado no scaffolding do FaseUm (mesma família funcional-sem-tema das Fases 1/5/6) — sem tela de design dedicada a clientes/dívidas nos mocks aprovados. O modal de fecho de conta da bottlestore (`Bottlestore.tsx`, tela `2a`/`2b`) passou a mostrar o alerta de limite de crédito quando excedido, sem bloquear a confirmação.
+
 ---
 
 ## 9. Fase 8 — Relatórios e exportação Excel/PDF

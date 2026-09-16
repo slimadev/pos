@@ -12,6 +12,7 @@ import (
 type Querier interface {
 	AtualizarArmazem(ctx context.Context, arg AtualizarArmazemParams) error
 	AtualizarCliente(ctx context.Context, arg AtualizarClienteParams) error
+	AtualizarDivida(ctx context.Context, arg AtualizarDividaParams) (Dividas, error)
 	AtualizarNegocio(ctx context.Context, arg AtualizarNegocioParams) (Negocios, error)
 	AtualizarProduto(ctx context.Context, arg AtualizarProdutoParams) (Produtos, error)
 	AtualizarQuantidadeLote(ctx context.Context, arg AtualizarQuantidadeLoteParams) error
@@ -31,6 +32,7 @@ type Querier interface {
 	CriarLote(ctx context.Context, arg CriarLoteParams) (LotesProduto, error)
 	CriarMovimentoStock(ctx context.Context, arg CriarMovimentoStockParams) (MovimentosStock, error)
 	CriarPagamento(ctx context.Context, arg CriarPagamentoParams) (Pagamentos, error)
+	CriarPagamentoDivida(ctx context.Context, arg CriarPagamentoDividaParams) (PagamentosDivida, error)
 	CriarProduto(ctx context.Context, arg CriarProdutoParams) (Produtos, error)
 	CriarReceitaMedica(ctx context.Context, arg CriarReceitaMedicaParams) (ReceitasMedicas, error)
 	CriarUnidadeProduto(ctx context.Context, arg CriarUnidadeProdutoParams) (UnidadesProduto, error)
@@ -47,6 +49,7 @@ type Querier interface {
 	ListarClientes(ctx context.Context, negocioID int64) ([]Clientes, error)
 	ListarConfiguracoes(ctx context.Context, negocioID int64) ([]ListarConfiguracoesRow, error)
 	ListarContasAbertas(ctx context.Context, negocioID int64) ([]Contas, error)
+	ListarDividasAbertas(ctx context.Context, negocioID int64) ([]Dividas, error)
 	ListarDividasPorCliente(ctx context.Context, clienteID int64) ([]Dividas, error)
 	ListarIngredientes(ctx context.Context, produtoCompostoID int64) ([]FichasTecnicas, error)
 	ListarInventarioItens(ctx context.Context, inventarioID int64) ([]InventarioItens, error)
@@ -56,12 +59,14 @@ type Querier interface {
 	ListarLotesFEFO(ctx context.Context, arg ListarLotesFEFOParams) ([]LotesProduto, error)
 	ListarMovimentosPorProduto(ctx context.Context, produtoID int64) ([]MovimentosStock, error)
 	ListarPagamentos(ctx context.Context, vendaID int64) ([]Pagamentos, error)
+	ListarPagamentosDivida(ctx context.Context, dividaID int64) ([]PagamentosDivida, error)
 	ListarProdutos(ctx context.Context, negocioID int64) ([]Produtos, error)
 	ListarProdutosAtivos(ctx context.Context, negocioID int64) ([]Produtos, error)
 	ListarReceitasPorVenda(ctx context.Context, vendaID int64) ([]ReceitasMedicas, error)
 	ListarStockParaInventario(ctx context.Context, arg ListarStockParaInventarioParams) ([]ListarStockParaInventarioRow, error)
 	ListarStockPorArmazem(ctx context.Context, armazemID sql.NullInt64) ([]StockAtual, error)
 	ListarUnidadesPorProduto(ctx context.Context, produtoID int64) ([]UnidadesProduto, error)
+	ListarVendasPorCliente(ctx context.Context, clienteID int64) ([]Vendas, error)
 	ListarVendasPorPeriodo(ctx context.Context, arg ListarVendasPorPeriodoParams) ([]Vendas, error)
 	MarcarInventarioItemAjustado(ctx context.Context, id int64) error
 	ObterArmazem(ctx context.Context, id int64) (Armazens, error)
@@ -69,6 +74,7 @@ type Querier interface {
 	ObterConfiguracao(ctx context.Context, arg ObterConfiguracaoParams) (ObterConfiguracaoRow, error)
 	ObterConta(ctx context.Context, id int64) (Contas, error)
 	ObterCustoMedioProdutoArmazem(ctx context.Context, arg ObterCustoMedioProdutoArmazemParams) (ProdutoCustoMedio, error)
+	ObterDivida(ctx context.Context, id int64) (Dividas, error)
 	ObterInventario(ctx context.Context, id int64) (Inventarios, error)
 	ObterInventarioItem(ctx context.Context, id int64) (InventarioItens, error)
 	ObterItemConta(ctx context.Context, id int64) (ItensConta, error)

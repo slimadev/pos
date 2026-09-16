@@ -379,7 +379,14 @@ function ModalFecho({
 
     setAFechar(true);
     FecharContaAberta(conta.ID, p)
-      .then((resultado) => onFechar(resultado.Venda.ID))
+      .then((resultado) => {
+        if (resultado.Alerta?.Excedido) {
+          window.alert(
+            `Aviso: cliente ultrapassa o limite de crédito (${resultado.Alerta.LimiteCredito.toFixed(2)} MT) — total em dívida agora ${resultado.Alerta.TotalEmAberto.toFixed(2)} MT.`,
+          );
+        }
+        onFechar(resultado.Venda.Venda.ID);
+      })
       .catch((e) => onErro(String(e)))
       .finally(() => setAFechar(false));
   }

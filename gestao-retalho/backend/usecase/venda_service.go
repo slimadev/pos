@@ -467,6 +467,11 @@ func consumirLoteFEFO(
 	return custoTotal, nil
 }
 
+// ListarVendasPorCliente cobre o "histórico de compras" por cliente (SDD 4.9).
+func (s *VendaService) ListarVendasPorCliente(ctx context.Context, clienteID int64) ([]domain.Venda, error) {
+	return s.vendas.ListarPorCliente(ctx, clienteID)
+}
+
 // ObterVendaCompleta é usado pelo recibo e pelo histórico do dia (SDD 5.3).
 func (s *VendaService) ObterVendaCompleta(ctx context.Context, vendaID int64) (VendaCompleta, error) {
 	venda, err := s.vendas.ObterVenda(ctx, vendaID)

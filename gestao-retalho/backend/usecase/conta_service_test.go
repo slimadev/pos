@@ -22,12 +22,14 @@ func newTestContaServices(t *testing.T) (*usecase.ProdutoService, *usecase.Armaz
 	loteRepo := repository.NewLoteRepository(db, stockRepo)
 	vendaRepo := repository.NewVendaRepository(db, stockRepo, loteRepo)
 	fichaRepo := repository.NewFichaTecnicaRepository(db)
+	dividaRepo := repository.NewDividaRepository(db)
 
 	produtoSvc := usecase.NewProdutoService(produtoRepo)
 	armazemSvc := usecase.NewArmazemService(armazemRepo)
 	stockSvc := usecase.NewStockService(stockRepo, produtoRepo, armazemRepo, invRepo)
 	clienteSvc := usecase.NewClienteService(clienteRepo)
-	contaSvc := usecase.NewContaService(vendaRepo, produtoRepo, armazemRepo, fichaRepo)
+	dividaSvc := usecase.NewDividaService(dividaRepo, clienteRepo)
+	contaSvc := usecase.NewContaService(vendaRepo, produtoRepo, armazemRepo, fichaRepo, dividaSvc)
 
 	return produtoSvc, armazemSvc, stockSvc, clienteSvc, contaSvc, vendaRepo
 }
@@ -88,11 +90,11 @@ func TestFecharConta_NaoFechaDuasVezes(t *testing.T) {
 		Pagamentos:   []usecase.PagamentoVendaParams{{Metodo: domain.MetodoDinheiro, Valor: 120}},
 		UtilizadorID: 1,
 	}
-	if _, err := contaSvc.FecharConta(ctx, conta.ID, fecharParams); err != nil {
+	if _, _, err := contaSvc.FecharConta(ctx, conta.ID, fecharParams); err != nil {
 		t.Fatalf("primeiro fecho: %v", err)
 	}
 
-	if _, err := contaSvc.FecharConta(ctx, conta.ID, fecharParams); !errors.Is(err, domain.ErrContaNaoAberta) {
+	if _, _, err := contaSvc.FecharConta(ctx, conta.ID, fecharParams); !errors.Is(err, domain.ErrContaNaoAberta) {
 		t.Fatalf("esperava ErrContaNaoAberta ao fechar de novo, obteve %v", err)
 	}
 }
@@ -147,7 +149,7 @@ func TestTransferirItem_MantemTotalConsistenteEntreContas(t *testing.T) {
 	// fechar a conta que recebeu o item e confirmar que o total bate
 	// exatamente com o que foi transferido (4 * 180 = 720) — nada se
 	// perdeu nem duplicou na transferência.
-	resultado, err := contaSvc.FecharConta(ctx, contaB.ID, usecase.FecharContaParams{
+	resultado, _, err := contaSvc.FecharConta(ctx, contaB.ID, usecase.FecharContaParams{
 		ArmazemID:    armazem.ID,
 		Pagamentos:   []usecase.PagamentoVendaParams{{Metodo: domain.MetodoDinheiro, Valor: 720}},
 		UtilizadorID: 1,
@@ -182,7 +184,7 @@ func TestFecharConta_DividaBloqueadaParaClienteAnonimo(t *testing.T) {
 		t.Fatalf("adicionar item: %v", err)
 	}
 
-	_, err = contaSvc.FecharConta(ctx, conta.ID, usecase.FecharContaParams{
+	_, _, err = contaSvc.FecharConta(ctx, conta.ID, usecase.FecharContaParams{
 		ArmazemID:    armazem.ID,
 		Pagamentos:   nil, // sem pagamento nenhum -> ficaria tudo em dívida
 		UtilizadorID: 1,
@@ -221,7 +223,7 @@ func TestFecharConta_CriaDividaParaClienteIdentificado(t *testing.T) {
 		t.Fatalf("adicionar item: %v", err)
 	}
 
-	resultado, err := contaSvc.FecharConta(ctx, conta.ID, usecase.FecharContaParams{
+	resultado, _, err := contaSvc.FecharConta(ctx, conta.ID, usecase.FecharContaParams{
 		ArmazemID:    armazem.ID,
 		Pagamentos:   []usecase.PagamentoVendaParams{{Metodo: domain.MetodoDinheiro, Valor: 300}},
 		UtilizadorID: 1,
