@@ -10,10 +10,41 @@ import (
 	"database/sql"
 )
 
+const cancelarConta = `-- name: CancelarConta :one
+UPDATE contas
+SET status = 'cancelada', fechada_em = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), utilizador_fecho_id = ?, motivo_cancelamento = ?
+WHERE id = ?
+RETURNING id, negocio_id, cliente_id, identificador, status, aberta_em, fechada_em, utilizador_abertura_id, utilizador_fecho_id, motivo_cancelamento
+`
+
+type CancelarContaParams struct {
+	UtilizadorFechoID  sql.NullInt64  `json:"utilizador_fecho_id"`
+	MotivoCancelamento sql.NullString `json:"motivo_cancelamento"`
+	ID                 int64          `json:"id"`
+}
+
+func (q *Queries) CancelarConta(ctx context.Context, arg CancelarContaParams) (Contas, error) {
+	row := q.db.QueryRowContext(ctx, cancelarConta, arg.UtilizadorFechoID, arg.MotivoCancelamento, arg.ID)
+	var i Contas
+	err := row.Scan(
+		&i.ID,
+		&i.NegocioID,
+		&i.ClienteID,
+		&i.Identificador,
+		&i.Status,
+		&i.AbertaEm,
+		&i.FechadaEm,
+		&i.UtilizadorAberturaID,
+		&i.UtilizadorFechoID,
+		&i.MotivoCancelamento,
+	)
+	return i, err
+}
+
 const criarConta = `-- name: CriarConta :one
 INSERT INTO contas (negocio_id, cliente_id, identificador, status, utilizador_abertura_id)
 VALUES (?, ?, ?, 'aberta', ?)
-RETURNING id, negocio_id, cliente_id, identificador, status, aberta_em, fechada_em, utilizador_abertura_id, utilizador_fecho_id
+RETURNING id, negocio_id, cliente_id, identificador, status, aberta_em, fechada_em, utilizador_abertura_id, utilizador_fecho_id, motivo_cancelamento
 `
 
 type CriarContaParams struct {
@@ -41,6 +72,7 @@ func (q *Queries) CriarConta(ctx context.Context, arg CriarContaParams) (Contas,
 		&i.FechadaEm,
 		&i.UtilizadorAberturaID,
 		&i.UtilizadorFechoID,
+		&i.MotivoCancelamento,
 	)
 	return i, err
 }
@@ -90,7 +122,7 @@ const fecharConta = `-- name: FecharConta :one
 UPDATE contas
 SET status = 'fechada', fechada_em = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), utilizador_fecho_id = ?
 WHERE id = ?
-RETURNING id, negocio_id, cliente_id, identificador, status, aberta_em, fechada_em, utilizador_abertura_id, utilizador_fecho_id
+RETURNING id, negocio_id, cliente_id, identificador, status, aberta_em, fechada_em, utilizador_abertura_id, utilizador_fecho_id, motivo_cancelamento
 `
 
 type FecharContaParams struct {
@@ -111,8 +143,50 @@ func (q *Queries) FecharConta(ctx context.Context, arg FecharContaParams) (Conta
 		&i.FechadaEm,
 		&i.UtilizadorAberturaID,
 		&i.UtilizadorFechoID,
+		&i.MotivoCancelamento,
 	)
 	return i, err
+}
+
+const listarContasAbertas = `-- name: ListarContasAbertas :many
+SELECT id, negocio_id, cliente_id, identificador, status, aberta_em, fechada_em, utilizador_abertura_id, utilizador_fecho_id, motivo_cancelamento
+FROM contas
+WHERE negocio_id = ? AND status = 'aberta'
+ORDER BY aberta_em
+`
+
+func (q *Queries) ListarContasAbertas(ctx context.Context, negocioID int64) ([]Contas, error) {
+	rows, err := q.db.QueryContext(ctx, listarContasAbertas, negocioID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Contas
+	for rows.Next() {
+		var i Contas
+		if err := rows.Scan(
+			&i.ID,
+			&i.NegocioID,
+			&i.ClienteID,
+			&i.Identificador,
+			&i.Status,
+			&i.AbertaEm,
+			&i.FechadaEm,
+			&i.UtilizadorAberturaID,
+			&i.UtilizadorFechoID,
+			&i.MotivoCancelamento,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listarItensConta = `-- name: ListarItensConta :many
@@ -156,7 +230,7 @@ func (q *Queries) ListarItensConta(ctx context.Context, contaID int64) ([]ItensC
 }
 
 const obterConta = `-- name: ObterConta :one
-SELECT id, negocio_id, cliente_id, identificador, status, aberta_em, fechada_em, utilizador_abertura_id, utilizador_fecho_id
+SELECT id, negocio_id, cliente_id, identificador, status, aberta_em, fechada_em, utilizador_abertura_id, utilizador_fecho_id, motivo_cancelamento
 FROM contas
 WHERE id = ?
 `
@@ -174,6 +248,44 @@ func (q *Queries) ObterConta(ctx context.Context, id int64) (Contas, error) {
 		&i.FechadaEm,
 		&i.UtilizadorAberturaID,
 		&i.UtilizadorFechoID,
+		&i.MotivoCancelamento,
 	)
 	return i, err
+}
+
+const obterItemConta = `-- name: ObterItemConta :one
+SELECT id, conta_id, produto_id, unidade_produto_id, quantidade, preco_unitario_aplicado, desconto, criado_em, utilizador_id
+FROM itens_conta
+WHERE id = ?
+`
+
+func (q *Queries) ObterItemConta(ctx context.Context, id int64) (ItensConta, error) {
+	row := q.db.QueryRowContext(ctx, obterItemConta, id)
+	var i ItensConta
+	err := row.Scan(
+		&i.ID,
+		&i.ContaID,
+		&i.ProdutoID,
+		&i.UnidadeProdutoID,
+		&i.Quantidade,
+		&i.PrecoUnitarioAplicado,
+		&i.Desconto,
+		&i.CriadoEm,
+		&i.UtilizadorID,
+	)
+	return i, err
+}
+
+const transferirItemConta = `-- name: TransferirItemConta :exec
+UPDATE itens_conta SET conta_id = ? WHERE id = ?
+`
+
+type TransferirItemContaParams struct {
+	ContaID int64 `json:"conta_id"`
+	ID      int64 `json:"id"`
+}
+
+func (q *Queries) TransferirItemConta(ctx context.Context, arg TransferirItemContaParams) error {
+	_, err := q.db.ExecContext(ctx, transferirItemConta, arg.ContaID, arg.ID)
+	return err
 }

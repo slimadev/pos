@@ -36,6 +36,7 @@ type App struct {
 	ClienteService *usecase.ClienteService
 	VendaService   *usecase.VendaService
 	ReciboService  *usecase.ReciboService
+	ContaService   *usecase.ContaService
 }
 
 func NewApp(
@@ -47,6 +48,7 @@ func NewApp(
 	cliente *usecase.ClienteService,
 	venda *usecase.VendaService,
 	recibo *usecase.ReciboService,
+	conta *usecase.ContaService,
 ) *App {
 	return &App{
 		db:             db,
@@ -57,6 +59,7 @@ func NewApp(
 		ClienteService: cliente,
 		VendaService:   venda,
 		ReciboService:  recibo,
+		ContaService:   conta,
 	}
 }
 
@@ -305,4 +308,45 @@ func (a *App) GerarRecibo(vendaID int64) (string, error) {
 
 	runtime.BrowserOpenURL(a.ctx, "file://"+path)
 	return path, nil
+}
+
+// --- Contas abertas / bottlestore (SDD 4.10) --------------------------------
+
+func (a *App) ListarContasAbertas() ([]domain.Conta, error) {
+	return a.ContaService.ListarAbertas(a.ctx, domain.NegocioID)
+}
+
+func (a *App) ObterConta(id int64) (domain.Conta, error) {
+	return a.ContaService.ObterConta(a.ctx, id)
+}
+
+func (a *App) ListarItensConta(contaID int64) ([]domain.ItemConta, error) {
+	return a.ContaService.ListarItens(a.ctx, contaID)
+}
+
+type AbrirContaRequest struct {
+	Identificador string
+	ClienteID     *int64
+}
+
+func (a *App) AbrirConta(req AbrirContaRequest) (domain.Conta, error) {
+	return a.ContaService.AbrirConta(a.ctx, req.Identificador, req.ClienteID, UtilizadorAtualID)
+}
+
+func (a *App) AdicionarItemConta(p usecase.AdicionarItemContaParams) (domain.ItemConta, error) {
+	p.UtilizadorID = UtilizadorAtualID
+	return a.ContaService.AdicionarItem(a.ctx, p)
+}
+
+func (a *App) TransferirItemConta(itemID, novaContaID int64) error {
+	return a.ContaService.TransferirItem(a.ctx, itemID, novaContaID)
+}
+
+func (a *App) CancelarConta(contaID int64, motivo string) (domain.Conta, error) {
+	return a.ContaService.CancelarConta(a.ctx, contaID, UtilizadorAtualID, motivo)
+}
+
+func (a *App) FecharContaAberta(contaID int64, p usecase.FecharContaParams) (usecase.VendaCompleta, error) {
+	p.UtilizadorID = UtilizadorAtualID
+	return a.ContaService.FecharConta(a.ctx, contaID, p)
 }

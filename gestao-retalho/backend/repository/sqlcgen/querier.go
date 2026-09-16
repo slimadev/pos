@@ -16,10 +16,12 @@ type Querier interface {
 	AtualizarProduto(ctx context.Context, arg AtualizarProdutoParams) (Produtos, error)
 	AtualizarUnidadeProduto(ctx context.Context, arg AtualizarUnidadeProdutoParams) error
 	AtualizarUtilizadorAdmin(ctx context.Context, arg AtualizarUtilizadorAdminParams) error
+	CancelarConta(ctx context.Context, arg CancelarContaParams) (Contas, error)
 	CriarArmazem(ctx context.Context, arg CriarArmazemParams) (Armazens, error)
 	CriarCategoria(ctx context.Context, arg CriarCategoriaParams) (Categorias, error)
 	CriarCliente(ctx context.Context, arg CriarClienteParams) (Clientes, error)
 	CriarConta(ctx context.Context, arg CriarContaParams) (Contas, error)
+	CriarDivida(ctx context.Context, arg CriarDividaParams) (Dividas, error)
 	CriarInventario(ctx context.Context, arg CriarInventarioParams) (Inventarios, error)
 	CriarInventarioItem(ctx context.Context, arg CriarInventarioItemParams) error
 	CriarItemConta(ctx context.Context, arg CriarItemContaParams) (ItensConta, error)
@@ -40,6 +42,8 @@ type Querier interface {
 	ListarCategorias(ctx context.Context, negocioID int64) ([]Categorias, error)
 	ListarClientes(ctx context.Context, negocioID int64) ([]Clientes, error)
 	ListarConfiguracoes(ctx context.Context, negocioID int64) ([]ListarConfiguracoesRow, error)
+	ListarContasAbertas(ctx context.Context, negocioID int64) ([]Contas, error)
+	ListarDividasPorCliente(ctx context.Context, clienteID int64) ([]Dividas, error)
 	ListarInventarioItens(ctx context.Context, inventarioID int64) ([]InventarioItens, error)
 	ListarItensConta(ctx context.Context, contaID int64) ([]ItensConta, error)
 	ListarItensVenda(ctx context.Context, vendaID int64) ([]ItensVenda, error)
@@ -59,6 +63,7 @@ type Querier interface {
 	ObterCustoMedioProdutoArmazem(ctx context.Context, arg ObterCustoMedioProdutoArmazemParams) (ProdutoCustoMedio, error)
 	ObterInventario(ctx context.Context, id int64) (Inventarios, error)
 	ObterInventarioItem(ctx context.Context, id int64) (InventarioItens, error)
+	ObterItemConta(ctx context.Context, id int64) (ItensConta, error)
 	ObterNegocio(ctx context.Context, id int64) (Negocios, error)
 	ObterProduto(ctx context.Context, id int64) (Produtos, error)
 	ObterStockProdutoArmazem(ctx context.Context, arg ObterStockProdutoArmazemParams) (StockAtual, error)
@@ -66,6 +71,7 @@ type Querier interface {
 	ObterUtilizadorPorUsername(ctx context.Context, username string) (Utilizadores, error)
 	ObterVenda(ctx context.Context, id int64) (Vendas, error)
 	RegistarContagemInventarioItem(ctx context.Context, arg RegistarContagemInventarioItemParams) error
+	TransferirItemConta(ctx context.Context, arg TransferirItemContaParams) error
 }
 
 var _ Querier = (*Queries)(nil)

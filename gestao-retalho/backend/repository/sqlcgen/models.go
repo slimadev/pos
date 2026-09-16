@@ -52,6 +52,18 @@ type Contas struct {
 	FechadaEm            sql.NullString `json:"fechada_em"`
 	UtilizadorAberturaID int64          `json:"utilizador_abertura_id"`
 	UtilizadorFechoID    sql.NullInt64  `json:"utilizador_fecho_id"`
+	MotivoCancelamento   sql.NullString `json:"motivo_cancelamento"`
+}
+
+type Dividas struct {
+	ID            int64   `json:"id"`
+	ClienteID     int64   `json:"cliente_id"`
+	VendaID       int64   `json:"venda_id"`
+	ValorOriginal float64 `json:"valor_original"`
+	ValorPago     float64 `json:"valor_pago"`
+	ValorEmAberto float64 `json:"valor_em_aberto"`
+	Status        string  `json:"status"`
+	CriadoEm      string  `json:"criado_em"`
 }
 
 type InventarioItens struct {

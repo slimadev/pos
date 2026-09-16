@@ -13,4 +13,9 @@ var (
 	ErrArmazemIgual       = errors.New("armazém de origem e destino não podem ser o mesmo")
 	ErrInventarioFechado  = errors.New("inventário já está fechado")
 	ErrItemNaoPertenceInv = errors.New("item não pertence a este inventário")
+
+	// ErrClienteAnonimoNaoPodeDivida: SDD 4.10 — "Registar Dívida (exige
+	// cliente identificado, não anónimo)".
+	ErrClienteAnonimoNaoPodeDivida = errors.New("cliente anónimo não pode ficar com saldo em dívida")
+	ErrContaNaoAberta              = errors.New("conta não está aberta")
 )

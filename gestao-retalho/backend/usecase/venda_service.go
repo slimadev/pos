@@ -12,8 +12,11 @@ import (
 
 // VendaService implementa o fluxo de venda direta (SDD 4.10, ferragem/
 // mercearia/farmácia): internamente abre e fecha uma `conta` na mesma
-// transação (SDD 3.5) para reaproveitar, sem duplicar, a mecânica que a
-// Fase 4 (bottlestore) vai usar para contas que ficam abertas por horas.
+// transação (SDD 3.5). O mecanismo de resolver linhas e gerar itens_venda
+// + movimentos de stock (linhaResolvida / criarItensVendaEMovimentos, mais
+// abaixo) é o mesmo que ContaService.FecharConta usa para a bottlestore —
+// só a origem das linhas muda (parâmetros frescos vs. itens_conta já
+// persistidos ao longo da noite).
 type VendaService struct {
 	vendas  *repository.VendaRepository
 	produto *repository.ProdutoRepository
@@ -114,11 +117,11 @@ func (s *VendaService) RegistarVendaDireta(ctx context.Context, p VendaDiretaPar
 		for _, l := range linhas {
 			if _, err := tx.CriarItemConta(ctx, domain.ItemConta{
 				ContaID:               conta.ID,
-				ProdutoID:             l.produto.ID,
-				UnidadeProdutoID:      l.unidade.ID,
-				Quantidade:            l.params.Quantidade,
-				PrecoUnitarioAplicado: l.unidade.PrecoVenda,
-				Desconto:              l.params.Desconto,
+				ProdutoID:             l.ProdutoID,
+				UnidadeProdutoID:      l.UnidadeProdutoID,
+				Quantidade:            l.Quantidade,
+				PrecoUnitarioAplicado: l.PrecoUnitario,
+				Desconto:              l.Desconto,
 				UtilizadorID:          p.UtilizadorID,
 			}); err != nil {
 				return fmt.Errorf("lançar item na conta: %w", err)
@@ -147,52 +150,11 @@ func (s *VendaService) RegistarVendaDireta(ctx context.Context, p VendaDiretaPar
 		}
 		resultado.Venda = venda
 
-		for _, l := range linhas {
-			stockAtual, err := tx.Stock.ObterStock(ctx, l.produto.ID, p.ArmazemID)
-			if err != nil {
-				return err
-			}
-			if stockAtual.Quantidade < l.qtdBase {
-				return fmt.Errorf("%w: %s — disponível %.3f, pedido %.3f", domain.ErrStockInsuficiente, l.produto.Nome, stockAtual.Quantidade, l.qtdBase)
-			}
-
-			subtotalLinha := l.params.Quantidade*l.unidade.PrecoVenda - l.params.Desconto
-			// Custo por unidade vendida (não por unidade base) — ver nota
-			// em domain.ItemVenda.
-			custoPorUnidadeVendida := stockAtual.CustoMedioPonderado * l.unidade.QtdEmUnidadeBase
-
-			itemGravado, err := tx.CriarItemVenda(ctx, domain.ItemVenda{
-				VendaID:                venda.ID,
-				ProdutoID:              l.produto.ID,
-				UnidadeProdutoID:       l.unidade.ID,
-				Quantidade:             l.params.Quantidade,
-				PrecoUnitario:          l.unidade.PrecoVenda,
-				CustoUnitarioNoMomento: custoPorUnidadeVendida,
-				Desconto:               l.params.Desconto,
-				Subtotal:               subtotalLinha,
-			})
-			if err != nil {
-				return fmt.Errorf("gravar item de venda: %w", err)
-			}
-			resultado.Itens = append(resultado.Itens, itemGravado)
-
-			armazemID := p.ArmazemID
-			unidadeID := l.unidade.ID
-			custo := stockAtual.CustoMedioPonderado
-			referenciaID := strconv.FormatInt(venda.ID, 10)
-			if _, err := tx.Stock.CriarMovimento(ctx, repository.NovoMovimento{
-				ProdutoID:        l.produto.ID,
-				ArmazemOrigemID:  &armazemID,
-				Tipo:             domain.TipoMovimentoVenda,
-				Quantidade:       l.qtdBase,
-				CustoUnitario:    &custo,
-				UnidadeProdutoID: &unidadeID,
-				ReferenciaID:     &referenciaID,
-				UtilizadorID:     p.UtilizadorID,
-			}); err != nil {
-				return fmt.Errorf("baixar stock: %w", err)
-			}
+		itens, err := criarItensVendaEMovimentos(ctx, tx, venda.ID, p.ArmazemID, p.UtilizadorID, linhas)
+		if err != nil {
+			return err
 		}
+		resultado.Itens = itens
 
 		for _, pag := range p.Pagamentos {
 			pagamentoGravado, err := tx.CriarPagamento(ctx, domain.Pagamento{
@@ -214,15 +176,22 @@ func (s *VendaService) RegistarVendaDireta(ctx context.Context, p VendaDiretaPar
 	return resultado, nil
 }
 
-type linhaVenda struct {
-	produto domain.Produto
-	unidade domain.UnidadeProduto
-	params  ItemVendaDiretaParams
-	qtdBase float64
+// linhaResolvida é uma linha de venda já validada e pronta a virar
+// itens_venda + movimento de stock — venha ela de parâmetros frescos
+// (venda direta) ou de itens_conta já persistidos (fecho de conta aberta).
+type linhaResolvida struct {
+	ProdutoID        int64
+	ProdutoNome      string
+	UnidadeProdutoID int64
+	QtdEmUnidadeBase float64
+	PrecoUnitario    float64
+	Quantidade       float64
+	Desconto         float64
+	QtdBase          float64
 }
 
-func (s *VendaService) resolverLinhas(ctx context.Context, itens []ItemVendaDiretaParams) ([]linhaVenda, float64, float64, error) {
-	linhas := make([]linhaVenda, 0, len(itens))
+func (s *VendaService) resolverLinhas(ctx context.Context, itens []ItemVendaDiretaParams) ([]linhaResolvida, float64, float64, error) {
+	linhas := make([]linhaResolvida, 0, len(itens))
 	var subtotal, descontoLinhas float64
 
 	for _, item := range itens {
@@ -255,19 +224,80 @@ func (s *VendaService) resolverLinhas(ctx context.Context, itens []ItemVendaDire
 			return nil, 0, 0, fmt.Errorf("unidade %d não pertence ao produto %q", unidade.ID, produto.Nome)
 		}
 
-		subtotalLinha := item.Quantidade * unidade.PrecoVenda
-		subtotal += subtotalLinha
+		subtotal += item.Quantidade * unidade.PrecoVenda
 		descontoLinhas += item.Desconto
 
-		linhas = append(linhas, linhaVenda{
-			produto: produto,
-			unidade: unidade,
-			params:  item,
-			qtdBase: item.Quantidade * unidade.QtdEmUnidadeBase,
+		linhas = append(linhas, linhaResolvida{
+			ProdutoID:        produto.ID,
+			ProdutoNome:      produto.Nome,
+			UnidadeProdutoID: unidade.ID,
+			QtdEmUnidadeBase: unidade.QtdEmUnidadeBase,
+			PrecoUnitario:    unidade.PrecoVenda,
+			Quantidade:       item.Quantidade,
+			Desconto:         item.Desconto,
+			QtdBase:          item.Quantidade * unidade.QtdEmUnidadeBase,
 		})
 	}
 
 	return linhas, subtotal, descontoLinhas, nil
+}
+
+// criarItensVendaEMovimentos grava um itens_venda e um movimento de stock
+// tipo `venda` por cada linha, dentro da transação corrente. Falha (e
+// aborta tudo, incluindo linhas já processadas nesta chamada — o chamador
+// está sempre dentro de um WithTx) se alguma linha não tiver stock
+// suficiente no armazém indicado.
+func criarItensVendaEMovimentos(ctx context.Context, tx *repository.VendaRepository, vendaID, armazemID, utilizadorID int64, linhas []linhaResolvida) ([]domain.ItemVenda, error) {
+	itens := make([]domain.ItemVenda, 0, len(linhas))
+
+	for _, l := range linhas {
+		stockAtual, err := tx.Stock.ObterStock(ctx, l.ProdutoID, armazemID)
+		if err != nil {
+			return nil, err
+		}
+		if stockAtual.Quantidade < l.QtdBase {
+			return nil, fmt.Errorf("%w: %s — disponível %.3f, pedido %.3f", domain.ErrStockInsuficiente, l.ProdutoNome, stockAtual.Quantidade, l.QtdBase)
+		}
+
+		subtotalLinha := l.Quantidade*l.PrecoUnitario - l.Desconto
+		// Custo por unidade vendida (não por unidade base) — ver nota em
+		// domain.ItemVenda.
+		custoPorUnidadeVendida := stockAtual.CustoMedioPonderado * l.QtdEmUnidadeBase
+
+		itemGravado, err := tx.CriarItemVenda(ctx, domain.ItemVenda{
+			VendaID:                vendaID,
+			ProdutoID:              l.ProdutoID,
+			UnidadeProdutoID:       l.UnidadeProdutoID,
+			Quantidade:             l.Quantidade,
+			PrecoUnitario:          l.PrecoUnitario,
+			CustoUnitarioNoMomento: custoPorUnidadeVendida,
+			Desconto:               l.Desconto,
+			Subtotal:               subtotalLinha,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("gravar item de venda: %w", err)
+		}
+		itens = append(itens, itemGravado)
+
+		armazemIDCopy := armazemID
+		unidadeIDCopy := l.UnidadeProdutoID
+		custoCopy := stockAtual.CustoMedioPonderado
+		referenciaID := strconv.FormatInt(vendaID, 10)
+		if _, err := tx.Stock.CriarMovimento(ctx, repository.NovoMovimento{
+			ProdutoID:        l.ProdutoID,
+			ArmazemOrigemID:  &armazemIDCopy,
+			Tipo:             domain.TipoMovimentoVenda,
+			Quantidade:       l.QtdBase,
+			CustoUnitario:    &custoCopy,
+			UnidadeProdutoID: &unidadeIDCopy,
+			ReferenciaID:     &referenciaID,
+			UtilizadorID:     utilizadorID,
+		}); err != nil {
+			return nil, fmt.Errorf("baixar stock: %w", err)
+		}
+	}
+
+	return itens, nil
 }
 
 // ObterVendaCompleta é usado pelo recibo e pelo histórico do dia (SDD 5.3).

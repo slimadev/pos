@@ -23,6 +23,7 @@ type Conta struct {
 	FechadaEm            *time.Time
 	UtilizadorAberturaID int64
 	UtilizadorFechoID    *int64
+	MotivoCancelamento   *string
 }
 
 type ItemConta struct {

@@ -4,6 +4,7 @@ import { usecase } from "../wailsjs/go/models";
 import { THEMES, useTheme, type Theme } from "./hooks/useTheme";
 import Wizard from "./wizard/Wizard";
 import VendaDireta from "./pos/VendaDireta";
+import Bottlestore from "./pos/Bottlestore";
 import FaseUm from "./FaseUm";
 import "./App.css";
 
@@ -36,9 +37,11 @@ function App() {
 }
 
 /**
- * Ecrã pós-wizard. O PDV direto (VendaDireta, Fase 3) já é o ecrã real
- * — o resto (produtos/armazéns/stock via FaseUm) continua scaffolding
- * até as Fases 4+ trazerem os ecrãs de admin definitivos.
+ * Ecrã pós-wizard. Menu dinâmico por módulo (SDD 9.5): pos_direto mostra
+ * o PDV direto (Fase 3), contas_abertas mostra a bottlestore (Fase 4) —
+ * nunca os dois ao mesmo tempo, tal como os presets do wizard nunca
+ * ativam os dois módulos juntos. Produtos/armazéns/stock via FaseUm
+ * continua scaffolding até as fases de admin trazerem os ecrãs definitivos.
  */
 function AppPrincipal({ config }: { config: usecase.EstadoConfig }) {
   const { theme, setTheme } = useTheme(config.Tema as Theme);
@@ -71,7 +74,8 @@ function AppPrincipal({ config }: { config: usecase.EstadoConfig }) {
         <span>{status}</span>
       </div>
 
-      <VendaDireta />
+      {config.ModulosAtivos.includes("pos_direto") && <VendaDireta />}
+      {config.ModulosAtivos.includes("contas_abertas") && <Bottlestore />}
 
       <FaseUm />
     </div>

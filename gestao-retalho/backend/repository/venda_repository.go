@@ -89,6 +89,85 @@ func (r *VendaRepository) ListarItensConta(ctx context.Context, contaID int64) (
 	return out, nil
 }
 
+func (r *VendaRepository) ObterItemConta(ctx context.Context, id int64) (domain.ItemConta, error) {
+	row, err := r.q.ObterItemConta(ctx, id)
+	if err != nil {
+		return domain.ItemConta{}, err
+	}
+	return itemContaFromRow(row), nil
+}
+
+// TransferirItemConta move uma linha inteira para outra conta aberta (SDD
+// 4.10, "transferir itens entre contas") — move a linha completa, não
+// fraciona quantidade entre contas.
+func (r *VendaRepository) TransferirItemConta(ctx context.Context, itemID, novaContaID int64) error {
+	return r.q.TransferirItemConta(ctx, sqlcgen.TransferirItemContaParams{
+		ContaID: novaContaID,
+		ID:      itemID,
+	})
+}
+
+func (r *VendaRepository) ObterConta(ctx context.Context, id int64) (domain.Conta, error) {
+	row, err := r.q.ObterConta(ctx, id)
+	if err != nil {
+		return domain.Conta{}, err
+	}
+	return contaFromRow(row), nil
+}
+
+func (r *VendaRepository) ListarContasAbertas(ctx context.Context, negocioID int64) ([]domain.Conta, error) {
+	rows, err := r.q.ListarContasAbertas(ctx, negocioID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.Conta, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, contaFromRow(row))
+	}
+	return out, nil
+}
+
+func (r *VendaRepository) CancelarConta(ctx context.Context, contaID, utilizadorFechoID int64, motivo string) (domain.Conta, error) {
+	row, err := r.q.CancelarConta(ctx, sqlcgen.CancelarContaParams{
+		UtilizadorFechoID:  sql.NullInt64{Int64: utilizadorFechoID, Valid: true},
+		MotivoCancelamento: sql.NullString{String: motivo, Valid: true},
+		ID:                 contaID,
+	})
+	if err != nil {
+		return domain.Conta{}, err
+	}
+	return contaFromRow(row), nil
+}
+
+// --- Dívidas (SDD 4.11) -----------------------------------------------------
+
+func (r *VendaRepository) CriarDivida(ctx context.Context, d domain.Divida) (domain.Divida, error) {
+	row, err := r.q.CriarDivida(ctx, sqlcgen.CriarDividaParams{
+		ClienteID:     d.ClienteID,
+		VendaID:       d.VendaID,
+		ValorOriginal: d.ValorOriginal,
+		ValorPago:     d.ValorPago,
+		ValorEmAberto: d.ValorEmAberto,
+		Status:        string(d.Status),
+	})
+	if err != nil {
+		return domain.Divida{}, err
+	}
+	return dividaFromRow(row), nil
+}
+
+func (r *VendaRepository) ListarDividasPorCliente(ctx context.Context, clienteID int64) ([]domain.Divida, error) {
+	rows, err := r.q.ListarDividasPorCliente(ctx, clienteID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.Divida, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, dividaFromRow(row))
+	}
+	return out, nil
+}
+
 // --- Vendas ----------------------------------------------------------------
 
 func (r *VendaRepository) CriarVenda(ctx context.Context, v domain.Venda) (domain.Venda, error) {
@@ -205,6 +284,20 @@ func contaFromRow(row sqlcgen.Contas) domain.Conta {
 		FechadaEm:            fechadaEm,
 		UtilizadorAberturaID: row.UtilizadorAberturaID,
 		UtilizadorFechoID:    nullInt64ToPtr(row.UtilizadorFechoID),
+		MotivoCancelamento:   nullStringToPtr(row.MotivoCancelamento),
+	}
+}
+
+func dividaFromRow(row sqlcgen.Dividas) domain.Divida {
+	return domain.Divida{
+		ID:            row.ID,
+		ClienteID:     row.ClienteID,
+		VendaID:       row.VendaID,
+		ValorOriginal: row.ValorOriginal,
+		ValorPago:     row.ValorPago,
+		ValorEmAberto: row.ValorEmAberto,
+		Status:        domain.StatusDivida(row.Status),
+		CriadoEm:      parseTimestamp(row.CriadoEm),
 	}
 }
 

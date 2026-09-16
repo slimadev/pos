@@ -128,6 +128,15 @@ Mapeia à Fase 1 do roadmap do SDD (secção 11) e às entidades da secção 3.2
 
 **Testes:** conta não pode fechar duas vezes; transferência de item entre contas mantém total consistente nas duas; dívida bloqueada para cliente anónimo.
 
+> **Estado: concluída.** Decisões tomadas durante a implementação:
+> - `FecharConta` (bottlestore) e `RegistarVendaDireta` (Fase 3) partilham a mecânica de gerar `itens_venda`+movimentos de stock via uma função de pacote só (`criarItensVendaEMovimentos`, em `venda_service.go`) — extraí isto do código da Fase 3 em vez de duplicar a lógica de resolver linha→stock→custo; só a origem das linhas muda (parâmetros frescos na venda direta vs. `itens_conta` já persistidos ao longo da noite na bottlestore).
+> - `AdicionarItem` não toca em stock nem o valida — só regista a linha na conta. O stock só é lido/baixado no `FecharConta`, confirmando a leitura da Fase 3 do fluxo 4.10: lançar consumo é uma operação "leve", a baixa de stock é sempre no fecho.
+> - `FecharConta` calcula preço a partir de `itens_conta.preco_unitario_aplicado` (congelado no momento em que cada item foi lançado), não do preço de catálogo atual — o cliente paga o preço de quando pediu, mesmo que o preço mude a meio da noite.
+> - Dívida: se os pagamentos não cobrem o total, a diferença vira `divida` — mas só se `conta.cliente_id` não for o anónimo (`domain.ErrClienteAnonimoNaoPodeDivida`). Pagamento parcial gera `status=parcial` (venda e dívida); zero pagamento gera `status=divida`. O fluxo de **pagar** uma dívida existente fica para a Fase 7 (SDD 4.11) — aqui só o registo é criado.
+> - Transferência de item move a linha inteira (`itens_conta.conta_id` para a nova conta) — não fraciona quantidade entre duas contas; cobre o caso do SDD ("útil se o grupo se dividir") sem a complexidade extra de split parcial, que ninguém pediu.
+> - No frontend, `2a`/`2b` não têm os filtros "Com cliente / Abertas > 2h" nem o destaque de cor por tempo do mock — ficou tudo numa lista simples ordenada por hora de abertura; e o modal de fecho não tem "imprimir recibo" como checkbox opcional, gera sempre (mesma simplificação da Fase 3).
+> - Menu dinâmico (SDD 9.5) ligado pela primeira vez nesta fase: `App.tsx` só mostra o PDV direto se `pos_direto` estiver ativo, e a bottlestore se `contas_abertas` estiver ativo — nunca os dois ao mesmo tempo, porque nenhum preset do wizard ativa os dois juntos.
+
 ---
 
 ## 6. Fase 5 — Fichas técnicas, produtos compostos e semi-elaborados
