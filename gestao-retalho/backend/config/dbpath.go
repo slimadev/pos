@@ -54,6 +54,20 @@ func ResolveRecibosDir() (string, error) {
 	return recibosDir, nil
 }
 
+// ResolveRelatoriosDir returns the folder exported reports (Excel/PDF,
+// Fase 8) are written to, creating it if needed.
+func ResolveRelatoriosDir() (string, error) {
+	dir, err := dataDir()
+	if err != nil {
+		return "", err
+	}
+	relatoriosDir := filepath.Join(dir, "relatorios")
+	if err := os.MkdirAll(relatoriosDir, 0o755); err != nil {
+		return "", err
+	}
+	return relatoriosDir, nil
+}
+
 func dataDir() (string, error) {
 	base, err := os.UserConfigDir()
 	if err != nil {

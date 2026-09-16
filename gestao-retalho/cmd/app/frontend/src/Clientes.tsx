@@ -195,7 +195,7 @@ function ClienteDetalhe({
           {vendas.map((v) => (
             <tr key={v.ID}>
               <td>{v.ID}</td>
-              <td>{new Date(v.CriadoEm).toLocaleString()}</td>
+              <td>{new Date(String(v.CriadoEm)).toLocaleString()}</td>
               <td>{v.Total.toFixed(2)} MT</td>
               <td>{v.Status}</td>
             </tr>
@@ -272,7 +272,7 @@ function DividaLinha({
       <td>{divida.ValorPago.toFixed(2)}</td>
       <td>{divida.ValorEmAberto.toFixed(2)}</td>
       <td>{divida.Status}</td>
-      <td>{new Date(divida.CriadoEm).toLocaleDateString()}</td>
+      <td>{new Date(String(divida.CriadoEm)).toLocaleDateString()}</td>
       <td>
         {!paga && (
           <div className="fase1-form">

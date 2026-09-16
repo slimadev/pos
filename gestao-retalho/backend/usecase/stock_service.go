@@ -211,11 +211,13 @@ func (s *StockService) registarSaida(ctx context.Context, tipo domain.TipoMovime
 
 		origemID := p.ArmazemOrigemID
 		motivo := p.Motivo
+		custo := atual.CustoMedioPonderado
 		movimento, err = tx.CriarMovimento(ctx, repository.NovoMovimento{
 			ProdutoID:        p.ProdutoID,
 			ArmazemOrigemID:  &origemID,
 			Tipo:             tipo,
 			Quantidade:       p.Quantidade,
+			CustoUnitario:    &custo,
 			UnidadeProdutoID: p.UnidadeProdutoID,
 			Motivo:           &motivo,
 			UtilizadorID:     p.UtilizadorID,

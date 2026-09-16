@@ -71,3 +71,28 @@ func boolToInt64(b bool) int64 {
 func int64ToBool(i int64) bool {
 	return i != 0
 }
+
+// anyToFloat64 lê o resultado de um COALESCE(SUM(coluna_real), 0) — SQLite
+// devolve int64 quando a agregação não tocou nenhuma linha (o literal `0`
+// vence por tipagem dinâmica) e float64 quando somou pelo menos uma linha
+// REAL; os relatórios (Fase 8) usam isto em todas as colunas agregadas.
+func anyToFloat64(v any) float64 {
+	switch n := v.(type) {
+	case float64:
+		return n
+	case int64:
+		return float64(n)
+	default:
+		return 0
+	}
+}
+
+// interfaceArmazemFiltro converte um filtro opcional de armazém para o tipo
+// `interface{}` que o sqlc gera para `sqlc.narg` usado em condições OR
+// contra colunas de tabelas diferentes — nil desativa o filtro.
+func interfaceArmazemFiltro(armazemID *int64) any {
+	if armazemID == nil {
+		return nil
+	}
+	return *armazemID
+}

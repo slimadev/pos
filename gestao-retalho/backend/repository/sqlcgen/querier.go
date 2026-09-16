@@ -44,6 +44,7 @@ type Querier interface {
 	DefinirProdutoAtivo(ctx context.Context, arg DefinirProdutoAtivoParams) error
 	FecharConta(ctx context.Context, arg FecharContaParams) (Contas, error)
 	FecharInventario(ctx context.Context, id int64) error
+	ItensVendaPorPeriodo(ctx context.Context, arg ItensVendaPorPeriodoParams) ([]ItensVenda, error)
 	ListarArmazens(ctx context.Context, negocioID int64) ([]Armazens, error)
 	ListarCategorias(ctx context.Context, negocioID int64) ([]Categorias, error)
 	ListarClientes(ctx context.Context, negocioID int64) ([]Clientes, error)
@@ -85,6 +86,15 @@ type Querier interface {
 	ObterUtilizadorPorUsername(ctx context.Context, username string) (Utilizadores, error)
 	ObterVenda(ctx context.Context, id int64) (Vendas, error)
 	RegistarContagemInventarioItem(ctx context.Context, arg RegistarContagemInventarioItemParams) error
+	RelatorioContasPorPeriodo(ctx context.Context, arg RelatorioContasPorPeriodoParams) ([]Contas, error)
+	RelatorioLucroPorPeriodo(ctx context.Context, arg RelatorioLucroPorPeriodoParams) (RelatorioLucroPorPeriodoRow, error)
+	RelatorioMovimentosPorPeriodo(ctx context.Context, arg RelatorioMovimentosPorPeriodoParams) ([]RelatorioMovimentosPorPeriodoRow, error)
+	RelatorioPerdasConsumoInterno(ctx context.Context, arg RelatorioPerdasConsumoInternoParams) ([]RelatorioPerdasConsumoInternoRow, error)
+	RelatorioStockAtual(ctx context.Context, arg RelatorioStockAtualParams) ([]RelatorioStockAtualRow, error)
+	RelatorioValorContas(ctx context.Context) ([]RelatorioValorContasRow, error)
+	RelatorioVendasPorDia(ctx context.Context, arg RelatorioVendasPorDiaParams) ([]RelatorioVendasPorDiaRow, error)
+	RelatorioVendasPorMetodoPagamento(ctx context.Context, arg RelatorioVendasPorMetodoPagamentoParams) ([]RelatorioVendasPorMetodoPagamentoRow, error)
+	RelatorioVendasPorProduto(ctx context.Context, arg RelatorioVendasPorProdutoParams) ([]RelatorioVendasPorProdutoRow, error)
 	RemoverIngredientes(ctx context.Context, produtoCompostoID int64) error
 	TransferirItemConta(ctx context.Context, arg TransferirItemContaParams) error
 }

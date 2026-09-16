@@ -10,11 +10,16 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
+	"time"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
 	"gestao-retalho/backend/config"
 	"gestao-retalho/backend/domain"
+	"gestao-retalho/backend/export"
+	"gestao-retalho/backend/repository"
 	"gestao-retalho/backend/usecase"
 )
 
@@ -40,6 +45,7 @@ type App struct {
 	FichaTecnicaService *usecase.FichaTecnicaService
 	FarmaciaService     *usecase.FarmaciaService
 	DividaService       *usecase.DividaService
+	RelatorioService    *usecase.RelatorioService
 }
 
 func NewApp(
@@ -55,6 +61,7 @@ func NewApp(
 	fichas *usecase.FichaTecnicaService,
 	farmacia *usecase.FarmaciaService,
 	dividas *usecase.DividaService,
+	relatorios *usecase.RelatorioService,
 ) *App {
 	return &App{
 		db:                  db,
@@ -69,6 +76,7 @@ func NewApp(
 		FichaTecnicaService: fichas,
 		FarmaciaService:     farmacia,
 		DividaService:       dividas,
+		RelatorioService:    relatorios,
 	}
 }
 
@@ -471,4 +479,148 @@ func (a *App) RegistarPagamentoDivida(p usecase.RegistarPagamentoDividaParams) (
 		return RegistarPagamentoDividaResponse{}, err
 	}
 	return RegistarPagamentoDividaResponse{Divida: divida, Pagamento: pagamento}, nil
+}
+
+// --- Relatórios (SDD secção 6, Fase 8) --------------------------------------
+//
+// Todos partilham o mesmo filtro (período + armazém opcional); o
+// "comparativo entre negócios" da tabela do SDD 6 fica para a Fase 9 (Admin
+// universal) — não há o que comparar dentro de uma única loja.
+
+// FiltroRelatorioRequest é o par (Desde, Até) + armazém opcional que quase
+// todos os relatórios aceitam.
+type FiltroRelatorioRequest struct {
+	Desde     time.Time
+	Ate       time.Time
+	ArmazemID *int64
+}
+
+func (f FiltroRelatorioRequest) paraFiltro() usecase.FiltroPeriodo {
+	return usecase.FiltroPeriodo{Desde: f.Desde, Ate: f.Ate, ArmazemID: f.ArmazemID}
+}
+
+type RelatorioVendasResponse struct {
+	Resumo usecase.ResumoVendas
+	PorDia []repository.LinhaVendasPorDia
+}
+
+func (a *App) RelatorioVendasPorPeriodo(f FiltroRelatorioRequest) (RelatorioVendasResponse, error) {
+	resumo, linhas, err := a.RelatorioService.VendasPorPeriodo(a.ctx, f.paraFiltro())
+	if err != nil {
+		return RelatorioVendasResponse{}, err
+	}
+	return RelatorioVendasResponse{Resumo: resumo, PorDia: linhas}, nil
+}
+
+func (a *App) RelatorioLucroPorPeriodo(f FiltroRelatorioRequest) (usecase.RelatorioLucro, error) {
+	return a.RelatorioService.LucroPorPeriodo(a.ctx, f.paraFiltro())
+}
+
+func (a *App) RelatorioVendasPorProduto(f FiltroRelatorioRequest) ([]repository.LinhaVendasPorProduto, error) {
+	return a.RelatorioService.VendasPorProduto(a.ctx, f.paraFiltro())
+}
+
+func (a *App) RelatorioConsumoTeoricoVsReal(f FiltroRelatorioRequest) ([]usecase.LinhaConsumoIngrediente, error) {
+	return a.RelatorioService.ConsumoTeoricoVsReal(a.ctx, f.paraFiltro())
+}
+
+func (a *App) RelatorioVendasPorMetodoPagamento(f FiltroRelatorioRequest) ([]repository.LinhaVendasPorMetodo, error) {
+	return a.RelatorioService.VendasPorMetodoPagamento(a.ctx, f.paraFiltro())
+}
+
+type RelatorioStockAtualResponse struct {
+	Linhas     []usecase.LinhaStockAtualRelatorio
+	ValorTotal float64
+}
+
+func (a *App) RelatorioStockAtual(armazemID *int64) (RelatorioStockAtualResponse, error) {
+	linhas, total, err := a.RelatorioService.StockAtual(a.ctx, armazemID)
+	if err != nil {
+		return RelatorioStockAtualResponse{}, err
+	}
+	return RelatorioStockAtualResponse{Linhas: linhas, ValorTotal: total}, nil
+}
+
+func (a *App) RelatorioMovimentosPorPeriodo(f FiltroRelatorioRequest) ([]repository.LinhaMovimento, error) {
+	return a.RelatorioService.MovimentosPorPeriodo(a.ctx, f.paraFiltro())
+}
+
+type RelatorioPerdasConsumoInternoResponse struct {
+	Linhas     []repository.LinhaPerdaConsumo
+	ValorTotal float64
+}
+
+func (a *App) RelatorioPerdasConsumoInterno(f FiltroRelatorioRequest) (RelatorioPerdasConsumoInternoResponse, error) {
+	linhas, total, err := a.RelatorioService.PerdasConsumoInterno(a.ctx, f.paraFiltro())
+	if err != nil {
+		return RelatorioPerdasConsumoInternoResponse{}, err
+	}
+	return RelatorioPerdasConsumoInternoResponse{Linhas: linhas, ValorTotal: total}, nil
+}
+
+type RelatorioContasResponse struct {
+	Resumo usecase.ResumoContas
+	Linhas []usecase.LinhaConta
+}
+
+func (a *App) RelatorioContasPorPeriodo(desde, ate time.Time) (RelatorioContasResponse, error) {
+	resumo, linhas, err := a.RelatorioService.ContasPorPeriodo(a.ctx, desde, ate)
+	if err != nil {
+		return RelatorioContasResponse{}, err
+	}
+	return RelatorioContasResponse{Resumo: resumo, Linhas: linhas}, nil
+}
+
+func (a *App) RelatorioDividasEmAberto() ([]usecase.LinhaDividaRelatorio, error) {
+	return a.RelatorioService.DividasEmAberto(a.ctx)
+}
+
+func (a *App) RelatorioFechoCaixaDiario(dia time.Time) (usecase.FechoCaixa, error) {
+	return a.RelatorioService.FechoCaixaDiario(a.ctx, dia)
+}
+
+// --- Exportação Excel/PDF (SDD 6.1) -----------------------------------------
+//
+// Genérica de propósito: o ecrã de relatórios já formatou cada valor como
+// string para a pré-visualização em tabela, por isso só há uma exportação
+// (não uma por relatório) — reutiliza exatamente essas linhas.
+
+func (a *App) ExportarTabelaExcel(titulo string, colunas []string, linhas [][]string, totais []string) (string, error) {
+	return a.exportarTabela(titulo, colunas, linhas, totais, "xlsx", export.GerarTabelaExcel)
+}
+
+func (a *App) ExportarTabelaPDF(titulo string, colunas []string, linhas [][]string, totais []string) (string, error) {
+	return a.exportarTabela(titulo, colunas, linhas, totais, "pdf", export.GerarTabelaPDF)
+}
+
+var caracteresInvalidosFicheiro = regexp.MustCompile(`[^a-zA-Z0-9-]+`)
+
+func (a *App) exportarTabela(
+	titulo string,
+	colunas []string,
+	linhas [][]string,
+	totais []string,
+	extensao string,
+	gerar func(export.Tabela) ([]byte, error),
+) (string, error) {
+	conteudo, err := gerar(export.Tabela{Titulo: titulo, Colunas: colunas, Linhas: linhas, Totais: totais})
+	if err != nil {
+		return "", err
+	}
+
+	dir, err := config.ResolveRelatoriosDir()
+	if err != nil {
+		return "", err
+	}
+	nome := strings.Trim(caracteresInvalidosFicheiro.ReplaceAllString(titulo, "-"), "-")
+	if nome == "" {
+		nome = "relatorio"
+	}
+	path := filepath.Join(dir, fmt.Sprintf("%s-%d.%s", nome, time.Now().Unix(), extensao))
+	if err := os.WriteFile(path, conteudo, 0o644); err != nil {
+		return "", fmt.Errorf("gravar relatório: %w", err)
+	}
+
+	runtime.BrowserOpenURL(a.ctx, "file://"+path)
+	return path, nil
 }

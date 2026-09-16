@@ -16,6 +16,7 @@ import { api, domain, usecase } from "../wailsjs/go/models";
 import FichasTecnicasSection from "./FichasTecnicas";
 import FarmaciaSection from "./Farmacia";
 import ClientesSection from "./Clientes";
+import RelatoriosSection from "./Relatorios";
 import "./FaseUm.css";
 
 /**
@@ -50,6 +51,7 @@ export default function FaseUm() {
       <FarmaciaSection produtos={produtos} armazens={armazens} onErro={setErro} />
       <InventarioSection produtos={produtos} armazens={armazens} onErro={setErro} />
       <ClientesSection onErro={setErro} />
+      <RelatoriosSection armazens={armazens} onErro={setErro} />
     </div>
   );
 }
