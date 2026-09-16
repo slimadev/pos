@@ -14,9 +14,11 @@ import (
 var Module = fx.Options(
 	fx.Provide(repository.NewAdminSQLiteConn),
 	fx.Provide(repository.NewLojaRepository),
+	fx.Provide(repository.NewAdministradorRepository),
 
 	fx.Provide(NewLojasService),
 	fx.Provide(NewDashboardService),
+	fx.Provide(NewAuthService),
 
 	fx.Provide(NewAdminApp),
 )

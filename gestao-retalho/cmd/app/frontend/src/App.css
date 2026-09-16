@@ -52,23 +52,3 @@
   background: var(--color-accent);
   color: var(--color-accent-contrast);
 }
-
-.app-sair {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-left: auto;
-  padding: 10px 14px;
-  font-size: 13px;
-  font-weight: 500;
-  border-radius: 7px;
-  border: 1px solid var(--color-surface-border);
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-  cursor: pointer;
-}
-
-.app-sair-icon {
-  width: 16px;
-  height: 16px;
-}

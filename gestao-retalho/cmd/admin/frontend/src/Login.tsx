@@ -1,27 +1,12 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { LockClosedIcon } from "@heroicons/react/24/outline";
-import { Login as EntrarBinding } from "../wailsjs/go/api/App";
-import { usecase } from "../wailsjs/go/models";
-import { useTheme, type Theme } from "./hooks/useTheme";
-import "./Login.css";
+import { Login as EntrarBinding } from "../wailsjs/go/admin/AdminApp";
 
 /**
- * Ecrã de sessão (pós-wizard, SDD 4.13): a app sempre pede login ao
- * arrancar quando já está configurada — nunca entra direto no ecrã
- * principal, mesmo que só exista um utilizador. Usa o tema já configurado
- * (config.Tema) mesmo antes de autenticar, para o operador reconhecer a
- * loja certa de imediato.
+ * Login do cmd/admin — o único de todo o sistema (decisão pós-Fase 10, a
+ * pedido explícito). As lojas (cmd/app) não pedem login nenhum.
  */
-export default function Login({
-  config,
-  onEntrar,
-}: {
-  config: usecase.EstadoConfig;
-  onEntrar: () => void;
-}) {
-  useTheme(config.Tema as Theme);
-
+export default function Login({ onEntrar }: { onEntrar: () => void }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [erro, setErro] = useState<string | null>(null);
@@ -41,10 +26,8 @@ export default function Login({
   return (
     <div className="login-shell">
       <form className="login-card" onSubmit={entrar}>
-        <div className="login-logo">
-          <LockClosedIcon className="login-logo-icon" aria-hidden="true" />
-        </div>
-        <h1 className="login-titulo">{config.Negocio.Nome}</h1>
+        <div className="login-logo" />
+        <h1 className="login-titulo">Administração</h1>
         <p className="login-sub">Inicie sessão para continuar</p>
 
         {erro && <div className="login-erro">{erro}</div>}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ComponentType, SVGProps } from "react";
 import {
   Squares2X2Icon,
@@ -12,7 +12,11 @@ import {
   ChartBarIcon,
   UserCircleIcon,
   BuildingStorefrontIcon,
+  ArrowRightStartOnRectangleIcon,
 } from "@heroicons/react/24/outline";
+import { PrecisaConfigurarAdmin, Logout } from "../wailsjs/go/admin/AdminApp";
+import Configurar from "./Configurar";
+import Login from "./Login";
 import Dashboard from "./Dashboard";
 import LojasScreen from "./Lojas";
 
@@ -37,15 +41,47 @@ const NAV: { chave: Ecra; nome: string; Icone: IconeSvg; stub?: boolean }[] = [
   { chave: "lojas", nome: "Lojas", Icone: BuildingStorefrontIcon },
 ];
 
+type Estado = { tipo: "a-carregar" } | { tipo: "configurar" } | { tipo: "login" } | { tipo: "pronto" };
+
 /**
- * Administração universal (SDD 7.3/8.5, Fase 9) — sidebar fiel à tela `1c`
- * dos mocks aprovados. Só "Dashboard" e "Lojas" têm ecrã real nesta fase:
- * o resto da sidebar existe por fidelidade visual ao mock, mas a gestão
- * detalhada de produtos/stock/vendas/etc. continua a acontecer no
- * executável de cada loja (cmd/app) — o admin foca-se na visão agregada
- * (SDD 8.5: "visão agregada primeiro") e no registo de lojas.
+ * Arranque do cmd/admin: admin.db vazio (primeiro arranque de sempre)
+ * mostra "Configurar" (criar o único administrador de todo o sistema —
+ * decisão pós-Fase 10, a pedido explícito); já configurado, pede sempre
+ * login antes de mostrar o dashboard. As lojas (cmd/app) não têm login
+ * nenhum — só este, aqui, é que existe.
  */
 export default function App() {
+  const [estado, setEstado] = useState<Estado>({ tipo: "a-carregar" });
+
+  const verificar = () => {
+    PrecisaConfigurarAdmin()
+      .then((precisa) => setEstado({ tipo: precisa ? "configurar" : "login" }))
+      .catch(() => setEstado({ tipo: "login" }));
+  };
+
+  useEffect(verificar, []);
+
+  if (estado.tipo === "a-carregar") {
+    return null;
+  }
+  if (estado.tipo === "configurar") {
+    return <Configurar onConcluido={() => setEstado({ tipo: "pronto" })} />;
+  }
+  if (estado.tipo === "login") {
+    return <Login onEntrar={() => setEstado({ tipo: "pronto" })} />;
+  }
+  return <AdminPrincipal onSair={() => Logout().finally(verificar)} />;
+}
+
+/**
+ * Sidebar fiel à tela `1c` dos mocks aprovados (SDD 7.3/8.5, Fase 9). Só
+ * "Dashboard" e "Lojas" têm ecrã real nesta fase: o resto da sidebar
+ * existe por fidelidade visual ao mock, mas a gestão detalhada de
+ * produtos/stock/vendas/etc. continua a acontecer no executável de cada
+ * loja (cmd/app) — o admin foca-se na visão agregada (SDD 8.5: "visão
+ * agregada primeiro") e no registo de lojas.
+ */
+function AdminPrincipal({ onSair }: { onSair: () => void }) {
   const [ecra, setEcra] = useState<Ecra>("dashboard");
   const [stubNome, setStubNome] = useState("");
   const [erro, setErro] = useState<string | null>(null);
@@ -72,10 +108,10 @@ export default function App() {
             </button>
           ))}
         </nav>
-        <div className="admin-sidebar-footer">
-          <div className="admin-sidebar-footer-nome">Administrador</div>
-          <div className="admin-sidebar-footer-sub">Gestão de Retalho</div>
-        </div>
+        <button className="admin-sidebar-item admin-sidebar-sair" onClick={onSair}>
+          <ArrowRightStartOnRectangleIcon className="admin-sidebar-icon" aria-hidden="true" />
+          Sair
+        </button>
       </aside>
 
       <div className="admin-main">

@@ -1,27 +1,21 @@
 import { useEffect, useState } from "react";
-import { ArrowRightStartOnRectangleIcon } from "@heroicons/react/24/outline";
-import { EstaConfigurado, ObterEstadoConfig, Logout } from "../wailsjs/go/api/App";
+import { EstaConfigurado, ObterEstadoConfig } from "../wailsjs/go/api/App";
 import { usecase } from "../wailsjs/go/models";
 import { useTheme, type Theme } from "./hooks/useTheme";
 import Wizard from "./wizard/Wizard";
-import Login from "./Login";
 import VendaDireta from "./pos/VendaDireta";
 import Bottlestore from "./pos/Bottlestore";
 import Administracao from "./Administracao";
 import "./App.css";
 
-type Estado =
-  | { tipo: "a-carregar" }
-  | { tipo: "wizard" }
-  | { tipo: "login"; config: usecase.EstadoConfig }
-  | { tipo: "pronto"; config: usecase.EstadoConfig };
+type Estado = { tipo: "a-carregar" } | { tipo: "wizard" } | { tipo: "pronto"; config: usecase.EstadoConfig };
 
 /**
- * Arranque da app (pedido do utilizador): sem configuração ainda, abre o
- * wizard (escolher tipo de negócio, criar o utilizador administrador);
- * assim que a configuração existe — seja porque o wizard acabou de a criar,
- * seja porque já existia de uma sessão anterior — a app pede sempre login
- * antes de mostrar o ecrã principal, nunca entra direto.
+ * Arranque da app: sem configuração ainda, abre o wizard (escolher tipo de
+ * negócio, que decide só tema/cor e ecrã de venda). Já configurada, entra
+ * direto no ecrã principal — cmd/app não pede login (decisão pós-Fase 10:
+ * autenticação existe só no cmd/admin, um único administrador para todas
+ * as lojas; ver PLANO_IMPLEMENTACAO.md).
  */
 function App() {
   const [estado, setEstado] = useState<Estado>({ tipo: "a-carregar" });
@@ -33,7 +27,7 @@ function App() {
           setEstado({ tipo: "wizard" });
           return;
         }
-        ObterEstadoConfig().then((config) => setEstado({ tipo: "login", config }));
+        ObterEstadoConfig().then((config) => setEstado({ tipo: "pronto", config }));
       })
       .catch(() => setEstado({ tipo: "wizard" }));
   };
@@ -46,16 +40,13 @@ function App() {
   if (estado.tipo === "wizard") {
     return <Wizard onConcluido={verificar} />;
   }
-  if (estado.tipo === "login") {
-    return <Login config={estado.config} onEntrar={() => setEstado({ tipo: "pronto", config: estado.config })} />;
-  }
-  return <AppPrincipal config={estado.config} onSair={verificar} />;
+  return <AppPrincipal config={estado.config} />;
 }
 
 type Modo = "venda" | "administracao";
 
 /**
- * Ecrã pós-login: um único executável por loja com dois modos (SDD 9.5) —
+ * Ecrã principal: um único executável por loja com dois modos (SDD 9.5) —
  * "Venda" mostra o ecrã de PDV certo consoante os módulos ativos (PDV
  * direto para mercearia/ferragem/farmácia, contas abertas para
  * bottlestore, nunca os dois ao mesmo tempo), "Administração" é o ponto
@@ -65,14 +56,10 @@ type Modo = "venda" | "administracao";
  * decide os dois: que ecrã de venda existe, e o que aparece na
  * administração.
  */
-function AppPrincipal({ config, onSair }: { config: usecase.EstadoConfig; onSair: () => void }) {
+function AppPrincipal({ config }: { config: usecase.EstadoConfig }) {
   useTheme(config.Tema as Theme);
   const temVenda = config.ModulosAtivos.includes("pos_direto") || config.ModulosAtivos.includes("contas_abertas");
   const [modo, setModo] = useState<Modo>(temVenda ? "venda" : "administracao");
-
-  function sair() {
-    Logout().finally(onSair);
-  }
 
   return (
     <div id="App">
@@ -89,10 +76,6 @@ function AppPrincipal({ config, onSair }: { config: usecase.EstadoConfig; onSair
             </button>
           </div>
         )}
-        <button className="app-sair" onClick={sair} title="Terminar sessão">
-          <ArrowRightStartOnRectangleIcon className="app-sair-icon" aria-hidden="true" />
-          Sair
-        </button>
       </div>
 
       {modo === "venda" && temVenda ? (

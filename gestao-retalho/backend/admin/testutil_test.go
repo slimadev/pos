@@ -2,6 +2,7 @@ package admin_test
 
 import (
 	"context"
+	"database/sql"
 	"path/filepath"
 	"testing"
 
@@ -109,11 +110,23 @@ func novaBaseNaoConfigurada(t *testing.T, nomeFicheiro string) string {
 // vive na migração própria do admin (migrations_admin), não na partilhada.
 func novoLojaRepositoryTeste(t *testing.T) *repository.LojaRepository {
 	t.Helper()
+	return repository.NewLojaRepository(novoAdminDBTeste(t))
+}
+
+// novoAdministradorRepositoryTeste segue o mesmo padrão, para os testes de
+// AuthService (login único, decisão pós-Fase 10).
+func novoAdministradorRepositoryTeste(t *testing.T) *repository.AdministradorRepository {
+	t.Helper()
+	return repository.NewAdministradorRepository(novoAdminDBTeste(t))
+}
+
+func novoAdminDBTeste(t *testing.T) *sql.DB {
+	t.Helper()
 	caminho := filepath.Join(t.TempDir(), "admin.db")
 	db, err := repository.NewAdminSQLiteConn(config.AdminDBPath(caminho))
 	if err != nil {
 		t.Fatalf("abrir admin.db de teste: %v", err)
 	}
 	t.Cleanup(func() { _ = db.Close() })
-	return repository.NewLojaRepository(db)
+	return db
 }
