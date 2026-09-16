@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Ping } from "../wailsjs/go/api/App";
 import { THEMES, useTheme } from "./hooks/useTheme";
+import FaseUm from "./FaseUm";
 import "./App.css";
 
 /**
@@ -39,6 +40,8 @@ function App() {
         <button onClick={testPing}>Testar Ping() → SQLite</button>
         <span>{status}</span>
       </div>
+
+      <FaseUm />
     </div>
   );
 }

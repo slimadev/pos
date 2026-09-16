@@ -1,0 +1,16 @@
+package domain
+
+import "errors"
+
+// Erros de regra de negócio partilhados pelos usecases (SDD secção 4).
+// São sentinelas comparáveis com errors.Is, não erros de infraestrutura.
+var (
+	ErrStockInsuficiente  = errors.New("stock insuficiente")
+	ErrMotivoObrigatorio  = errors.New("motivo é obrigatório")
+	ErrProdutoComposto    = errors.New("produto composto não tem stock próprio")
+	ErrProdutoInativo     = errors.New("produto inativo")
+	ErrArmazemInativo     = errors.New("armazém inativo")
+	ErrArmazemIgual       = errors.New("armazém de origem e destino não podem ser o mesmo")
+	ErrInventarioFechado  = errors.New("inventário já está fechado")
+	ErrItemNaoPertenceInv = errors.New("item não pertence a este inventário")
+)

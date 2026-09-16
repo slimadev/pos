@@ -1,0 +1,12 @@
+DROP TABLE IF EXISTS inventario_itens;
+DROP TABLE IF EXISTS inventarios;
+DROP VIEW IF EXISTS stock_atual;
+DROP TABLE IF EXISTS produto_custo_medio;
+DROP TABLE IF EXISTS movimentos_stock;
+DROP TABLE IF EXISTS unidades_produto;
+DROP TABLE IF EXISTS produtos;
+DROP TABLE IF EXISTS categorias;
+DROP TABLE IF EXISTS armazens;
+DROP TABLE IF EXISTS utilizadores;
+DROP TABLE IF EXISTS configuracoes;
+DROP TABLE IF EXISTS negocios;

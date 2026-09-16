@@ -28,5 +28,9 @@ func NewSQLiteConn(path config.DBPath) (*sql.DB, error) {
 		return nil, fmt.Errorf("enable foreign keys: %w", err)
 	}
 
+	if err := Migrate(db); err != nil {
+		return nil, err
+	}
+
 	return db, nil
 }

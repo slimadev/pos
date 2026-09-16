@@ -9,6 +9,7 @@ import (
 
 	"gestao-retalho/backend/api"
 	"gestao-retalho/backend/repository"
+	"gestao-retalho/backend/usecase"
 )
 
 // CoreModule provides every repository, usecase and the api.App on top of
@@ -16,5 +17,15 @@ import (
 // (one loja vs. many), everything else is 100% shared.
 var CoreModule = fx.Options(
 	fx.Provide(repository.NewSQLiteConn),
+
+	fx.Provide(repository.NewProdutoRepository),
+	fx.Provide(repository.NewArmazemRepository),
+	fx.Provide(repository.NewStockRepository),
+	fx.Provide(repository.NewInventarioRepository),
+
+	fx.Provide(usecase.NewProdutoService),
+	fx.Provide(usecase.NewArmazemService),
+	fx.Provide(usecase.NewStockService),
+
 	fx.Provide(api.NewApp),
 )

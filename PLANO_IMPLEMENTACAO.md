@@ -66,6 +66,12 @@ Mapeia à Fase 1 do roadmap do SDD (secção 11) e às entidades da secção 3.2
 
 **Testes:** unitários Go para `StockService` (casos: entrada aumenta stock, transferência é atómica e falha se stock insuficiente, perda exige motivo, inventário gera `ajuste_inventario` correto para diferenças positivas e negativas).
 
+> **Estado: concluída.** Duas notas sobre decisões tomadas durante a implementação:
+> - `migrations/` não pôde ficar solta na raiz do módulo pela mesma razão do frontend na Fase 0 (`go:embed` não aceita `..`) — vive em `backend/repository/migrations/`, embutida por `backend/repository/migrate.go` e aplicada automaticamente a cada `NewSQLiteConn` (nenhum passo manual de migração a lembrar).
+> - Custo médio ponderado ficou por **(produto, armazém)**, não só por produto — a tabela `stock_atual` do SDD 3.2 pareia as duas colunas explicitamente, mesmo a prosa da secção 4.4 falando só em "produto". Transferências entram no destino ao custo médio da origem; saídas (perda/consumo/venda) nunca alteram a média do que fica.
+> - `utilizadores` entrou já nesta fase (não só na Fase 2) porque `movimentos_stock.utilizador_id` é `NOT NULL` desde o primeiro registo — há uma linha semente (`id=1`, sem password) até o wizard criar o admin real.
+> - Frontend da Fase 1 (`cmd/app/frontend/src/FaseUm.tsx`) é deliberadamente sem tema/estilo — existe para exercitar os bindings ponta a ponta, não para o operador final usar; é substituído pelos ecrãs `1b`/`2a`/`2b`/`2c` nas fases seguintes.
+
 ---
 
 ## 3. Fase 2 — Wizard de 1º arranque e configuração (tela `1b`)
