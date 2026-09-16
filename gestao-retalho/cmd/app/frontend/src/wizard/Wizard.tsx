@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { CheckIcon } from "@heroicons/react/24/outline";
 import { ObterPresetsNegocio, ObterTodosModulos, FinalizarWizard } from "../../wailsjs/go/api/App";
 import { domain, usecase } from "../../wailsjs/go/models";
 import { useTheme, type Theme } from "../hooks/useTheme";
@@ -117,7 +118,9 @@ export default function Wizard({ onConcluido }: { onConcluido: () => void }) {
             const estado = n < passo ? "feito" : n === passo ? "atual" : "pendente";
             return (
               <li key={label} className={`wizard-step wizard-step--${estado}`}>
-                <span className="wizard-step-bullet">{n < passo ? "✓" : n}</span>
+                <span className="wizard-step-bullet">
+                  {n < passo ? <CheckIcon className="wizard-step-check" aria-hidden="true" /> : n}
+                </span>
                 <span>{label}</span>
               </li>
             );

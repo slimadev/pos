@@ -74,7 +74,7 @@ function AppPrincipal({ config }: { config: usecase.EstadoConfig }) {
         <span>{status}</span>
       </div>
 
-      {config.ModulosAtivos.includes("pos_direto") && <VendaDireta />}
+      {config.ModulosAtivos.includes("pos_direto") && <VendaDireta tipoNegocio={config.Negocio.TipoNegocio} />}
       {config.ModulosAtivos.includes("contas_abertas") && <Bottlestore />}
 
       <FaseUm />

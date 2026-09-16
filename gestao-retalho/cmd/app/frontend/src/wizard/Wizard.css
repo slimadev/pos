@@ -89,6 +89,12 @@
   color: #fff;
 }
 
+.wizard-step-check {
+  width: 13px;
+  height: 13px;
+  stroke-width: 2.5;
+}
+
 .wizard-footnote {
   font-family: "IBM Plex Mono", monospace;
   font-size: 11px;

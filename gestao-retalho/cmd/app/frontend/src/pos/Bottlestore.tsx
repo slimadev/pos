@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
 import {
+  PlusCircleIcon,
+  ArrowLeftIcon,
+  XCircleIcon,
+  CheckCircleIcon,
+} from "@heroicons/react/24/outline";
+import {
   ListarContasAbertas,
   ListarItensConta,
   AbrirConta,
@@ -125,7 +131,8 @@ export default function Bottlestore() {
           ))}
         </select>
         <button disabled={!novoIdentificador.trim()} onClick={abrirConta}>
-          + Nova conta
+          <PlusCircleIcon className="bs-icon" aria-hidden="true" />
+          Nova conta
         </button>
       </div>
 
@@ -189,10 +196,6 @@ function ContaDetalhe({
     });
   }, []);
 
-  function recarregarItens() {
-    ListarItensConta(conta.ID).then(setItensAtual);
-  }
-
   function adicionar(produto: domain.Produto) {
     const unidade = unidadesPadrao.get(produto.ID);
     if (!unidade) return;
@@ -202,13 +205,19 @@ function ContaDetalhe({
     p.UnidadeProdutoID = unidade.ID;
     p.Quantidade = 1;
     p.Desconto = 0;
-    AdicionarItemConta(p).then(recarregarItens).catch((e) => onErro(String(e)));
+    // Junta o item devolvido em vez de voltar a listar tudo — ação mais
+    // frequente do ecrã (SDD "< 200ms percecionados"), não vale a pena
+    // pagar uma segunda viagem ao backend só para reconfirmar o que já
+    // sabemos que foi criado.
+    AdicionarItemConta(p)
+      .then((item) => setItensAtual((prev) => [...prev, item]))
+      .catch((e) => onErro(String(e)));
   }
 
   function transferir(itemId: number, novaContaId: number) {
     TransferirItemConta(itemId, novaContaId)
       .then(() => {
-        recarregarItens();
+        setItensAtual((prev) => prev.filter((i) => i.ID !== itemId));
         onMudou();
       })
       .catch((e) => onErro(String(e)));
@@ -232,7 +241,8 @@ function ContaDetalhe({
     <div className="bs">
       <div className="bs-detalhe-header">
         <button className="bs-voltar" onClick={onVoltar}>
-          ← Contas
+          <ArrowLeftIcon className="bs-icon" aria-hidden="true" />
+          Contas
         </button>
         <div className="bs-detalhe-titulo">
           <div>{conta.Identificador}</div>
@@ -246,6 +256,7 @@ function ContaDetalhe({
           ))}
         </select>
         <button className="bs-cancelar" onClick={cancelar}>
+          <XCircleIcon className="bs-icon" aria-hidden="true" />
           Cancelar conta
         </button>
       </div>
@@ -303,6 +314,7 @@ function ContaDetalhe({
               disabled={itensAtual.length === 0 || armazemId === ""}
               onClick={() => setMostrarFecho(true)}
             >
+              <CheckCircleIcon className="bs-icon" aria-hidden="true" />
               Fechar conta
             </button>
           </div>

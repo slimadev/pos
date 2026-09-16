@@ -1,4 +1,11 @@
-/* SDD secção 7.3 — Admin universal, tema neutro "profissional". */
+/* SDD secção 7.3 — Admin universal, tema neutro "profissional".
+ *
+ * Fase 10 (auditoria de contraste, WCAG 1.4.3): --color-warning herdava o
+ * dourado #E0A62B do bottlestore (correto lá, 8.5:1 em fundo escuro), mas
+ * em fundo claro cai para 2.1:1 — bem abaixo do mínimo de 3:1 até para
+ * texto grande/ícone. Escurecido para o mesmo #916B1B usado nos outros
+ * temas claros (4.6:1).
+ */
 :root[data-theme="admin"] {
   --color-bg: #f7f8fa;
   --color-surface: #ffffff;
@@ -9,7 +16,7 @@
   --color-text: #1a1d23;
   --color-text-muted: #6b7280;
   --color-success: #0e8f5f;
-  --color-warning: #e0a62b;
+  --color-warning: #916b1b;
   --color-error: #c1443d;
 
   /* Etiquetas por tipo de negócio nas listagens agregadas (secção 7.3). */

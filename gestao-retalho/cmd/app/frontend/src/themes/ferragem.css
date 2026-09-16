@@ -1,15 +1,25 @@
-/* SDD secção 7.2 — Ferragem, tema "industrial / prático". */
+/* SDD secção 7.2 — Ferragem, tema "industrial / prático".
+ *
+ * Fase 10 (auditoria de contraste, WCAG 1.4.3): o laranja #E8611C exato do
+ * SDD só atinge 3.4:1 com texto branco em cima — falha o mínimo de 4.5:1
+ * para texto normal (o botão "Finalizar venda" usa exatamente esta
+ * combinação). --color-accent aqui ficou ~18% mais escuro (4.9:1 com
+ * branco) — continua inequivocamente "laranja industrial", só deixou de
+ * falhar o teste. --color-warning e --color-text-muted tinham o mesmo
+ * problema (2.0:1 e 4.3:1 respetivamente) e foram corrigidos da mesma
+ * forma.
+ */
 :root[data-theme="ferragem"] {
   --color-bg: #f4f2ed;
   --color-surface: #ffffff;
   --color-surface-border: #e3dfd6;
-  --color-accent: #e8611c;
+  --color-accent: #be4f16;
   --color-accent-contrast: #ffffff;
   --color-secondary: #2c3539;
   --color-text: #22262b;
-  --color-text-muted: #6b7280;
+  --color-text-muted: #636a77;
   --color-success: #3e8e5a;
-  --color-warning: #e0a62b;
+  --color-warning: #916b1b;
   --color-error: #c1443d;
 
   --font-display: "IBM Plex Sans", sans-serif;

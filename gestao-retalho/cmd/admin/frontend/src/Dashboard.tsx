@@ -1,4 +1,11 @@
 import { useEffect, useState } from "react";
+import {
+  BanknotesIcon,
+  ArrowTrendingUpIcon,
+  ClipboardDocumentListIcon,
+  ExclamationTriangleIcon,
+  ArrowPathIcon,
+} from "@heroicons/react/24/outline";
 import { ObterDashboard } from "../wailsjs/go/admin/AdminApp";
 import { admin } from "../wailsjs/go/models";
 
@@ -73,7 +80,8 @@ export default function Dashboard({ onErro }: { onErro: (e: string) => void }) {
             {d.Lojas.filter((l) => l.Online).length} loja(s) ligada(s)
           </div>
         </div>
-        <button className="admin-btn-secundario" onClick={recarregar} disabled={aCarregar}>
+        <button className="admin-btn-secundario admin-btn-com-icone" onClick={recarregar} disabled={aCarregar}>
+          <ArrowPathIcon className={`admin-btn-icon${aCarregar ? " a-girar" : ""}`} aria-hidden="true" />
           {aCarregar ? "A atualizar…" : "Atualizar"}
         </button>
       </div>
@@ -82,7 +90,10 @@ export default function Dashboard({ onErro }: { onErro: (e: string) => void }) {
         <div className="admin-col">
           <div className="admin-kpis">
             <div className="admin-card admin-kpi">
-              <div className="admin-kpi-label">Vendas hoje</div>
+              <div className="admin-kpi-label">
+                <BanknotesIcon className="admin-kpi-icon" aria-hidden="true" />
+                Vendas hoje
+              </div>
               <div className="admin-kpi-valor">{mt(d.VendasHoje)}</div>
               {d.VendasHojeVariacaoPct != null && (
                 <div className={`admin-kpi-nota ${d.VendasHojeVariacaoPct >= 0 ? "ok" : "danger"}`}>
@@ -92,17 +103,26 @@ export default function Dashboard({ onErro }: { onErro: (e: string) => void }) {
               )}
             </div>
             <div className="admin-card admin-kpi">
-              <div className="admin-kpi-label">Lucro estimado</div>
+              <div className="admin-kpi-label">
+                <ArrowTrendingUpIcon className="admin-kpi-icon" aria-hidden="true" />
+                Lucro estimado
+              </div>
               <div className="admin-kpi-valor">{mt(d.LucroEstimadoHoje)}</div>
               <div className="admin-kpi-nota">margem {d.MargemHojePct.toFixed(1)}%</div>
             </div>
             <div className="admin-card admin-kpi">
-              <div className="admin-kpi-label">Contas abertas agora</div>
+              <div className="admin-kpi-label">
+                <ClipboardDocumentListIcon className="admin-kpi-icon" aria-hidden="true" />
+                Contas abertas agora
+              </div>
               <div className="admin-kpi-valor">{d.ContasAbertasAgora}</div>
               <div className="admin-kpi-nota warn">{mt(d.ContasAbertasValor)} em consumo</div>
             </div>
             <div className="admin-card admin-kpi">
-              <div className="admin-kpi-label">Dívidas em aberto</div>
+              <div className="admin-kpi-label">
+                <ExclamationTriangleIcon className="admin-kpi-icon" aria-hidden="true" />
+                Dívidas em aberto
+              </div>
               <div className="admin-kpi-valor">{mt(d.DividasEmAbertoValor)}</div>
               <div className="admin-kpi-nota danger">
                 {d.DividasClientes} cliente(s) · {d.DividasAntigasCount} &gt; 30 dias

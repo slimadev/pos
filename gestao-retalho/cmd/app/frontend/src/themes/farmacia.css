@@ -3,18 +3,25 @@
  * #0EA5A5 sobre fundo branco, "clínico, limpo, confiável"). Resto da paleta
  * extrapolado da mesma estrutura de tema claro das demais lojas — ver nota
  * em mercearia.css.
+ *
+ * Fase 10 (auditoria de contraste, WCAG 1.4.3): o azul #3A8FD4 exato do
+ * SDD só atinge 3.5:1 com texto branco em cima — falha o mínimo de 4.5:1
+ * para texto normal (o botão "Finalizar venda" usa exatamente esta
+ * combinação). --color-accent ficou ~18% mais escuro (4.9:1 com branco),
+ * continua claramente "azul clínico". --color-warning tinha o mesmo
+ * problema (2.1:1) e foi corrigido da mesma forma.
  */
 :root[data-theme="farmacia"] {
   --color-bg: #f7fafc;
   --color-surface: #ffffff;
   --color-surface-border: #dce7ef;
-  --color-accent: #3a8fd4;
+  --color-accent: #2f75ad;
   --color-accent-contrast: #ffffff;
   --color-secondary: #0ea5a5;
   --color-text: #1a1d23;
   --color-text-muted: #6b7280;
   --color-success: #3e8e5a;
-  --color-warning: #e0a62b;
+  --color-warning: #916b1b;
   --color-error: #c1443d;
 
   --font-display: "Inter", sans-serif;

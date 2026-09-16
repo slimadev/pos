@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { ComponentType, SVGProps } from "react";
+import { MagnifyingGlassIcon as MagnifyingGlassOutline, ShoppingCartIcon as ShoppingCartOutline, CheckCircleIcon as CheckCircleOutline } from "@heroicons/react/24/outline";
+import { MagnifyingGlassIcon as MagnifyingGlassSolid, ShoppingCartIcon as ShoppingCartSolid, CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
 import {
   ListarProdutos,
   ListarUnidadesProduto,
@@ -37,13 +40,28 @@ function ehGranel(produto: domain.Produto): boolean {
   return UNIDADES_GRANEL.includes(produto.UnidadeBase.toLowerCase());
 }
 
+type IconeSvg = ComponentType<SVGProps<SVGSVGElement>>;
+
+// Ícones sólidos para a ferragem (SDD 7.2: "ícones sólidos"), outline para
+// mercearia/farmácia — este ecrã é partilhado pelos três tipos de negócio
+// (todos usam pos_direto), por isso a escolha de conjunto depende do
+// `tipoNegocio` recebido de App.tsx, não de um CSS fixo por ficheiro.
+const ICONES_OUTLINE = { busca: MagnifyingGlassOutline, carrinho: ShoppingCartOutline, finalizar: CheckCircleOutline };
+const ICONES_SOLID = { busca: MagnifyingGlassSolid, carrinho: ShoppingCartSolid, finalizar: CheckCircleSolid };
+
 /**
  * PDV direto (SDD 4.10, tela de design `2c`) — pesquisa/leitor sempre
  * focado, grelha de produtos, carrinho lateral, F12 finaliza. Vende
  * sempre contra o armazém escolhido; internamente é uma `conta` que abre
  * e fecha na mesma transação (SDD 3.5), transparente aqui.
  */
-export default function VendaDireta() {
+export default function VendaDireta({ tipoNegocio }: { tipoNegocio: string }) {
+  const icones: Record<"busca" | "carrinho" | "finalizar", IconeSvg> =
+    tipoNegocio === "ferragem" ? ICONES_SOLID : ICONES_OUTLINE;
+  const IconeBusca = icones.busca;
+  const IconeCarrinho = icones.carrinho;
+  const IconeFinalizar = icones.finalizar;
+
   const [produtos, setProdutos] = useState<domain.Produto[]>([]);
   const [unidadesPadrao, setUnidadesPadrao] = useState<Map<number, domain.UnidadeProduto>>(
     new Map(),
@@ -231,13 +249,16 @@ export default function VendaDireta() {
     <div className="pos">
       <div className="pos-vendas">
         <div className="pos-toolbar">
-          <input
-            ref={buscaRef}
-            className="pos-busca"
-            placeholder="Ler código de barras ou escrever nome do artigo (F2)"
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-          />
+          <div className="pos-busca-wrap">
+            <IconeBusca className="pos-busca-icon" aria-hidden="true" />
+            <input
+              ref={buscaRef}
+              className="pos-busca"
+              placeholder="Ler código de barras ou escrever nome do artigo (F2)"
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+            />
+          </div>
           <select
             value={armazemId}
             onChange={(e) => setArmazemId(e.target.value ? Number(e.target.value) : "")}
@@ -316,7 +337,10 @@ export default function VendaDireta() {
 
       <aside className="pos-carrinho">
         <div className="pos-carrinho-header">
-          <span>Venda</span>
+          <span className="pos-carrinho-titulo">
+            <IconeCarrinho className="pos-carrinho-icon" aria-hidden="true" />
+            Venda
+          </span>
           <span className="pos-carrinho-count">{carrinho.length} itens</span>
         </div>
 
@@ -413,6 +437,7 @@ export default function VendaDireta() {
             disabled={carrinho.length === 0 || Math.abs(faltaAtribuir) >= 0.01 || aFinalizar}
             onClick={finalizar}
           >
+            <IconeFinalizar className="pos-finalizar-icon" aria-hidden="true" />
             {aFinalizar ? "A finalizar…" : "Finalizar venda (F12)"}
           </button>
         </div>

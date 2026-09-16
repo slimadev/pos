@@ -11,7 +11,11 @@
   --accent-bg: #f3f7fe;
   --danger: #c1443d;
   --danger-bg: #fcedec;
-  --warn: #e0a62b;
+  /* #E0A62B (dourado do bottlestore) só passa WCAG AA em fundo escuro —
+     em branco cai a 2.2:1. Não está em uso como texto neste momento
+     (ver App.css.admin-kpi-nota.warn, que já usa --bottlestore-text),
+     mas fica corrigido para não virar armadilha da próxima vez. */
+  --warn: #916b1b;
   --warn-bg: #fbf3e2;
   --ok: #0e8f5f;
 
@@ -89,6 +93,9 @@ body {
 }
 
 .admin-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   padding: 10px 12px;
   border-radius: 6px;
   color: var(--text-tertiary);
@@ -98,6 +105,12 @@ body {
   background: none;
   text-align: left;
   font-family: inherit;
+}
+
+.admin-sidebar-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 .admin-sidebar-item:hover {
@@ -218,8 +231,16 @@ body {
   gap: 7px;
 }
 .admin-kpi-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 12px;
   color: var(--text-secondary);
+}
+.admin-kpi-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 .admin-kpi-valor {
   font-size: 24px;
@@ -521,6 +542,27 @@ body {
 }
 .admin-btn-secundario:hover {
   background: var(--bg);
+}
+.admin-btn-com-icone {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.admin-btn-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+.admin-btn-icon.a-girar {
+  animation: admin-girar 0.8s linear infinite;
+}
+@keyframes admin-girar {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .admin-tabela {
