@@ -1,0 +1,17 @@
+/* SDD secção 7.1 — Bottlestore, tema "noite / bar". */
+:root[data-theme="bottlestore"] {
+  --color-bg: #14121a;
+  --color-surface: #1f1b29;
+  --color-surface-border: #2a2536;
+  --color-accent: #d4a24e;
+  --color-accent-contrast: #14121a;
+  --color-secondary: #7b3f61;
+  --color-text: #f2ece4;
+  --color-text-muted: #8a8394;
+  --color-success: #4caf7d;
+  --color-warning: #e0a62b;
+  --color-error: #d9534f;
+
+  --font-display: "DM Serif Display", serif;
+  --font-body: "Inter", sans-serif;
+}

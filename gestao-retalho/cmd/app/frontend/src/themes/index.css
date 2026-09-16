@@ -1,0 +1,22 @@
+/*
+ * Todos os temas partilham a mesma grelha de espaçamento (base 4px/8px,
+ * SDD secção 7.4) e o mesmo conjunto de variáveis; só os valores mudam por
+ * `data-theme` no elemento raiz. `admin` é o fallback até o wizard (Fase 2)
+ * gravar o tipo de negócio real em config.json.
+ */
+@import "./bottlestore.css";
+@import "./ferragem.css";
+@import "./mercearia.css";
+@import "./farmacia.css";
+@import "./admin.css";
+
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}

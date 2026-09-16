@@ -1,0 +1,22 @@
+/*
+ * SDD secção 9.6 só define o accent da farmácia (azul #3A8FD4 / verde-azulado
+ * #0EA5A5 sobre fundo branco, "clínico, limpo, confiável"). Resto da paleta
+ * extrapolado da mesma estrutura de tema claro das demais lojas — ver nota
+ * em mercearia.css.
+ */
+:root[data-theme="farmacia"] {
+  --color-bg: #f7fafc;
+  --color-surface: #ffffff;
+  --color-surface-border: #dce7ef;
+  --color-accent: #3a8fd4;
+  --color-accent-contrast: #ffffff;
+  --color-secondary: #0ea5a5;
+  --color-text: #1a1d23;
+  --color-text-muted: #6b7280;
+  --color-success: #3e8e5a;
+  --color-warning: #e0a62b;
+  --color-error: #c1443d;
+
+  --font-display: "Inter", sans-serif;
+  --font-body: "Inter", sans-serif;
+}

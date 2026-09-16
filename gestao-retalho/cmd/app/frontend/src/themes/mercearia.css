@@ -1,0 +1,22 @@
+/*
+ * SDD secção 9.6 só define o accent da mercearia (verde #3E8E5A sobre fundo
+ * branco, "fresco, confiança"). O resto da paleta segue a mesma estrutura de
+ * tema claro usada em ferragem/farmácia (secção 7.4 — grelha e componentes
+ * partilhados, só trocam os tokens de cor) até haver direção visual própria.
+ */
+:root[data-theme="mercearia"] {
+  --color-bg: #f5f8f5;
+  --color-surface: #ffffff;
+  --color-surface-border: #dce8dc;
+  --color-accent: #3e8e5a;
+  --color-accent-contrast: #ffffff;
+  --color-secondary: #2c3539;
+  --color-text: #1a1d23;
+  --color-text-muted: #6b7280;
+  --color-success: #3e8e5a;
+  --color-warning: #e0a62b;
+  --color-error: #c1443d;
+
+  --font-display: "Inter", sans-serif;
+  --font-body: "Inter", sans-serif;
+}

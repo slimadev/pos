@@ -27,14 +27,15 @@ Estas escolhas devem ser confirmadas contigo antes da Fase 0; o resto do plano a
 
 - `git init` no diretório do projeto (atualmente sem controlo de versão).
 - `wails init -n gestao-retalho -t react-ts` como base do `/cmd/app`.
-- Estrutura de pastas conforme secção 2.2 do SDD:
+- Estrutura de pastas conforme secção 2.2 do SDD, com um ajuste face ao original: `go:embed` não aceita `..` no caminho, por isso o frontend de cada executável tem de estar fisicamente ao lado do respetivo `main.go`, não numa pasta `/frontend` partilhada na raiz:
   ```
-  /backend/{domain,usecase,repository,api,export,config,di}
-  /cmd/{app,admin}
-  /frontend/{components,modules,themes,wizard,hooks,types}
-  /frontend-admin/pages
-  /migrations
+  gestao-retalho/
+    backend/{domain,usecase,repository,api,export,config,di}   ← 100% partilhado
+    cmd/app/frontend/src/{components,modules,themes,wizard,hooks,types}
+    cmd/admin/frontend/pages   (Fase 9, equivalente ao /frontend-admin do SDD)
+    migrations/
   ```
+  Consequência prática: reutilização de componentes entre `cmd/app` e `cmd/admin` (secção 7.4 do SDD) passa a ser cópia deliberada ou, se a duplicação incomodar antes da Fase 9, extração para um pacote npm local via npm workspaces — decisão a tomar quando o admin arrancar, não antes.
 - `go.mod` com Uber Fx, modernc.org/sqlite, golang-migrate, sqlc (dev tool), excelize, gofpdf.
 - `backend/di/modules.go` com `CoreModule` vazio (só `NewSQLiteConn` por agora) — depois cresce a cada fase.
 - `cmd/app/main.go` mínimo: `fx.Populate` + `wails.Run` a abrir uma janela em branco.

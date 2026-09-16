@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+defaults:
+  run:
+    working-directory: gestao-retalho
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: gestao-retalho/go.mod
+      - run: go vet ./...
+      - run: go build ./...
+      - run: go test ./...
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: gestao-retalho/cmd/app/frontend/package-lock.json
+      - working-directory: gestao-retalho/cmd/app/frontend
+        run: npm ci
+      - working-directory: gestao-retalho/cmd/app/frontend
+        run: npm run lint
+      - working-directory: gestao-retalho/cmd/app/frontend
+        run: npm run build
+
+  # Full `wails build` (Go + frontend + cgo link against webkit2gtk) — the
+  # real "does the installer still come out the other end" check.
+  package-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: gestao-retalho/go.mod
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install Wails system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
+      - working-directory: gestao-retalho/cmd/app
+        # Ubuntu 24.04 only ships webkit2gtk-4.1, hence the build tag (see Makefile).
+        run: wails build -tags webkit2_41

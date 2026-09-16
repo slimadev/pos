@@ -1,0 +1,27 @@
+/* SDD secção 7.3 — Admin universal, tema neutro "profissional". */
+:root[data-theme="admin"] {
+  --color-bg: #f7f8fa;
+  --color-surface: #ffffff;
+  --color-surface-border: #e7e9ee;
+  --color-accent: #2f6fed;
+  --color-accent-contrast: #ffffff;
+  --color-accent-secondary: #0ea5a5;
+  --color-text: #1a1d23;
+  --color-text-muted: #6b7280;
+  --color-success: #0e8f5f;
+  --color-warning: #e0a62b;
+  --color-error: #c1443d;
+
+  /* Etiquetas por tipo de negócio nas listagens agregadas (secção 7.3). */
+  --tag-bottlestore-fg: #7a5616;
+  --tag-bottlestore-bg: #f7eedc;
+  --tag-ferragem-fg: #b04e14;
+  --tag-ferragem-bg: #fdede4;
+  --tag-mercearia-fg: #2e6e45;
+  --tag-mercearia-bg: #eaf3ec;
+  --tag-farmacia-fg: #0e7a7a;
+  --tag-farmacia-bg: #e4f5f5;
+
+  --font-display: "Inter", sans-serif;
+  --font-body: "Inter", sans-serif;
+}

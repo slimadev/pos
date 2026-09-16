@@ -1,0 +1,59 @@
+#App {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 40px;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+#App h1 {
+  font-family: var(--font-display);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.theme-switcher {
+  display: flex;
+  gap: 8px;
+}
+
+.theme-switcher button {
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid var(--color-surface-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.theme-switcher button.active {
+  border-color: var(--color-accent);
+  color: var(--color-accent-contrast);
+  background: var(--color-accent);
+}
+
+.ping-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ping-box button {
+  padding: 10px 18px;
+  font-size: 13.5px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  cursor: pointer;
+}
+
+.ping-box span {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
