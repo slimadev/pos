@@ -1,9 +1,27 @@
 import { useEffect, useState } from "react";
+import type { ComponentType, SVGProps } from "react";
+import {
+  CubeIcon,
+  TagIcon,
+  BuildingOffice2Icon,
+  ArchiveBoxIcon,
+  ClipboardDocumentCheckIcon,
+  ClipboardDocumentListIcon,
+  BeakerIcon,
+  UserGroupIcon,
+  ChartBarIcon,
+} from "@heroicons/react/24/outline";
 import {
   ListarArmazens,
   CriarArmazem,
+  AtivarArmazem,
+  DesativarArmazem,
   ListarProdutos,
   CriarProduto,
+  AtivarProduto,
+  DesativarProduto,
+  ListarCategorias,
+  CriarCategoria,
   ObterStock,
   RegistarEntradaStock,
   TransferirStock,
@@ -17,41 +35,104 @@ import FichasTecnicasSection from "./FichasTecnicas";
 import FarmaciaSection from "./Farmacia";
 import ClientesSection from "./Clientes";
 import RelatoriosSection from "./Relatorios";
-import "./FaseUm.css";
+import "./Administracao.css";
+
+type Seccao =
+  | "produtos"
+  | "categorias"
+  | "armazens"
+  | "stock"
+  | "inventario"
+  | "fichas"
+  | "farmacia"
+  | "clientes"
+  | "relatorios";
+
+type IconeSvg = ComponentType<SVGProps<SVGSVGElement>>;
 
 /**
- * Ecrã de exercício da Fase 1 (core: produtos, armazéns, stock) — sem tema
- * de negócio nem polimento visual (plano de implementação, Fase 1). Serve
- * para validar os bindings ponta a ponta; é substituído pelos ecrãs reais
- * de PDV/admin nas fases seguintes.
+ * Ponto único de administração da loja (SDD 9.5): produtos, categorias,
+ * armazéns, stock e inventário aparecem sempre; fichas técnicas e farmácia
+ * só quando o respetivo módulo está ativo (decidido no wizard, SDD 9.1/9.2)
+ * — o mesmo `ModulosAtivos` que decide qual ecrã de venda aparece em
+ * App.tsx decide também o que aparece aqui. Substitui o scaffolding
+ * FaseUm.tsx da Fase 1, que ficava tudo empilhado numa página só, sem
+ * navegação nem separação do ecrã de venda.
  */
-export default function FaseUm() {
+export default function Administracao({ modulosAtivos }: { modulosAtivos: string[] }) {
+  const [seccao, setSeccao] = useState<Seccao>("produtos");
   const [armazens, setArmazens] = useState<domain.Armazem[]>([]);
   const [produtos, setProdutos] = useState<domain.Produto[]>([]);
+  const [categorias, setCategorias] = useState<domain.Categoria[]>([]);
   const [erro, setErro] = useState<string | null>(null);
 
   const recarregar = () => {
     ListarArmazens().then(setArmazens).catch((e) => setErro(String(e)));
     ListarProdutos().then(setProdutos).catch((e) => setErro(String(e)));
+    ListarCategorias().then(setCategorias).catch((e) => setErro(String(e)));
   };
 
   useEffect(recarregar, []);
 
+  const temFichas = modulosAtivos.includes("fichas_tecnicas");
+  const temFarmacia = modulosAtivos.includes("lotes_validade") || modulosAtivos.includes("receitas_medicas");
+
+  const itens: { chave: Seccao; nome: string; Icone: IconeSvg }[] = [
+    { chave: "produtos", nome: "Produtos", Icone: CubeIcon },
+    { chave: "categorias", nome: "Categorias", Icone: TagIcon },
+    { chave: "armazens", nome: "Armazéns", Icone: BuildingOffice2Icon },
+    { chave: "stock", nome: "Stock", Icone: ArchiveBoxIcon },
+    { chave: "inventario", nome: "Inventário", Icone: ClipboardDocumentCheckIcon },
+    ...(temFichas ? [{ chave: "fichas" as const, nome: "Fichas técnicas", Icone: ClipboardDocumentListIcon }] : []),
+    ...(temFarmacia ? [{ chave: "farmacia" as const, nome: "Farmácia", Icone: BeakerIcon }] : []),
+    { chave: "clientes", nome: "Clientes e dívidas", Icone: UserGroupIcon },
+    { chave: "relatorios", nome: "Relatórios", Icone: ChartBarIcon },
+  ];
+
   return (
-    <div className="fase1">
-      {erro && (
-        <div className="fase1-erro">
-          {erro} <button onClick={() => setErro(null)}>×</button>
-        </div>
-      )}
-      <ArmazensSection armazens={armazens} onChange={recarregar} onErro={setErro} />
-      <ProdutosSection produtos={produtos} onChange={recarregar} onErro={setErro} />
-      <StockSection produtos={produtos} armazens={armazens} onErro={setErro} />
-      <FichasTecnicasSection produtos={produtos} armazens={armazens} onErro={setErro} />
-      <FarmaciaSection produtos={produtos} armazens={armazens} onErro={setErro} />
-      <InventarioSection produtos={produtos} armazens={armazens} onErro={setErro} />
-      <ClientesSection onErro={setErro} />
-      <RelatoriosSection armazens={armazens} onErro={setErro} />
+    <div className="admin2">
+      <aside className="admin2-sidebar">
+        <nav className="admin2-nav">
+          {itens.map((item) => (
+            <button
+              key={item.chave}
+              className={`admin2-nav-item${seccao === item.chave ? " active" : ""}`}
+              onClick={() => setSeccao(item.chave)}
+            >
+              <item.Icone className="admin2-nav-icon" aria-hidden="true" />
+              {item.nome}
+            </button>
+          ))}
+        </nav>
+      </aside>
+
+      <div className="admin2-content fase1">
+        {erro && (
+          <div className="fase1-erro">
+            {erro} <button onClick={() => setErro(null)}>×</button>
+          </div>
+        )}
+
+        {seccao === "produtos" && (
+          <ProdutosSection produtos={produtos} categorias={categorias} onChange={recarregar} onErro={setErro} />
+        )}
+        {seccao === "categorias" && (
+          <CategoriasSection categorias={categorias} onChange={recarregar} onErro={setErro} />
+        )}
+        {seccao === "armazens" && <ArmazensSection armazens={armazens} onChange={recarregar} onErro={setErro} />}
+        {seccao === "stock" && <StockSection produtos={produtos} armazens={armazens} onErro={setErro} />}
+        {seccao === "inventario" && (
+          <InventarioSection produtos={produtos} armazens={armazens} onErro={setErro} />
+        )}
+        {seccao === "fichas" && temFichas && (
+          <FichasTecnicasSection produtos={produtos} armazens={armazens} onErro={setErro} />
+        )}
+        {seccao === "farmacia" && temFarmacia && (
+          <FarmaciaSection produtos={produtos} armazens={armazens} onErro={setErro} />
+        )}
+        {seccao === "clientes" && <ClientesSection onErro={setErro} />}
+        {seccao === "relatorios" && <RelatoriosSection armazens={armazens} onErro={setErro} />}
+      </div>
     </div>
   );
 }
@@ -86,6 +167,10 @@ function ArmazensSection({
     });
   }
 
+  function alternarAtivo(a: domain.Armazem) {
+    run(() => (a.Ativo ? DesativarArmazem(a.ID) : AtivarArmazem(a.ID)), onErro, onChange);
+  }
+
   return (
     <section>
       <h2>Armazéns</h2>
@@ -95,6 +180,7 @@ function ArmazensSection({
             <th>Nome</th>
             <th>Tipo</th>
             <th>Ativo</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -103,6 +189,9 @@ function ArmazensSection({
               <td>{a.Nome}</td>
               <td>{a.Tipo}</td>
               <td>{a.Ativo ? "sim" : "não"}</td>
+              <td>
+                <button onClick={() => alternarAtivo(a)}>{a.Ativo ? "Desativar" : "Ativar"}</button>
+              </td>
             </tr>
           ))}
         </tbody>
@@ -122,27 +211,102 @@ function ArmazensSection({
   );
 }
 
-// --- Produtos ----------------------------------------------------------------
+// --- Categorias --------------------------------------------------------------
 
-function ProdutosSection({
-  produtos,
+function CategoriasSection({
+  categorias,
   onChange,
   onErro,
 }: {
-  produtos: domain.Produto[];
+  categorias: domain.Categoria[];
   onChange: () => void;
   onErro: (e: string) => void;
 }) {
   const [nome, setNome] = useState("");
+  const [categoriaPaiId, setCategoriaPaiId] = useState<number | "">("");
+
+  const nomeCategoria = (id: number) => categorias.find((c) => c.ID === id)?.Nome ?? `#${id}`;
+
+  function criar() {
+    const c = new domain.Categoria();
+    c.Nome = nome;
+    c.CategoriaPaiID = categoriaPaiId === "" ? undefined : Number(categoriaPaiId);
+    run(() => CriarCategoria(c), onErro, () => {
+      setNome("");
+      setCategoriaPaiId("");
+      onChange();
+    });
+  }
+
+  return (
+    <section>
+      <h2>Categorias</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Categoria-mãe</th>
+          </tr>
+        </thead>
+        <tbody>
+          {categorias.map((c) => (
+            <tr key={c.ID}>
+              <td>{c.Nome}</td>
+              <td>{c.CategoriaPaiID != null ? nomeCategoria(c.CategoriaPaiID) : "—"}</td>
+            </tr>
+          ))}
+          {categorias.length === 0 && (
+            <tr>
+              <td colSpan={2}>Sem categorias — crie uma abaixo.</td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+      <div className="fase1-form">
+        <input placeholder="Nome da categoria" value={nome} onChange={(e) => setNome(e.target.value)} />
+        <select value={categoriaPaiId} onChange={(e) => setCategoriaPaiId(e.target.value ? Number(e.target.value) : "")}>
+          <option value="">Sem categoria-mãe</option>
+          {categorias.map((c) => (
+            <option key={c.ID} value={c.ID}>
+              {c.Nome}
+            </option>
+          ))}
+        </select>
+        <button disabled={!nome} onClick={criar}>
+          + Criar categoria
+        </button>
+      </div>
+    </section>
+  );
+}
+
+// --- Produtos ----------------------------------------------------------------
+
+function ProdutosSection({
+  produtos,
+  categorias,
+  onChange,
+  onErro,
+}: {
+  produtos: domain.Produto[];
+  categorias: domain.Categoria[];
+  onChange: () => void;
+  onErro: (e: string) => void;
+}) {
+  const [nome, setNome] = useState("");
+  const [categoriaId, setCategoriaId] = useState<number | "">("");
   const [tipoProduto, setTipoProduto] = useState<"simples" | "composto" | "semi_elaborado">("simples");
   const [unidadeBase, setUnidadeBase] = useState("unidade");
   const [precoCusto, setPrecoCusto] = useState("0");
   const [precoVenda, setPrecoVenda] = useState("0");
   const [loteControlado, setLoteControlado] = useState(false);
 
+  const nomeCategoria = (id: number) => categorias.find((c) => c.ID === id)?.Nome ?? `#${id}`;
+
   function criar() {
     const produto = new domain.Produto();
     produto.Nome = nome;
+    produto.CategoriaID = categoriaId === "" ? undefined : Number(categoriaId);
     produto.TipoProduto = tipoProduto;
     produto.UnidadeBase = unidadeBase;
     produto.LoteControlado = loteControlado;
@@ -169,43 +333,73 @@ function ProdutosSection({
     );
   }
 
+  function alternarAtivo(p: domain.Produto) {
+    run(() => (p.Ativo ? DesativarProduto(p.ID) : AtivarProduto(p.ID)), onErro, onChange);
+  }
+
   return (
     <section>
       <h2>Produtos</h2>
       <table>
         <thead>
           <tr>
-            <th>ID</th>
             <th>Nome</th>
+            <th>Categoria</th>
             <th>Tipo</th>
             <th>Unidade base</th>
-            <th>Controla stock</th>
             <th>Lote controlado</th>
+            <th>Ativo</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
           {produtos.map((p) => (
             <tr key={p.ID}>
-              <td>{p.ID}</td>
               <td>{p.Nome}</td>
+              <td>{p.CategoriaID != null ? nomeCategoria(p.CategoriaID) : "—"}</td>
               <td>{p.TipoProduto}</td>
               <td>{p.UnidadeBase}</td>
-              <td>{p.ControlaStock ? "sim" : "não"}</td>
               <td>{p.LoteControlado ? "sim" : "não"}</td>
+              <td>{p.Ativo ? "sim" : "não"}</td>
+              <td>
+                <button onClick={() => alternarAtivo(p)}>{p.Ativo ? "Desativar" : "Ativar"}</button>
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
       <div className="fase1-form">
         <input placeholder="Nome do produto" value={nome} onChange={(e) => setNome(e.target.value)} />
+        <select value={categoriaId} onChange={(e) => setCategoriaId(e.target.value ? Number(e.target.value) : "")}>
+          <option value="">Sem categoria</option>
+          {categorias.map((c) => (
+            <option key={c.ID} value={c.ID}>
+              {c.Nome}
+            </option>
+          ))}
+        </select>
         <select value={tipoProduto} onChange={(e) => setTipoProduto(e.target.value as typeof tipoProduto)}>
           <option value="simples">simples</option>
           <option value="composto">composto</option>
           <option value="semi_elaborado">semi_elaborado</option>
         </select>
-        <input placeholder="Unidade base (ex: unidade, kg)" value={unidadeBase} onChange={(e) => setUnidadeBase(e.target.value)} />
-        <input placeholder="Preço custo" type="number" value={precoCusto} onChange={(e) => setPrecoCusto(e.target.value)} />
-        <input placeholder="Preço venda" type="number" value={precoVenda} onChange={(e) => setPrecoVenda(e.target.value)} />
+        <input
+          placeholder="Unidade base (ex: unidade, kg)"
+          value={unidadeBase}
+          onChange={(e) => setUnidadeBase(e.target.value)}
+        />
+        <input
+          placeholder="Preço custo"
+          type="number"
+          value={precoCusto}
+          onChange={(e) => setPrecoCusto(e.target.value)}
+        />
+        <input
+          placeholder="Preço venda"
+          type="number"
+          value={precoVenda}
+          onChange={(e) => setPrecoVenda(e.target.value)}
+        />
         <label>
           <input type="checkbox" checked={loteControlado} onChange={(e) => setLoteControlado(e.target.checked)} /> lote
           controlado (farmácia)
@@ -305,7 +499,12 @@ function StockSection({
 
       <div className="fase1-form">
         <input placeholder="Quantidade" type="number" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} />
-        <input placeholder="Custo unitário (entrada)" type="number" value={custoUnitario} onChange={(e) => setCustoUnitario(e.target.value)} />
+        <input
+          placeholder="Custo unitário (entrada)"
+          type="number"
+          value={custoUnitario}
+          onChange={(e) => setCustoUnitario(e.target.value)}
+        />
         <button onClick={entrada}>Registar entrada</button>
       </div>
 

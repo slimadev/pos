@@ -35,6 +35,7 @@ type App struct {
 	db  *sql.DB
 
 	ProdutoService      *usecase.ProdutoService
+	CategoriaService    *usecase.CategoriaService
 	ArmazemService      *usecase.ArmazemService
 	StockService        *usecase.StockService
 	ConfigService       *usecase.ConfigService
@@ -51,6 +52,7 @@ type App struct {
 func NewApp(
 	db *sql.DB,
 	produto *usecase.ProdutoService,
+	categoria *usecase.CategoriaService,
 	armazem *usecase.ArmazemService,
 	stock *usecase.StockService,
 	cfg *usecase.ConfigService,
@@ -66,6 +68,7 @@ func NewApp(
 	return &App{
 		db:                  db,
 		ProdutoService:      produto,
+		CategoriaService:    categoria,
 		ArmazemService:      armazem,
 		StockService:        stock,
 		ConfigService:       cfg,
@@ -155,6 +158,16 @@ func (a *App) DuplicarProduto(produtoID int64) (CriarProdutoResponse, error) {
 		return CriarProdutoResponse{}, err
 	}
 	return CriarProdutoResponse{Produto: produto, Unidades: unidades}, nil
+}
+
+// --- Categorias (SDD 3.2) ---------------------------------------------------
+
+func (a *App) ListarCategorias() ([]domain.Categoria, error) {
+	return a.CategoriaService.Listar(a.ctx, domain.NegocioID)
+}
+
+func (a *App) CriarCategoria(c domain.Categoria) (domain.Categoria, error) {
+	return a.CategoriaService.Criar(a.ctx, c)
 }
 
 // --- Armazéns (SDD 4.3) ----------------------------------------------------

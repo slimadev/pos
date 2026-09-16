@@ -70,7 +70,7 @@ Mapeia à Fase 1 do roadmap do SDD (secção 11) e às entidades da secção 3.2
 > - `migrations/` não pôde ficar solta na raiz do módulo pela mesma razão do frontend na Fase 0 (`go:embed` não aceita `..`) — vive em `backend/repository/migrations/`, embutida por `backend/repository/migrate.go` e aplicada automaticamente a cada `NewSQLiteConn` (nenhum passo manual de migração a lembrar).
 > - Custo médio ponderado ficou por **(produto, armazém)**, não só por produto — a tabela `stock_atual` do SDD 3.2 pareia as duas colunas explicitamente, mesmo a prosa da secção 4.4 falando só em "produto". Transferências entram no destino ao custo médio da origem; saídas (perda/consumo/venda) nunca alteram a média do que fica.
 > - `utilizadores` entrou já nesta fase (não só na Fase 2) porque `movimentos_stock.utilizador_id` é `NOT NULL` desde o primeiro registo — há uma linha semente (`id=1`, sem password) até o wizard criar o admin real.
-> - Frontend da Fase 1 (`cmd/app/frontend/src/FaseUm.tsx`) é deliberadamente sem tema/estilo — existe para exercitar os bindings ponta a ponta, não para o operador final usar; é substituído pelos ecrãs `1b`/`2a`/`2b`/`2c` nas fases seguintes.
+> - Frontend da Fase 1 (`cmd/app/frontend/src/FaseUm.tsx`) é deliberadamente sem tema/estilo — existe para exercitar os bindings ponta a ponta, não para o operador final usar; a previsão original era ser "substituído pelos ecrãs `1b`/`2a`/`2b`/`2c` nas fases seguintes" — **isto era impreciso**: `1b`/`2a`/`2b`/`2c` são só o wizard e os ecrãs de venda, nunca cobriram gestão de produtos/categorias/armazéns/stock em si. Sem nenhuma fase do roteiro alocada para desenhar esse ecrã, o `FaseUm.tsx` foi crescendo (uma secção nova a cada fase que precisava de validar bindings — fichas técnicas na 5, farmácia na 6, clientes na 7, relatórios na 8) e ficou por resolver até um pedido explícito do utilizador depois da Fase 10 ("único ponto de administração"). Substituído nessa altura por `Administracao.tsx` — sidebar de navegação (Produtos, Categorias, Armazéns, Stock, Inventário, Fichas técnicas/Farmácia quando o módulo respetivo está ativo, Clientes e dívidas, Relatórios), com um separador "Venda / Administração" em `App.tsx` — ver nota correspondente antes da Fase 9.
 
 ---
 
@@ -219,6 +219,24 @@ Implementar a tabela completa da secção 6 do SDD, todos com filtro por períod
 > - O botão "Exportar" é genérico, não um por relatório: só há dois bindings no total (`ExportarTabelaExcel`/`ExportarTabelaPDF`), que recebem título/colunas/linhas/totais já formatados como string — o ecrã de relatórios já teve de formatar cada valor para a pré-visualização em tabela, por isso a exportação reutiliza exatamente essas mesmas linhas em vez de o backend reconstruir a formatação a partir dos dados tipados outra vez. Evita 22 bindings quase idênticos (11 relatórios × 2 formatos).
 > - "Fecho de caixa diário" não tem "contado" gravado em lado nenhum — o modelo de dados não tem uma tabela de "caixa"/contagem física, e o SDD não pede uma. O backend só devolve o valor esperado por método (reaproveitando "vendas por método de pagamento" com a janela fechada a um dia); o campo "Contado" e a diferença são só de UI, no `Relatorios.tsx`, nunca chegam ao backend.
 > - Frontend ficou em `Relatorios.tsx`, integrado no scaffolding do FaseUm (mesma família funcional-sem-tema das Fases 1/5/6/7) — sem tela de design dedicada a relatórios nos mocks aprovados. Um único componente de tabela genérica (`TabelaRelatorio`) é reutilizado pelos 11 relatórios, com os botões de exportação já ligados aos dois bindings genéricos.
+
+---
+
+## 8.5. Addendum (pós-Fase 10) — Administração única por loja
+
+Fora da sequência numerada do roteiro: pedido explícito do utilizador depois da Fase 10, a confirmar o desenho pretendido da app — "um único ponto de administração onde se regista categorias, produtos, armazéns, etc. consoante o tipo de negócio escolhido, e isso ativa o módulo de ponto de venda específico escolhido na instalação". Resposta: a parte de "o tipo de negócio escolhido ativa o módulo de venda certo" já estava implementada desde a Fase 2/3/4 (wizard decide `ModulosAtivos`, `App.tsx` escolhe entre `VendaDireta`/`Bottlestore`); a parte que faltava era o "único ponto de administração" em si — existia funcionalmente, mas espalhado no scaffolding do `FaseUm.tsx` sem navegação nem separação do ecrã de venda (ver nota corrigida na Fase 1 acima).
+
+**Backend (pequeno):**
+- `CategoriaService` + bindings `ListarCategorias`/`CriarCategoria` — faltavam por completo; `CategoriaRepository` já existia desde a Fase 1 (usado internamente pelo wizard para semear categorias por preset) mas nunca teve usecase/binding próprios. `CategoriaID` já fluía ponta a ponta desde `ProdutoRepository.Criar` — só a UI para o escolher é que não existia.
+
+**Frontend:**
+- `FaseUm.tsx` foi substituído por `Administracao.tsx`: sidebar (produtos, categorias, armazéns, stock, inventário sempre visíveis; fichas técnicas só se o módulo `fichas_tecnicas` estiver ativo; farmácia só se `lotes_validade` ou `receitas_medicas` estiverem ativos; clientes e relatórios sempre visíveis) + área de conteúdo com a secção selecionada — mesmo padrão da sidebar de `cmd/admin` (Fase 9), mas usando os tokens de tema (`--color-*`) em vez de azul neutro fixo, porque esta administração vive dentro da mesma app com tema por tipo de negócio, ao contrário do `cmd/admin` que é propositadamente neutro.
+- `App.tsx` ganhou um separador "Venda / Administração" no cabeçalho — só aparece se a loja tiver módulo de venda ativo (`pos_direto` ou `contas_abertas`); sem nenhum dos dois, a app abre direto em Administração.
+- Removidos da UI de produção o seletor de tema manual (`theme-switcher`) e a caixa de teste "Ping() → SQLite" — ambos scaffolding explícito da Fase 0 (o próprio `useTheme.ts` já dizia "scaffolding-only theme switcher"), nunca destinados ao operador final; o tema já vem sempre corretamente de `config.Tema`.
+- `ProdutosSection` e `ArmazensSection` ganharam Ativar/Desativar (os bindings já existiam desde a Fase 1/2, nunca tinham UI) e `ProdutosSection` ganhou o seletor de categoria.
+- Reaproveitados sem alteração: `FichasTecnicas.tsx`, `Farmacia.tsx`, `Clientes.tsx`, `Relatorios.tsx` — já eram componentes à parte, só passaram a ser montados condicionalmente por secção em vez de sempre empilhados.
+
+Testado com a base de desenvolvimento real (farmácia): `CriarCategoria`/`ListarCategorias` confirmados ponta a ponta (categorias "Medicamentos"/"Higiene" já semeadas pelo wizard nunca tinham sido visíveis em lado nenhum até agora), app lançada com `xwininfo` a confirmar a janela, sem erros no log.
 
 ---
 

@@ -41,6 +41,7 @@ var CoreModule = fx.Options(
 	fx.Provide(repository.NewRelatorioRepository),
 
 	fx.Provide(usecase.NewProdutoService),
+	fx.Provide(usecase.NewCategoriaService),
 	fx.Provide(usecase.NewArmazemService),
 	fx.Provide(usecase.NewStockService),
 	fx.Provide(usecase.NewConfigService),
