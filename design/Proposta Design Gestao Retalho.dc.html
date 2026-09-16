@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #E9EAEE; font-family: Inter, Helvetica, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: #2F6FED; text-decoration: none; }
+  a:hover { color: #1B4FBF; text-decoration: underline; }
+</style>
+</helmet>
+
+<section style="display:flex; flex-direction:column; gap:40px; padding:56px">
+
+  <div style="display:flex; flex-direction:column; gap:10px; max-width:820px">
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:#6B7280">Turno 2 · Pontos de venda</div>
+    <h1 style="margin:0; font-size:34px; font-weight:600; letter-spacing:-0.02em; color:#1A1D23">PDV Bottlestore e PDV Ferragem</h1>
+    <p style="margin:0; font-size:15px; line-height:1.55; color:#4B5563; text-wrap:pretty">Na linguagem de <a href="#1b">1b</a> e <a href="#1c">1c</a>: mesma grelha de 8px, mesmos componentes, só trocam os tokens de cor e tipografia (secção 7.4). Bottlestore em tema noite, ferragem em tema industrial. Alvo desktop 1280×800, grelha dimensionada para toque e campo de leitura de código de barras sempre focado.</p>
+  </div>
+
+  <div style="display:flex; flex-wrap:wrap; gap:40px; align-items:flex-start">
+
+    <!-- 2a — Bottlestore: contas abertas -->
+    <div id="2a" style="display:flex; flex-direction:column; gap:12px">
+      <div style="display:flex; align-items:baseline; gap:12px">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:500; color:#fff; background:#1A1D23; padding:4px 9px; border-radius:5px">2a</span>
+        <span style="font-size:15px; font-weight:600; color:#1A1D23">Bottlestore — contas abertas</span>
+        <span style="font-size:13px; color:#6B7280">Ecrã principal do operador; comandas como cartões</span>
+      </div>
+
+      <div style="width:1280px; height:800px; background:#14121A; border:1px solid #2A2536; border-radius:10px; overflow:hidden; display:flex; flex-direction:column; font-family:Inter,sans-serif">
+
+        <div style="height:64px; border-bottom:1px solid #2A2536; padding:0 26px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0">
+          <div style="display:flex; align-items:center; gap:22px">
+            <div style="font-family:'DM Serif Display',serif; font-size:20px; color:#F2ECE4">Bottlestore XPTO</div>
+            <div style="display:flex; gap:4px">
+              <div style="padding:8px 14px; font-size:13.5px; font-weight:600; color:#14121A; background:#D4A24E; border-radius:7px">Contas</div>
+              <div style="padding:8px 14px; font-size:13.5px; color:#8A8394">Venda rápida</div>
+              <div style="padding:8px 14px; font-size:13.5px; color:#8A8394">Dívidas</div>
+              <div style="padding:8px 14px; font-size:13.5px; color:#8A8394">Fecho de caixa</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:16px">
+            <div style="display:flex; flex-direction:column; gap:2px; text-align:right">
+              <div style="font-size:12.5px; color:#F2ECE4">Ana Cumbe</div>
+              <div style="font-size:11.5px; color:#8A8394">Operador · turno desde 17:00</div>
+            </div>
+            <div style="width:32px; height:32px; border-radius:50%; background:#2A2536; color:#D4A24E; font-size:12px; font-weight:600; display:flex; align-items:center; justify-content:center">AC</div>
+          </div>
+        </div>
+
+        <div style="height:64px; padding:0 26px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0">
+          <div style="display:flex; align-items:center; gap:26px">
+            <div style="display:flex; align-items:baseline; gap:9px">
+              <span style="font-family:'DM Serif Display',serif; font-size:24px; color:#F2ECE4">14</span>
+              <span style="font-size:13px; color:#8A8394">contas abertas</span>
+            </div>
+            <div style="display:flex; align-items:baseline; gap:9px">
+              <span style="font-family:'DM Serif Display',serif; font-size:24px; color:#D4A24E">27 900 MT</span>
+              <span style="font-size:13px; color:#8A8394">em consumo</span>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px">
+            <div style="display:flex; background:#1F1B29; border:1px solid #2A2536; border-radius:8px; padding:3px">
+              <div style="padding:7px 13px; font-size:12.5px; font-weight:600; color:#F2ECE4; background:#2A2536; border-radius:6px">Todas</div>
+              <div style="padding:7px 13px; font-size:12.5px; color:#8A8394">Com cliente</div>
+              <div style="padding:7px 13px; font-size:12.5px; color:#8A8394">Abertas &gt; 2h</div>
+            </div>
+            <div style="padding:11px 18px; font-size:13.5px; font-weight:600; color:#14121A; background:#D4A24E; border-radius:8px; cursor:pointer" style-hover="background:#E0B364">+ Nova conta</div>
+          </div>
+        </div>
+
+        <div style="flex:1; padding:6px 26px 26px; min-height:0">
+          <div style="display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:14px">
+            <sc-for list="{{ contas }}" as="c" hint-placeholder-count="8">
+              <div style="background:#1F1B29; border:1px solid #2A2536; border-radius:11px; padding:16px 17px 14px; display:flex; flex-direction:column; gap:13px; cursor:pointer; min-height:132px" style-hover="border-color:#D4A24E">
+                <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px">
+                  <div style="display:flex; flex-direction:column; gap:4px; min-width:0">
+                    <div style="font-size:15.5px; font-weight:600; color:#F2ECE4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ c.id }}</div>
+                    <div style="font-size:12px; color:#8A8394; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ c.cliente }}</div>
+                  </div>
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; padding:4px 8px; border-radius:5px; white-space:nowrap; color:{{ c.corTempo }}; background:{{ c.fundoTempo }}">{{ c.tempo }}</div>
+                </div>
+                <div style="display:flex; align-items:flex-end; justify-content:space-between; margin-top:auto">
+                  <div style="display:flex; flex-direction:column; gap:3px">
+                    <div style="font-family:'DM Serif Display',serif; font-size:23px; color:#D4A24E">{{ c.total }}</div>
+                    <div style="font-size:11.5px; color:#8A8394">{{ c.itens }} itens · {{ c.ultimo }}</div>
+                  </div>
+                  <div style="width:30px; height:30px; border-radius:8px; background:#2A2536; color:#D4A24E; font-size:16px; display:flex; align-items:center; justify-content:center">+</div>
+                </div>
+              </div>
+            </sc-for>
+
+            <div style="border:1px dashed #3A3346; border-radius:11px; min-height:132px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; cursor:pointer" style-hover="border-color:#D4A24E">
+              <div style="width:34px; height:34px; border-radius:9px; background:#1F1B29; color:#D4A24E; font-size:19px; display:flex; align-items:center; justify-content:center">+</div>
+              <div style="font-size:12.5px; color:#8A8394">Abrir conta</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2b — Bottlestore: conta + fecho -->
+    <div id="2b" style="display:flex; flex-direction:column; gap:12px">
+      <div style="display:flex; align-items:baseline; gap:12px">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:500; color:#fff; background:#1A1D23; padding:4px 9px; border-radius:5px">2b</span>
+        <span style="font-size:15px; font-weight:600; color:#1A1D23">Bottlestore — conta aberta e fecho</span>
+        <span style="font-size:13px; color:#6B7280">Grelha por categoria à esquerda, comanda viva à direita, fecho em painel</span>
+      </div>
+
+      <div style="width:1280px; height:800px; background:#14121A; border:1px solid #2A2536; border-radius:10px; overflow:hidden; display:flex; font-family:Inter,sans-serif; position:relative">
+
+        <div style="flex:1; display:flex; flex-direction:column; min-width:0">
+          <div style="height:64px; border-bottom:1px solid #2A2536; padding:0 24px; display:flex; align-items:center; gap:16px; flex-shrink:0">
+            <div style="font-size:13.5px; color:#8A8394; cursor:pointer">← Contas</div>
+            <div style="width:1px; height:22px; background:#2A2536"></div>
+            <div style="display:flex; flex-direction:column; gap:2px">
+              <div style="font-size:15.5px; font-weight:600; color:#F2ECE4">Grupo do João</div>
+              <div style="font-size:11.5px; color:#8A8394">Aberta às 19:42 · João Sitoe · 2h 18m</div>
+            </div>
+            <div style="flex:1"></div>
+            <div style="width:320px; display:flex; align-items:center; gap:10px; background:#1F1B29; border:1px solid #D4A24E; border-radius:8px; padding:11px 14px">
+              <div style="width:13px; height:13px; border:1.5px solid #D4A24E; border-radius:3px; box-sizing:border-box"></div>
+              <div style="font-size:13px; color:#8A8394">Ler código de barras ou pesquisar…</div>
+            </div>
+          </div>
+
+          <div style="height:54px; padding:0 24px; display:flex; align-items:center; gap:8px; flex-shrink:0">
+            <div style="padding:9px 15px; font-size:13px; font-weight:600; color:#14121A; background:#D4A24E; border-radius:19px">Cervejas</div>
+            <div style="padding:9px 15px; font-size:13px; color:#F2ECE4; background:#1F1B29; border-radius:19px">Destilados</div>
+            <div style="padding:9px 15px; font-size:13px; color:#F2ECE4; background:#1F1B29; border-radius:19px">Refrigerantes</div>
+            <div style="padding:9px 15px; font-size:13px; color:#F2ECE4; background:#1F1B29; border-radius:19px">Preparados</div>
+            <div style="padding:9px 15px; font-size:13px; color:#F2ECE4; background:#1F1B29; border-radius:19px">Comida</div>
+            <div style="padding:9px 15px; font-size:13px; color:#F2ECE4; background:#1F1B29; border-radius:19px">Tabaco</div>
+          </div>
+
+          <div style="flex:1; padding:6px 24px 24px; min-height:0">
+            <div style="display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px">
+              <sc-for list="{{ produtos }}" as="p" hint-placeholder-count="12">
+                <div style="background:#1F1B29; border:1px solid #2A2536; border-radius:10px; overflow:hidden; cursor:pointer; display:flex; flex-direction:column" style-hover="border-color:#D4A24E">
+                  <div style="height:74px; background:#241F30; display:flex; align-items:center; justify-content:center; position:relative">
+                    <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:#7F769B">foto produto</div>
+                    <div style="position:absolute; top:8px; right:8px; font-family:'IBM Plex Mono',monospace; font-size:10px; padding:3px 6px; border-radius:4px; color:{{ p.corStock }}; background:#14121A">{{ p.stock }}</div>
+                  </div>
+                  <div style="padding:11px 12px 12px; display:flex; flex-direction:column; gap:7px">
+                    <div style="font-size:13px; font-weight:500; color:#F2ECE4; line-height:1.3; min-height:34px">{{ p.nome }}</div>
+                    <div style="display:flex; align-items:baseline; justify-content:space-between; gap:6px">
+                      <div style="font-size:14.5px; font-weight:600; color:#D4A24E">{{ p.preco }}</div>
+                      <div style="font-size:10.5px; color:#8A8394">{{ p.unidade }}</div>
+                    </div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+
+        <div style="width:376px; background:#1A1723; border-left:1px solid #2A2536; display:flex; flex-direction:column; flex-shrink:0">
+          <div style="padding:20px 22px 16px; border-bottom:1px solid #2A2536; display:flex; align-items:center; justify-content:space-between">
+            <div style="font-family:'DM Serif Display',serif; font-size:18px; color:#F2ECE4">Comanda</div>
+            <div style="font-size:12px; color:#8A8394">9 itens</div>
+          </div>
+
+          <div style="flex:1; padding:14px 22px; display:flex; flex-direction:column; gap:3px; min-height:0; overflow:hidden">
+            <sc-for list="{{ comanda }}" as="i" hint-placeholder-count="6">
+              <div style="padding:11px 0; border-bottom:1px solid #221E2D; display:flex; align-items:flex-start; gap:12px">
+                <div style="width:26px; height:26px; border-radius:6px; background:#2A2536; color:#D4A24E; font-size:12px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0">{{ i.qtd }}</div>
+                <div style="flex:1; display:flex; flex-direction:column; gap:3px; min-width:0">
+                  <div style="font-size:13px; color:#F2ECE4; line-height:1.3">{{ i.nome }}</div>
+                  <div style="font-size:11px; color:#8A8394">{{ i.detalhe }}</div>
+                </div>
+                <div style="font-size:13px; font-weight:500; color:#F2ECE4; white-space:nowrap">{{ i.total }}</div>
+              </div>
+            </sc-for>
+            <div style="padding:12px 0; display:flex; align-items:center; gap:9px">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#5C5470">último lançamento 21:34 por Ana C.</div>
+            </div>
+          </div>
+
+          <div style="padding:18px 22px 20px; border-top:1px solid #2A2536; display:flex; flex-direction:column; gap:14px">
+            <div style="display:flex; flex-direction:column; gap:7px">
+              <div style="display:flex; justify-content:space-between; font-size:12.5px; color:#8A8394"><span>Subtotal</span><span>3 620 MT</span></div>
+              <div style="display:flex; justify-content:space-between; font-size:12.5px; color:#8A8394"><span>Desconto</span><span>−140 MT</span></div>
+              <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:1px solid #2A2536; padding-top:11px">
+                <span style="font-size:13px; color:#F2ECE4">Total</span>
+                <span style="font-family:'DM Serif Display',serif; font-size:29px; color:#D4A24E">3 480 MT</span>
+              </div>
+            </div>
+            <div style="display:flex; gap:9px">
+              <div style="flex:1; padding:13px; font-size:13.5px; font-weight:500; text-align:center; color:#F2ECE4; border:1px solid #3A3346; border-radius:8px; cursor:pointer" style-hover="border-color:#8A8394">Transferir itens</div>
+              <div style="flex:1; padding:13px; font-size:13.5px; font-weight:600; text-align:center; color:#14121A; background:#D4A24E; border-radius:8px; cursor:pointer" style-hover="background:#E0B364">Fechar conta</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="position:absolute; inset:0; background:rgba(10,8,14,0.72); display:flex; align-items:center; justify-content:center">
+          <div style="width:520px; background:#1F1B29; border:1px solid #332D42; border-radius:13px; padding:28px; display:flex; flex-direction:column; gap:22px">
+            <div style="display:flex; align-items:flex-start; justify-content:space-between">
+              <div style="display:flex; flex-direction:column; gap:5px">
+                <div style="font-family:'DM Serif Display',serif; font-size:22px; color:#F2ECE4">Fechar conta — Grupo do João</div>
+                <div style="font-size:12.5px; color:#8A8394">9 itens · aberta 2h 18m · cliente João Sitoe</div>
+              </div>
+              <div style="font-family:'DM Serif Display',serif; font-size:30px; color:#D4A24E">3 480 MT</div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:10px">
+              <div style="font-size:12.5px; color:#8A8394">Pagamento</div>
+              <div style="display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:9px">
+                <div style="padding:14px 12px; border:2px solid #D4A24E; border-radius:9px; display:flex; flex-direction:column; gap:4px; background:#241F30">
+                  <div style="font-size:13.5px; font-weight:600; color:#F2ECE4">Dinheiro</div>
+                  <div style="font-size:13px; color:#D4A24E">2 000 MT</div>
+                </div>
+                <div style="padding:14px 12px; border:2px solid #D4A24E; border-radius:9px; display:flex; flex-direction:column; gap:4px; background:#241F30">
+                  <div style="font-size:13.5px; font-weight:600; color:#F2ECE4">Mpesa</div>
+                  <div style="font-size:13px; color:#D4A24E">1 480 MT</div>
+                </div>
+                <div style="padding:14px 12px; border:1px solid #3A3346; border-radius:9px; display:flex; flex-direction:column; gap:4px; cursor:pointer" style-hover="border-color:#8A8394">
+                  <div style="font-size:13.5px; color:#F2ECE4">Emola</div>
+                  <div style="font-size:13px; color:#8A8394">—</div>
+                </div>
+                <div style="padding:14px 12px; border:1px solid #3A3346; border-radius:9px; display:flex; flex-direction:column; gap:4px; cursor:pointer" style-hover="border-color:#8A8394">
+                  <div style="font-size:13.5px; color:#F2ECE4">Cartão</div>
+                  <div style="font-size:13px; color:#8A8394">—</div>
+                </div>
+                <div style="padding:14px 12px; border:1px solid #3A3346; border-radius:9px; display:flex; flex-direction:column; gap:4px; cursor:pointer" style-hover="border-color:#8A8394">
+                  <div style="font-size:13.5px; color:#F2ECE4">Transferência</div>
+                  <div style="font-size:13px; color:#8A8394">—</div>
+                </div>
+                <div style="padding:14px 12px; border:1px solid #7B3F61; border-radius:9px; display:flex; flex-direction:column; gap:4px; cursor:pointer" style-hover="border-color:#9E5480">
+                  <div style="font-size:13.5px; color:#F2ECE4">Dívida</div>
+                  <div style="font-size:11.5px; color:#C48FAD">cliente identificado</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="background:#241F30; border-radius:9px; padding:14px 16px; display:flex; align-items:center; justify-content:space-between">
+              <div style="font-size:13px; color:#8A8394">Falta atribuir</div>
+              <div style="font-size:16px; font-weight:600; color:#4CAF7D">0 MT</div>
+            </div>
+
+            <div style="display:flex; align-items:center; justify-content:space-between">
+              <div style="display:flex; align-items:center; gap:9px">
+                <div style="width:17px; height:17px; border-radius:4px; border:1.5px solid #D4A24E; background:#D4A24E; color:#14121A; font-size:11px; display:flex; align-items:center; justify-content:center; box-sizing:border-box">✓</div>
+                <div style="font-size:12.5px; color:#8A8394">Imprimir recibo</div>
+              </div>
+              <div style="display:flex; gap:10px">
+                <div style="padding:13px 20px; font-size:13.5px; color:#F2ECE4; border:1px solid #3A3346; border-radius:8px; cursor:pointer" style-hover="border-color:#8A8394">Cancelar</div>
+                <div style="padding:13px 26px; font-size:13.5px; font-weight:600; color:#14121A; background:#D4A24E; border-radius:8px; cursor:pointer" style-hover="background:#E0B364">Confirmar pagamento</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2c — Ferragem: ponto de venda -->
+    <div id="2c" style="display:flex; flex-direction:column; gap:12px">
+      <div style="display:flex; align-items:baseline; gap:12px">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:500; color:#fff; background:#1A1D23; padding:4px 9px; border-radius:5px">2c</span>
+        <span style="font-size:15px; font-weight:600; color:#1A1D23">Ferragem — ponto de venda</span>
+        <span style="font-size:13px; color:#6B7280">Leitor sempre focado, carrinho à direita, atalhos de teclado visíveis</span>
+      </div>
+
+      <div style="width:1280px; height:800px; background:#F4F2ED; border:1px solid #D8D3C8; border-radius:10px; overflow:hidden; display:flex; font-family:'IBM Plex Sans',sans-serif">
+
+        <div style="flex:1; display:flex; flex-direction:column; min-width:0">
+          <div style="height:60px; background:#2C3539; padding:0 22px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0">
+            <div style="display:flex; align-items:center; gap:20px">
+              <div style="font-size:15px; font-weight:700; color:#FFFFFF; letter-spacing:-0.01em">FERRAGEM CENTRAL</div>
+              <div style="display:flex; gap:3px">
+                <div style="padding:7px 13px; font-size:13px; font-weight:600; color:#FFFFFF; background:#E8611C; border-radius:4px">Venda</div>
+                <div style="padding:7px 13px; font-size:13px; color:#AEB6B9">Histórico do dia</div>
+                <div style="padding:7px 13px; font-size:13px; color:#AEB6B9">Stock</div>
+                <div style="padding:7px 13px; font-size:13px; color:#AEB6B9">Clientes</div>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:16px">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#AEB6B9">Balcão 1 · 14:26</div>
+              <div style="font-size:12.5px; color:#FFFFFF">Rui Bila</div>
+            </div>
+          </div>
+
+          <div style="padding:18px 22px 14px; display:flex; gap:12px; flex-shrink:0">
+            <div style="flex:1; display:flex; align-items:center; gap:12px; background:#FFFFFF; border:2px solid #E8611C; border-radius:6px; padding:14px 16px">
+              <div style="width:15px; height:15px; border:2px solid #E8611C; border-radius:2px; box-sizing:border-box"></div>
+              <div style="font-size:15px; color:#6B7280">Ler código de barras ou escrever nome do artigo</div>
+              <div style="flex:1"></div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#6B7280; background:#F4F2ED; padding:4px 7px; border-radius:3px">F2</div>
+            </div>
+            <div style="padding:14px 18px; font-size:14px; font-weight:600; color:#2C3539; background:#FFFFFF; border:1px solid #E3DFD6; border-radius:6px; cursor:pointer" style-hover="background:#FAF9F6">Cliente: Anónimo</div>
+          </div>
+
+          <div style="padding:0 22px 12px; display:flex; gap:7px; flex-wrap:wrap; flex-shrink:0">
+            <div style="padding:8px 14px; font-size:13px; font-weight:600; color:#FFFFFF; background:#2C3539; border-radius:4px">Todos</div>
+            <div style="padding:8px 14px; font-size:13px; color:#2C3539; background:#FFFFFF; border:1px solid #E3DFD6; border-radius:4px">Cimento e areia</div>
+            <div style="padding:8px 14px; font-size:13px; color:#2C3539; background:#FFFFFF; border:1px solid #E3DFD6; border-radius:4px">Tubos e ligações</div>
+            <div style="padding:8px 14px; font-size:13px; color:#2C3539; background:#FFFFFF; border:1px solid #E3DFD6; border-radius:4px">Elétrico</div>
+            <div style="padding:8px 14px; font-size:13px; color:#2C3539; background:#FFFFFF; border:1px solid #E3DFD6; border-radius:4px">Ferramentas</div>
+            <div style="padding:8px 14px; font-size:13px; color:#2C3539; background:#FFFFFF; border:1px solid #E3DFD6; border-radius:4px">Tintas</div>
+            <div style="padding:8px 14px; font-size:13px; color:#2C3539; background:#FFFFFF; border:1px solid #E3DFD6; border-radius:4px">Fixação</div>
+          </div>
+
+          <div style="flex:1; padding:0 22px 22px; min-height:0">
+            <div style="display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:10px">
+              <sc-for list="{{ artigos }}" as="a" hint-placeholder-count="12">
+                <div style="background:#FFFFFF; border:1px solid #E3DFD6; border-radius:5px; padding:13px 14px; display:flex; flex-direction:column; gap:9px; cursor:pointer; min-height:104px" style-hover="border-color:#E8611C">
+                  <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px">
+                    <div style="font-size:13.5px; font-weight:600; color:#22262B; line-height:1.3">{{ a.nome }}</div>
+                    <div style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; padding:3px 6px; border-radius:3px; white-space:nowrap; color:{{ a.corStock }}; background:{{ a.fundoStock }}">{{ a.stock }}</div>
+                  </div>
+                  <div style="margin-top:auto; display:flex; align-items:baseline; justify-content:space-between; gap:6px">
+                    <div style="font-size:17px; font-weight:700; color:#22262B; letter-spacing:-0.01em">{{ a.preco }}</div>
+                    <div style="font-size:11px; color:#6B7280">{{ a.unidade }}</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+
+        <div style="width:392px; background:#FFFFFF; border-left:1px solid #E3DFD6; display:flex; flex-direction:column; flex-shrink:0">
+          <div style="padding:18px 22px 15px; border-bottom:1px solid #EFECE5; display:flex; align-items:center; justify-content:space-between">
+            <div style="font-size:15px; font-weight:700; color:#22262B">Venda</div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#6B7280">#2 041</div>
+          </div>
+
+          <div style="flex:1; padding:6px 22px; display:flex; flex-direction:column; min-height:0; overflow:hidden">
+            <sc-for list="{{ carrinho }}" as="i" hint-placeholder-count="5">
+              <div style="padding:13px 0; border-bottom:1px solid #F4F2ED; display:flex; align-items:center; gap:12px">
+                <div style="display:flex; align-items:center; border:1px solid #E3DFD6; border-radius:4px; overflow:hidden; flex-shrink:0">
+                  <div style="width:26px; height:30px; display:flex; align-items:center; justify-content:center; font-size:15px; color:#6B7280; cursor:pointer">−</div>
+                  <div style="width:36px; height:30px; display:flex; align-items:center; justify-content:center; font-size:13.5px; font-weight:600; color:#22262B; border-left:1px solid #E3DFD6; border-right:1px solid #E3DFD6">{{ i.qtd }}</div>
+                  <div style="width:26px; height:30px; display:flex; align-items:center; justify-content:center; font-size:15px; color:#6B7280; cursor:pointer">+</div>
+                </div>
+                <div style="flex:1; display:flex; flex-direction:column; gap:3px; min-width:0">
+                  <div style="font-size:13.5px; font-weight:500; color:#22262B; line-height:1.3">{{ i.nome }}</div>
+                  <div style="font-size:11.5px; color:#6B7280">{{ i.detalhe }}</div>
+                </div>
+                <div style="font-size:14px; font-weight:600; color:#22262B; white-space:nowrap">{{ i.total }}</div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="padding:16px 22px 20px; border-top:1px solid #EFECE5; display:flex; flex-direction:column; gap:15px">
+            <div style="display:flex; flex-direction:column; gap:8px">
+              <div style="display:flex; justify-content:space-between; font-size:13px; color:#5A6066"><span>Subtotal</span><span>8 940 MT</span></div>
+              <div style="display:flex; justify-content:space-between; font-size:13px; color:#5A6066"><span>Desconto (5%)</span><span>−447 MT</span></div>
+              <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #22262B; padding-top:12px">
+                <span style="font-size:14px; font-weight:600; color:#22262B">Total</span>
+                <span style="font-size:33px; font-weight:700; color:#22262B; letter-spacing:-0.02em">8 493 MT</span>
+              </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:7px">
+              <div style="padding:11px 8px; text-align:center; font-size:12.5px; font-weight:600; color:#FFFFFF; background:#2C3539; border-radius:4px; cursor:pointer">Dinheiro</div>
+              <div style="padding:11px 8px; text-align:center; font-size:12.5px; font-weight:500; color:#2C3539; border:1px solid #E3DFD6; border-radius:4px; cursor:pointer" style-hover="background:#F4F2ED">Mpesa</div>
+              <div style="padding:11px 8px; text-align:center; font-size:12.5px; font-weight:500; color:#2C3539; border:1px solid #E3DFD6; border-radius:4px; cursor:pointer" style-hover="background:#F4F2ED">Cartão</div>
+            </div>
+
+            <div style="display:flex; gap:9px">
+              <div style="padding:16px 18px; font-size:14px; font-weight:600; color:#2C3539; border:1px solid #E3DFD6; border-radius:5px; cursor:pointer" style-hover="background:#F4F2ED">Suspender</div>
+              <div style="flex:1; padding:16px; text-align:center; font-size:15px; font-weight:700; color:#FFFFFF; background:#E8611C; border-radius:5px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px" style-hover="background:#CF5315">
+                <span>Finalizar venda</span>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; background:rgba(255,255,255,0.22); padding:3px 6px; border-radius:3px">F12</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<section style="display:flex; flex-direction:column; gap:40px; padding:56px">
+
+  <div style="display:flex; flex-direction:column; gap:10px; max-width:820px">
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:#6B7280">Turno 1 · SDD v2.0 · Gestão de Retalho Multi-Negócio</div>
+    <h1 style="margin:0; font-size:34px; font-weight:600; letter-spacing:-0.02em; color:#1A1D23">Wizard de 1º arranque e Admin Universal</h1>
+    <p style="margin:0; font-size:15px; line-height:1.55; color:#4B5563; text-wrap:pretty">Duas direções para cada ecrã, em desktop 1280×800 (alvo Wails). Cores e tipografia seguem a secção 7 do SDD: admin neutro azul <span style="font-family:'IBM Plex Mono',monospace">#2F6FED</span>, com etiquetas dourada e laranja a identificar bottlestore e ferragem. Refere as opções por <a href="#1a">1a</a>, <a href="#1b">1b</a>, <a href="#1c">1c</a>, <a href="#1d">1d</a>.</p>
+  </div>
+
+  <!-- ============ WIZARD ============ -->
+  <div style="display:flex; flex-direction:column; gap:6px">
+    <h2 style="margin:0; font-size:13px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:#6B7280">Wizard de primeiro arranque</h2>
+  </div>
+
+  <div style="display:flex; flex-wrap:wrap; gap:40px; align-items:flex-start">
+
+    <!-- 1a -->
+    <div id="1a" style="display:flex; flex-direction:column; gap:12px">
+      <div style="display:flex; align-items:baseline; gap:12px">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:500; color:#fff; background:#1A1D23; padding:4px 9px; border-radius:5px">1a</span>
+        <span style="font-size:15px; font-weight:600; color:#1A1D23">Escolha única, num só ecrã</span>
+        <span style="font-size:13px; color:#6B7280">Tipo de negócio como cartões; módulos revelados por baixo</span>
+      </div>
+
+      <div style="width:1280px; height:800px; background:#F7F8FA; border:1px solid #D7DAE0; border-radius:10px; overflow:hidden; display:flex; flex-direction:column">
+        <div style="height:44px; background:#FFFFFF; border-bottom:1px solid #E7E9EE; display:flex; align-items:center; padding:0 18px; gap:10px">
+          <div style="display:flex; gap:7px"><div style="width:11px;height:11px;border-radius:50%;background:#E5E7EB"></div><div style="width:11px;height:11px;border-radius:50%;background:#E5E7EB"></div><div style="width:11px;height:11px;border-radius:50%;background:#E5E7EB"></div></div>
+          <div style="font-size:13px; color:#6B7280; margin-left:8px">Gestão de Retalho — configuração inicial</div>
+        </div>
+
+        <div style="flex:1; display:flex; justify-content:center; padding:52px 0">
+          <div style="width:880px; display:flex; flex-direction:column; gap:32px">
+
+            <div style="display:flex; flex-direction:column; gap:8px">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:#2F6FED">Passo único</div>
+              <h3 style="margin:0; font-size:30px; font-weight:600; letter-spacing:-0.02em; color:#1A1D23">Bem-vindo — configure o seu negócio</h3>
+              <p style="margin:0; font-size:14px; line-height:1.5; color:#6B7280">Esta escolha define que módulos, ecrãs de venda e tema a aplicação usa. Pode ser alterada depois em Configurações.</p>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:8px">
+              <label style="font-size:13px; font-weight:500; color:#374151">Nome do negócio</label>
+              <input value="Bottlestore XPTO" style="width:100%; box-sizing:border-box; padding:13px 15px; font-family:Inter,sans-serif; font-size:15px; color:#1A1D23; background:#FFFFFF; border:1px solid #D7DAE0; border-radius:7px; outline:none" style-focus="border-color:#2F6FED; box-shadow:0 0 0 3px rgba(47,111,237,0.14)">
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:12px">
+              <label style="font-size:13px; font-weight:500; color:#374151">Tipo de negócio</label>
+              <div style="display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:12px">
+
+                <div style="background:#FFFFFF; border:1px solid #E1E4EA; border-radius:9px; padding:16px 14px 15px; display:flex; flex-direction:column; gap:9px; cursor:pointer" style-hover="border-color:#B9C2D0">
+                  <div style="width:30px; height:30px; border-radius:7px; background:#EAF3EC; display:flex; align-items:center; justify-content:center"><div style="width:11px;height:11px;border-radius:2px;background:#3E8E5A"></div></div>
+                  <div style="font-size:14px; font-weight:600; color:#1A1D23">Mercearia</div>
+                  <div style="font-size:12px; line-height:1.4; color:#6B7280">POS direto, venda a granel</div>
+                </div>
+
+                <div style="background:#FFFFFF; border:1px solid #E1E4EA; border-radius:9px; padding:16px 14px 15px; display:flex; flex-direction:column; gap:9px; cursor:pointer" style-hover="border-color:#B9C2D0">
+                  <div style="width:30px; height:30px; border-radius:7px; background:#FDEDE4; display:flex; align-items:center; justify-content:center"><div style="width:11px;height:11px;border-radius:2px;background:#E8611C"></div></div>
+                  <div style="font-size:14px; font-weight:600; color:#1A1D23">Ferragem</div>
+                  <div style="font-size:12px; line-height:1.4; color:#6B7280">POS direto, caixa / pack / unidade</div>
+                </div>
+
+                <div style="background:#FFFFFF; border:1px solid #E1E4EA; border-radius:9px; padding:16px 14px 15px; display:flex; flex-direction:column; gap:9px; cursor:pointer" style-hover="border-color:#B9C2D0">
+                  <div style="width:30px; height:30px; border-radius:7px; background:#E6F5F5; display:flex; align-items:center; justify-content:center"><div style="width:11px;height:11px;border-radius:2px;background:#0EA5A5"></div></div>
+                  <div style="font-size:14px; font-weight:600; color:#1A1D23">Farmácia</div>
+                  <div style="font-size:12px; line-height:1.4; color:#6B7280">Lotes, validade FEFO, receitas</div>
+                </div>
+
+                <div style="background:#FFFFFF; border:2px solid #2F6FED; border-radius:9px; padding:15px 13px 14px; display:flex; flex-direction:column; gap:9px; cursor:pointer; box-shadow:0 2px 10px rgba(47,111,237,0.12)">
+                  <div style="display:flex; align-items:flex-start; justify-content:space-between">
+                    <div style="width:30px; height:30px; border-radius:7px; background:#F7EEDC; display:flex; align-items:center; justify-content:center"><div style="width:11px;height:11px;border-radius:2px;background:#D4A24E"></div></div>
+                    <div style="width:18px; height:18px; border-radius:50%; background:#2F6FED; color:#fff; font-size:11px; display:flex; align-items:center; justify-content:center">✓</div>
+                  </div>
+                  <div style="font-size:14px; font-weight:600; color:#1A1D23">Bottlestore</div>
+                  <div style="font-size:12px; line-height:1.4; color:#6B7280">Contas abertas, dívidas, fichas técnicas</div>
+                </div>
+
+                <div style="background:#FFFFFF; border:1px dashed #C4C9D2; border-radius:9px; padding:16px 14px 15px; display:flex; flex-direction:column; gap:9px; cursor:pointer" style-hover="border-color:#6B7280">
+                  <div style="width:30px; height:30px; border-radius:7px; background:#F0F1F4; display:flex; align-items:center; justify-content:center"><div style="width:11px;height:11px;border-radius:2px;background:#6B7280"></div></div>
+                  <div style="font-size:14px; font-weight:600; color:#1A1D23">Personalizado</div>
+                  <div style="font-size:12px; line-height:1.4; color:#6B7280">Escolher módulos à mão</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="background:#FFFFFF; border:1px solid #E7E9EE; border-radius:9px; padding:20px 22px; display:flex; flex-direction:column; gap:14px">
+              <div style="display:flex; align-items:center; justify-content:space-between">
+                <div style="font-size:13px; font-weight:600; color:#1A1D23">Módulos que vão ficar ativos</div>
+                <div style="font-size:12px; color:#2F6FED; cursor:pointer">Ajustar manualmente</div>
+              </div>
+              <div style="display:flex; flex-wrap:wrap; gap:8px">
+                <div style="display:flex; align-items:center; gap:8px; background:#F3F7FE; border:1px solid #D3E2FD; color:#1B4FBF; font-size:13px; padding:7px 12px; border-radius:20px">Venda direta (POS)</div>
+                <div style="display:flex; align-items:center; gap:8px; background:#F3F7FE; border:1px solid #D3E2FD; color:#1B4FBF; font-size:13px; padding:7px 12px; border-radius:20px">Contas abertas</div>
+                <div style="display:flex; align-items:center; gap:8px; background:#F3F7FE; border:1px solid #D3E2FD; color:#1B4FBF; font-size:13px; padding:7px 12px; border-radius:20px">Fichas técnicas</div>
+                <div style="display:flex; align-items:center; gap:8px; background:#F3F7FE; border:1px solid #D3E2FD; color:#1B4FBF; font-size:13px; padding:7px 12px; border-radius:20px">Dívidas de clientes</div>
+                <div style="display:flex; align-items:center; gap:8px; background:#F7F8FA; border:1px solid #E1E4EA; color:#6B7280; font-size:13px; padding:7px 12px; border-radius:20px">Lotes e validade</div>
+                <div style="display:flex; align-items:center; gap:8px; background:#F7F8FA; border:1px solid #E1E4EA; color:#6B7280; font-size:13px; padding:7px 12px; border-radius:20px">Receitas médicas</div>
+                <div style="display:flex; align-items:center; gap:8px; background:#F7F8FA; border:1px solid #E1E4EA; color:#6B7280; font-size:13px; padding:7px 12px; border-radius:20px">Venda a granel</div>
+              </div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:#6B7280; border-top:1px solid #F0F1F4; padding-top:12px">tema: bottlestore · aplica seed de categorias e produtos exemplo</div>
+            </div>
+
+            <div style="display:flex; align-items:center; justify-content:space-between">
+              <div style="font-size:12.5px; color:#6B7280">Grava em <span style="font-family:'IBM Plex Mono',monospace">config.json</span> e na tabela <span style="font-family:'IBM Plex Mono',monospace">configuracoes</span></div>
+              <div style="display:flex; gap:10px">
+                <div style="padding:12px 20px; font-size:14px; font-weight:500; color:#374151; background:#FFFFFF; border:1px solid #D7DAE0; border-radius:7px; cursor:pointer" style-hover="background:#F0F1F4">Importar configuração</div>
+                <div style="padding:12px 26px; font-size:14px; font-weight:600; color:#FFFFFF; background:#2F6FED; border-radius:7px; cursor:pointer" style-hover="background:#1B4FBF">Concluir configuração</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1b -->
+    <div id="1b" style="display:flex; flex-direction:column; gap:12px">
+      <div style="display:flex; align-items:baseline; gap:12px">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:500; color:#fff; background:#1A1D23; padding:4px 9px; border-radius:5px">1b</span>
+        <span style="font-size:15px; font-weight:600; color:#1A1D23">Passos guiados, com pré-visualização</span>
+        <span style="font-size:13px; color:#6B7280">Barra lateral de progresso; o tema muda à frente dos olhos</span>
+      </div>
+
+      <div style="width:1280px; height:800px; background:#FFFFFF; border:1px solid #D7DAE0; border-radius:10px; overflow:hidden; display:flex">
+
+        <div style="width:300px; background:#1A1D23; padding:40px 32px; display:flex; flex-direction:column; justify-content:space-between">
+          <div style="display:flex; flex-direction:column; gap:38px">
+            <div style="display:flex; flex-direction:column; gap:7px">
+              <div style="width:34px; height:34px; border-radius:8px; background:#2F6FED"></div>
+              <div style="font-size:15px; font-weight:600; color:#FFFFFF; margin-top:8px">Configuração inicial</div>
+              <div style="font-size:12.5px; line-height:1.5; color:#9CA3AF">Quatro passos, cerca de dois minutos.</div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:2px">
+              <div style="display:flex; gap:14px; align-items:flex-start; padding:11px 0">
+                <div style="width:22px; height:22px; border-radius:50%; background:#2F6FED; color:#fff; font-size:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0">✓</div>
+                <div style="display:flex; flex-direction:column; gap:2px"><div style="font-size:13.5px; color:#FFFFFF">Nome do negócio</div><div style="font-size:12px; color:#9CA3AF">Bottlestore XPTO</div></div>
+              </div>
+              <div style="width:1px; height:12px; background:#33383F; margin-left:10px"></div>
+              <div style="display:flex; gap:14px; align-items:flex-start; padding:11px 0">
+                <div style="width:22px; height:22px; border-radius:50%; background:#FFFFFF; color:#1A1D23; font-size:11.5px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0">2</div>
+                <div style="display:flex; flex-direction:column; gap:2px"><div style="font-size:13.5px; font-weight:600; color:#FFFFFF">Tipo de negócio</div><div style="font-size:12px; color:#D4A24E">Bottlestore</div></div>
+              </div>
+              <div style="width:1px; height:12px; background:#33383F; margin-left:10px"></div>
+              <div style="display:flex; gap:14px; align-items:flex-start; padding:11px 0">
+                <div style="width:22px; height:22px; border-radius:50%; border:1px solid #4A5059; color:#9CA3AF; font-size:11.5px; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-sizing:border-box">3</div>
+                <div style="font-size:13.5px; color:#9CA3AF">Módulos e armazéns</div>
+              </div>
+              <div style="width:1px; height:12px; background:#33383F; margin-left:10px"></div>
+              <div style="display:flex; gap:14px; align-items:flex-start; padding:11px 0">
+                <div style="width:22px; height:22px; border-radius:50%; border:1px solid #4A5059; color:#9CA3AF; font-size:11.5px; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-sizing:border-box">4</div>
+                <div style="font-size:13.5px; color:#9CA3AF">Utilizador administrador</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; line-height:1.6; color:#9CA3AF">um só instalador<br>um só executável<br>config decide o resto</div>
+        </div>
+
+        <div style="flex:1; display:flex; flex-direction:column">
+          <div style="flex:1; padding:48px 56px; display:flex; flex-direction:column; gap:30px">
+            <div style="display:flex; flex-direction:column; gap:7px">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:#6B7280">Passo 2 de 4</div>
+              <h3 style="margin:0; font-size:27px; font-weight:600; letter-spacing:-0.02em; color:#1A1D23">Que tipo de negócio é esta loja?</h3>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:9px">
+              <div style="display:flex; align-items:center; gap:14px; padding:15px 18px; background:#FFFFFF; border:1px solid #E1E4EA; border-radius:8px; cursor:pointer" style-hover="border-color:#B9C2D0">
+                <div style="width:18px; height:18px; border-radius:50%; border:1.5px solid #C4C9D2; box-sizing:border-box; flex-shrink:0"></div>
+                <div style="width:4px; height:26px; border-radius:2px; background:#3E8E5A"></div>
+                <div style="flex:1; display:flex; flex-direction:column; gap:2px">
+                  <div style="font-size:14.5px; font-weight:600; color:#1A1D23">Mercearia</div>
+                  <div style="font-size:12.5px; color:#6B7280">POS direto e venda a granel por peso</div>
+                </div>
+              </div>
+
+              <div style="display:flex; align-items:center; gap:14px; padding:15px 18px; background:#FFFFFF; border:1px solid #E1E4EA; border-radius:8px; cursor:pointer" style-hover="border-color:#B9C2D0">
+                <div style="width:18px; height:18px; border-radius:50%; border:1.5px solid #C4C9D2; box-sizing:border-box; flex-shrink:0"></div>
+                <div style="width:4px; height:26px; border-radius:2px; background:#E8611C"></div>
+                <div style="flex:1; display:flex; flex-direction:column; gap:2px">
+                  <div style="font-size:14.5px; font-weight:600; color:#1A1D23">Ferragem / Loja de materiais</div>
+                  <div style="font-size:12.5px; color:#6B7280">POS direto com unidades de embalagem</div>
+                </div>
+              </div>
+
+              <div style="display:flex; align-items:center; gap:14px; padding:15px 18px; background:#FFFFFF; border:1px solid #E1E4EA; border-radius:8px; cursor:pointer" style-hover="border-color:#B9C2D0">
+                <div style="width:18px; height:18px; border-radius:50%; border:1.5px solid #C4C9D2; box-sizing:border-box; flex-shrink:0"></div>
+                <div style="width:4px; height:26px; border-radius:2px; background:#0EA5A5"></div>
+                <div style="flex:1; display:flex; flex-direction:column; gap:2px">
+                  <div style="font-size:14.5px; font-weight:600; color:#1A1D23">Farmácia</div>
+                  <div style="font-size:12.5px; color:#6B7280">Lotes com validade (FEFO) e receitas médicas</div>
+                </div>
+              </div>
+
+              <div style="display:flex; align-items:center; gap:14px; padding:14px 17px; background:#F7FAFF; border:2px solid #2F6FED; border-radius:8px; cursor:pointer">
+                <div style="width:18px; height:18px; border-radius:50%; border:5px solid #2F6FED; background:#fff; box-sizing:border-box; flex-shrink:0"></div>
+                <div style="width:4px; height:26px; border-radius:2px; background:#D4A24E"></div>
+                <div style="flex:1; display:flex; flex-direction:column; gap:2px">
+                  <div style="font-size:14.5px; font-weight:600; color:#1A1D23">Bottlestore (bebidas + comida)</div>
+                  <div style="font-size:12.5px; color:#6B7280">Contas abertas, dívidas e produtos compostos com ficha técnica</div>
+                </div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#7A5616; background:#F7EEDC; padding:5px 9px; border-radius:5px">tema noite</div>
+              </div>
+
+              <div style="display:flex; align-items:center; gap:14px; padding:15px 18px; background:#FFFFFF; border:1px dashed #C4C9D2; border-radius:8px; cursor:pointer" style-hover="border-color:#6B7280">
+                <div style="width:18px; height:18px; border-radius:50%; border:1.5px solid #C4C9D2; box-sizing:border-box; flex-shrink:0"></div>
+                <div style="width:4px; height:26px; border-radius:2px; background:#C4C9D2"></div>
+                <div style="flex:1; display:flex; flex-direction:column; gap:2px">
+                  <div style="font-size:14.5px; font-weight:600; color:#1A1D23">Personalizado</div>
+                  <div style="font-size:12.5px; color:#6B7280">Escolher módulos um a um no passo seguinte</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex; gap:16px; align-items:stretch">
+              <div style="flex:1; background:#14121A; border-radius:9px; padding:18px; display:flex; flex-direction:column; gap:12px">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase; color:#8A8394">Pré-visualização do tema</div>
+                <div style="display:flex; gap:9px">
+                  <div style="flex:1; background:#1F1B29; border-radius:6px; padding:11px 12px; display:flex; flex-direction:column; gap:6px">
+                    <div style="font-size:11.5px; color:#8A8394">Mesa 3</div>
+                    <div style="font-size:15px; font-weight:600; color:#D4A24E">1 250 MT</div>
+                  </div>
+                  <div style="flex:1; background:#1F1B29; border-radius:6px; padding:11px 12px; display:flex; flex-direction:column; gap:6px">
+                    <div style="font-size:11.5px; color:#8A8394">Grupo do João</div>
+                    <div style="font-size:15px; font-weight:600; color:#D4A24E">3 480 MT</div>
+                  </div>
+                </div>
+                <div style="font-size:11.5px; line-height:1.5; color:#F2ECE4; opacity:0.72">Ecrã de contas abertas, fundo escuro para pouca luz.</div>
+              </div>
+              <div style="width:240px; background:#F7F8FA; border:1px solid #E7E9EE; border-radius:9px; padding:18px; display:flex; flex-direction:column; gap:9px">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase; color:#6B7280">Migrations a aplicar</div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; line-height:1.9; color:#374151">contas, itens_conta<br>dividas, pagamentos<br>fichas_tecnicas</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="height:76px; border-top:1px solid #E7E9EE; padding:0 56px; display:flex; align-items:center; justify-content:space-between">
+            <div style="font-size:14px; color:#6B7280; cursor:pointer">← Voltar</div>
+            <div style="display:flex; align-items:center; gap:18px">
+              <div style="font-size:12.5px; color:#6B7280">Pode mudar mais tarde em Configurações</div>
+              <div style="padding:12px 26px; font-size:14px; font-weight:600; color:#FFFFFF; background:#2F6FED; border-radius:7px; cursor:pointer" style-hover="background:#1B4FBF">Continuar</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ DASHBOARD ============ -->
+  <div style="display:flex; flex-direction:column; gap:6px; margin-top:8px">
+    <h2 style="margin:0; font-size:13px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:#6B7280">Admin universal — dashboard multi-loja</h2>
+  </div>
+
+  <div style="display:flex; flex-wrap:wrap; gap:40px; align-items:flex-start">
+
+    <!-- 1c -->
+    <div id="1c" style="display:flex; flex-direction:column; gap:12px">
+      <div style="display:flex; align-items:baseline; gap:12px">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:500; color:#fff; background:#1A1D23; padding:4px 9px; border-radius:5px">1c</span>
+        <span style="font-size:15px; font-weight:600; color:#1A1D23">Visão agregada primeiro</span>
+        <span style="font-size:13px; color:#6B7280">KPI do grupo no topo, lojas como cartões, alertas à direita</span>
+      </div>
+
+      <div style="width:1280px; height:800px; background:#F7F8FA; border:1px solid #D7DAE0; border-radius:10px; overflow:hidden; display:flex">
+
+        <div style="width:212px; background:#FFFFFF; border-right:1px solid #E7E9EE; display:flex; flex-direction:column">
+          <div style="padding:20px 20px 18px; display:flex; align-items:center; gap:10px; border-bottom:1px solid #F0F1F4">
+            <div style="width:26px; height:26px; border-radius:6px; background:#2F6FED"></div>
+            <div style="font-size:14px; font-weight:600; color:#1A1D23">Administração</div>
+          </div>
+          <div style="padding:14px 10px; display:flex; flex-direction:column; gap:1px">
+            <div style="padding:10px 12px; border-radius:6px; background:#F3F7FE; color:#1B4FBF; font-size:13.5px; font-weight:600">Dashboard</div>
+            <div style="padding:10px 12px; border-radius:6px; color:#4B5563; font-size:13.5px" style-hover="background:#F7F8FA">Produtos</div>
+            <div style="padding:10px 12px; border-radius:6px; color:#4B5563; font-size:13.5px" style-hover="background:#F7F8FA">Fichas técnicas</div>
+            <div style="padding:10px 12px; border-radius:6px; color:#4B5563; font-size:13.5px" style-hover="background:#F7F8FA">Armazéns</div>
+            <div style="padding:10px 12px; border-radius:6px; color:#4B5563; font-size:13.5px" style-hover="background:#F7F8FA">Stock</div>
+            <div style="padding:10px 12px; border-radius:6px; color:#4B5563; font-size:13.5px" style-hover="background:#F7F8FA">Inventário</div>
+            <div style="padding:10px 12px; border-radius:6px; color:#4B5563; font-size:13.5px" style-hover="background:#F7F8FA">Vendas</div>
+            <div style="padding:10px 12px; border-radius:6px; color:#4B5563; font-size:13.5px" style-hover="background:#F7F8FA">Clientes e dívidas</div>
+            <div style="padding:10px 12px; border-radius:6px; color:#4B5563; font-size:13.5px" style-hover="background:#F7F8FA">Relatórios</div>
+            <div style="padding:10px 12px; border-radius:6px; color:#4B5563; font-size:13.5px" style-hover="background:#F7F8FA">Utilizadores</div>
+            <div style="padding:10px 12px; border-radius:6px; color:#4B5563; font-size:13.5px" style-hover="background:#F7F8FA">Lojas</div>
+          </div>
+          <div style="margin-top:auto; padding:16px 20px; border-top:1px solid #F0F1F4; display:flex; flex-direction:column; gap:3px">
+            <div style="font-size:12.5px; font-weight:500; color:#1A1D23">Nelson Matola</div>
+            <div style="font-size:11.5px; color:#6B7280">Admin · 3 lojas ligadas</div>
+          </div>
+        </div>
+
+        <div style="flex:1; display:flex; flex-direction:column; min-width:0">
+          <div style="height:60px; background:#FFFFFF; border-bottom:1px solid #E7E9EE; padding:0 24px; display:flex; align-items:center; justify-content:space-between">
+            <div style="display:flex; align-items:baseline; gap:12px">
+              <div style="font-size:17px; font-weight:600; color:#1A1D23">Dashboard</div>
+              <div style="font-size:12.5px; color:#6B7280">terça, 15 setembro · atualizado há 2 min</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:9px">
+              <div style="display:flex; background:#F0F1F4; border-radius:7px; padding:3px">
+                <div style="padding:6px 13px; font-size:12.5px; font-weight:600; color:#1A1D23; background:#FFFFFF; border-radius:5px">Hoje</div>
+                <div style="padding:6px 13px; font-size:12.5px; color:#6B7280">Semana</div>
+                <div style="padding:6px 13px; font-size:12.5px; color:#6B7280">Mês</div>
+              </div>
+              <div style="padding:8px 14px; font-size:12.5px; font-weight:500; color:#374151; background:#FFFFFF; border:1px solid #D7DAE0; border-radius:7px; cursor:pointer" style-hover="background:#F7F8FA">Exportar</div>
+            </div>
+          </div>
+
+          <div style="flex:1; padding:22px 24px; display:flex; gap:20px; min-width:0">
+
+            <div style="flex:1; display:flex; flex-direction:column; gap:20px; min-width:0">
+
+              <div style="display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px">
+                <div style="background:#FFFFFF; border:1px solid #E7E9EE; border-radius:9px; padding:16px 17px; display:flex; flex-direction:column; gap:7px">
+                  <div style="font-size:12px; color:#6B7280">Vendas hoje</div>
+                  <div style="font-size:24px; font-weight:600; letter-spacing:-0.02em; color:#1A1D23">184 720 MT</div>
+                  <div style="font-size:12px; color:#0E8F5F">+12,4% vs ontem</div>
+                </div>
+                <div style="background:#FFFFFF; border:1px solid #E7E9EE; border-radius:9px; padding:16px 17px; display:flex; flex-direction:column; gap:7px">
+                  <div style="font-size:12px; color:#6B7280">Lucro estimado</div>
+                  <div style="font-size:24px; font-weight:600; letter-spacing:-0.02em; color:#1A1D23">61 340 MT</div>
+                  <div style="font-size:12px; color:#6B7280">margem 33,2%</div>
+                </div>
+                <div style="background:#FFFFFF; border:1px solid #E7E9EE; border-radius:9px; padding:16px 17px; display:flex; flex-direction:column; gap:7px">
+                  <div style="font-size:12px; color:#6B7280">Contas abertas agora</div>
+                  <div style="font-size:24px; font-weight:600; letter-spacing:-0.02em; color:#1A1D23">14</div>
+                  <div style="font-size:12px; color:#7A5616">27 900 MT em consumo</div>
+                </div>
+                <div style="background:#FFFFFF; border:1px solid #E7E9EE; border-radius:9px; padding:16px 17px; display:flex; flex-direction:column; gap:7px">
+                  <div style="font-size:12px; color:#6B7280">Dívidas em aberto</div>
+                  <div style="font-size:24px; font-weight:600; letter-spacing:-0.02em; color:#1A1D23">43 150 MT</div>
+                  <div style="font-size:12px; color:#C1443D">9 clientes · 3 &gt; 30 dias</div>
+                </div>
+              </div>
+
+              <div style="background:#FFFFFF; border:1px solid #E7E9EE; border-radius:9px; padding:18px 20px; display:flex; flex-direction:column; gap:16px">
+                <div style="display:flex; align-items:center; justify-content:space-between">
+                  <div style="font-size:14px; font-weight:600; color:#1A1D23">Vendas por loja, últimos 14 dias</div>
+                  <div style="display:flex; gap:14px">
+                    <div style="display:flex; align-items:center; gap:6px"><div style="width:9px;height:9px;border-radius:2px;background:#D4A24E"></div><span style="font-size:12px; color:#6B7280">Bottlestore</span></div>
+                    <div style="display:flex; align-items:center; gap:6px"><div style="width:9px;height:9px;border-radius:2px;background:#E8611C"></div><span style="font-size:12px; color:#6B7280">Ferragem</span></div>
+                    <div style="display:flex; align-items:center; gap:6px"><div style="width:9px;height:9px;border-radius:2px;background:#3E8E5A"></div><span style="font-size:12px; color:#6B7280">Mercearia</span></div>
+                  </div>
+                </div>
+                <div style="display:flex; align-items:flex-end; gap:10px; height:150px">
+                  {{ chart1c }}
+                </div>
+              </div>
+
+              <div style="display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:12px">
+                <div style="background:#FFFFFF; border:1px solid #E7E9EE; border-top:3px solid #D4A24E; border-radius:9px; padding:16px 17px; display:flex; flex-direction:column; gap:12px">
+                  <div style="display:flex; align-items:center; justify-content:space-between">
+                    <div style="font-size:13.5px; font-weight:600; color:#1A1D23">Bottlestore XPTO</div>
+                    <div style="font-size:11px; font-weight:500; color:#7A5616; background:#F7EEDC; padding:3px 7px; border-radius:4px">bottlestore</div>
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:5px">
+                    <div style="font-size:19px; font-weight:600; color:#1A1D23">96 400 MT</div>
+                    <div style="font-size:12px; color:#6B7280">52% do total do grupo</div>
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:6px; border-top:1px solid #F0F1F4; padding-top:11px">
+                    <div style="display:flex; justify-content:space-between; font-size:12.5px"><span style="color:#6B7280">Contas abertas</span><span style="color:#1A1D23; font-weight:500">14</span></div>
+                    <div style="display:flex; justify-content:space-between; font-size:12.5px"><span style="color:#6B7280">Stock mínimo</span><span style="color:#C1443D; font-weight:500">6 produtos</span></div>
+                  </div>
+                </div>
+
+                <div style="background:#FFFFFF; border:1px solid #E7E9EE; border-top:3px solid #E8611C; border-radius:9px; padding:16px 17px; display:flex; flex-direction:column; gap:12px">
+                  <div style="display:flex; align-items:center; justify-content:space-between">
+                    <div style="font-size:13.5px; font-weight:600; color:#1A1D23">Ferragem Central</div>
+                    <div style="font-size:11px; font-weight:500; color:#B04E14; background:#FDEDE4; padding:3px 7px; border-radius:4px">ferragem</div>
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:5px">
+                    <div style="font-size:19px; font-weight:600; color:#1A1D23">62 180 MT</div>
+                    <div style="font-size:12px; color:#6B7280">34% do total do grupo</div>
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:6px; border-top:1px solid #F0F1F4; padding-top:11px">
+                    <div style="display:flex; justify-content:space-between; font-size:12.5px"><span style="color:#6B7280">Vendas diretas</span><span style="color:#1A1D23; font-weight:500">88</span></div>
+                    <div style="display:flex; justify-content:space-between; font-size:12.5px"><span style="color:#6B7280">Stock mínimo</span><span style="color:#7A5616; font-weight:500">2 produtos</span></div>
+                  </div>
+                </div>
+
+                <div style="background:#FFFFFF; border:1px solid #E7E9EE; border-top:3px solid #3E8E5A; border-radius:9px; padding:16px 17px; display:flex; flex-direction:column; gap:12px">
+                  <div style="display:flex; align-items:center; justify-content:space-between">
+                    <div style="font-size:13.5px; font-weight:600; color:#1A1D23">Mercearia D. Ana</div>
+                    <div style="font-size:11px; font-weight:500; color:#2E6E45; background:#EAF3EC; padding:3px 7px; border-radius:4px">mercearia</div>
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:5px">
+                    <div style="font-size:19px; font-weight:600; color:#1A1D23">26 140 MT</div>
+                    <div style="font-size:12px; color:#6B7280">14% do total do grupo</div>
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:6px; border-top:1px solid #F0F1F4; padding-top:11px">
+                    <div style="display:flex; justify-content:space-between; font-size:12.5px"><span style="color:#6B7280">Vendas diretas</span><span style="color:#1A1D23; font-weight:500">134</span></div>
+                    <div style="display:flex; justify-content:space-between; font-size:12.5px"><span style="color:#6B7280">Sincronizada</span><span style="color:#1A1D23; font-weight:500">há 4 min</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="width:288px; display:flex; flex-direction:column; gap:16px; flex-shrink:0">
+              <div style="background:#FFFFFF; border:1px solid #E7E9EE; border-radius:9px; padding:16px 17px; display:flex; flex-direction:column; gap:13px">
+                <div style="display:flex; align-items:center; justify-content:space-between">
+                  <div style="font-size:13.5px; font-weight:600; color:#1A1D23">Alertas</div>
+                  <div style="font-size:11px; font-weight:600; color:#C1443D; background:#FCEDEC; padding:3px 8px; border-radius:11px">8</div>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:11px">
+                  <div style="display:flex; gap:10px">
+                    <div style="width:3px; border-radius:2px; background:#C1443D; flex-shrink:0"></div>
+                    <div style="display:flex; flex-direction:column; gap:2px">
+                      <div style="font-size:12.5px; font-weight:500; color:#1A1D23">Vodka 750ml abaixo do mínimo</div>
+                      <div style="font-size:11.5px; color:#6B7280">Bottlestore · Balcão · 3 de 12</div>
+                    </div>
+                  </div>
+                  <div style="display:flex; gap:10px">
+                    <div style="width:3px; border-radius:2px; background:#C1443D; flex-shrink:0"></div>
+                    <div style="display:flex; flex-direction:column; gap:2px">
+                      <div style="font-size:12.5px; font-weight:500; color:#1A1D23">Dívida de 48 dias</div>
+                      <div style="font-size:11.5px; color:#6B7280">Carlos Muianga · 8 900 MT</div>
+                    </div>
+                  </div>
+                  <div style="display:flex; gap:10px">
+                    <div style="width:3px; border-radius:2px; background:#E0A62B; flex-shrink:0"></div>
+                    <div style="display:flex; flex-direction:column; gap:2px">
+                      <div style="font-size:12.5px; font-weight:500; color:#1A1D23">Conta aberta há 6h</div>
+                      <div style="font-size:11.5px; color:#6B7280">Mesa 3 · 1 250 MT</div>
+                    </div>
+                  </div>
+                  <div style="display:flex; gap:10px">
+                    <div style="width:3px; border-radius:2px; background:#E0A62B; flex-shrink:0"></div>
+                    <div style="display:flex; flex-direction:column; gap:2px">
+                      <div style="font-size:12.5px; font-weight:500; color:#1A1D23">Consumo real acima da receita</div>
+                      <div style="font-size:11.5px; color:#6B7280">Frango cru · +14% vs teórico</div>
+                    </div>
+                  </div>
+                </div>
+                <div style="font-size:12.5px; color:#2F6FED; border-top:1px solid #F0F1F4; padding-top:11px; cursor:pointer">Ver todos os alertas</div>
+              </div>
+
+              <div style="background:#FFFFFF; border:1px solid #E7E9EE; border-radius:9px; padding:16px 17px; display:flex; flex-direction:column; gap:13px; flex:1">
+                <div style="font-size:13.5px; font-weight:600; color:#1A1D23">Mais vendidos hoje</div>
+                <div style="display:flex; flex-direction:column; gap:12px">
+                  <div style="display:flex; flex-direction:column; gap:6px">
+                    <div style="display:flex; justify-content:space-between; font-size:12.5px"><span style="color:#374151">2M 550ml</span><span style="color:#1A1D23; font-weight:500">142 un</span></div>
+                    <div style="height:5px; border-radius:3px; background:#F0F1F4"><div style="width:100%; height:5px; border-radius:3px; background:#D4A24E"></div></div>
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:6px">
+                    <div style="display:flex; justify-content:space-between; font-size:12.5px"><span style="color:#374151">Caipirinha de Vodka</span><span style="color:#1A1D23; font-weight:500">64 un</span></div>
+                    <div style="height:5px; border-radius:3px; background:#F0F1F4"><div style="width:45%; height:5px; border-radius:3px; background:#D4A24E"></div></div>
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:6px">
+                    <div style="display:flex; justify-content:space-between; font-size:12.5px"><span style="color:#374151">Cimento 50kg</span><span style="color:#1A1D23; font-weight:500">48 sc</span></div>
+                    <div style="height:5px; border-radius:3px; background:#F0F1F4"><div style="width:34%; height:5px; border-radius:3px; background:#E8611C"></div></div>
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:6px">
+                    <div style="display:flex; justify-content:space-between; font-size:12.5px"><span style="color:#374151">¼ Frango c/ acompanhamento</span><span style="color:#1A1D23; font-weight:500">37 un</span></div>
+                    <div style="height:5px; border-radius:3px; background:#F0F1F4"><div style="width:26%; height:5px; border-radius:3px; background:#D4A24E"></div></div>
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:6px">
+                    <div style="display:flex; justify-content:space-between; font-size:12.5px"><span style="color:#374151">Arroz 5kg</span><span style="color:#1A1D23; font-weight:500">29 un</span></div>
+                    <div style="height:5px; border-radius:3px; background:#F0F1F4"><div style="width:20%; height:5px; border-radius:3px; background:#3E8E5A"></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1d -->
+    <div id="1d" style="display:flex; flex-direction:column; gap:12px">
+      <div style="display:flex; align-items:baseline; gap:12px">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:500; color:#fff; background:#1A1D23; padding:4px 9px; border-radius:5px">1d</span>
+        <span style="font-size:15px; font-weight:600; color:#1A1D23">Sala de controlo, loja a loja</span>
+        <span style="font-size:13px; color:#6B7280">Uma linha por loja, comparação lado a lado, fila de ações</span>
+      </div>
+
+      <div style="width:1280px; height:800px; background:#F7F8FA; border:1px solid #D7DAE0; border-radius:10px; overflow:hidden; display:flex; flex-direction:column">
+
+        <div style="height:56px; background:#1A1D23; padding:0 24px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0">
+          <div style="display:flex; align-items:center; gap:26px">
+            <div style="display:flex; align-items:center; gap:10px">
+              <div style="width:24px; height:24px; border-radius:6px; background:#2F6FED"></div>
+              <div style="font-size:14px; font-weight:600; color:#FFFFFF">Administração Universal</div>
+            </div>
+            <div style="display:flex; gap:4px">
+              <div style="padding:7px 13px; font-size:13px; font-weight:500; color:#FFFFFF; background:#2A2E36; border-radius:6px">Visão geral</div>
+              <div style="padding:7px 13px; font-size:13px; color:#9CA3AF">Produtos</div>
+              <div style="padding:7px 13px; font-size:13px; color:#9CA3AF">Stock</div>
+              <div style="padding:7px 13px; font-size:13px; color:#9CA3AF">Vendas</div>
+              <div style="padding:7px 13px; font-size:13px; color:#9CA3AF">Clientes</div>
+              <div style="padding:7px 13px; font-size:13px; color:#9CA3AF">Relatórios</div>
+              <div style="padding:7px 13px; font-size:13px; color:#9CA3AF">Lojas</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:14px">
+            <div style="font-size:12.5px; color:#9CA3AF">3 bases ligadas</div>
+            <div style="width:28px; height:28px; border-radius:50%; background:#3A3F48; color:#FFFFFF; font-size:11.5px; font-weight:600; display:flex; align-items:center; justify-content:center">NM</div>
+          </div>
+        </div>
+
+        <div style="height:56px; background:#FFFFFF; border-bottom:1px solid #E7E9EE; padding:0 24px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0">
+          <div style="display:flex; align-items:center; gap:10px">
+            <div style="padding:8px 13px; font-size:12.5px; font-weight:500; color:#1A1D23; background:#F0F1F4; border-radius:7px">Período: 1–15 set</div>
+            <div style="padding:8px 13px; font-size:12.5px; color:#4B5563; border:1px solid #D7DAE0; border-radius:7px">Todas as lojas</div>
+            <div style="padding:8px 13px; font-size:12.5px; color:#4B5563; border:1px solid #D7DAE0; border-radius:7px">Todos os armazéns</div>
+            <div style="padding:8px 13px; font-size:12.5px; color:#4B5563; border:1px solid #D7DAE0; border-radius:7px">Todos os tipos</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:9px">
+            <div style="padding:8px 14px; font-size:12.5px; font-weight:500; color:#374151; border:1px solid #D7DAE0; border-radius:7px; cursor:pointer" style-hover="background:#F7F8FA">Excel</div>
+            <div style="padding:8px 14px; font-size:12.5px; font-weight:500; color:#374151; border:1px solid #D7DAE0; border-radius:7px; cursor:pointer" style-hover="background:#F7F8FA">PDF</div>
+            <div style="padding:8px 15px; font-size:12.5px; font-weight:600; color:#FFFFFF; background:#2F6FED; border-radius:7px; cursor:pointer" style-hover="background:#1B4FBF">Fecho de caixa</div>
+          </div>
+        </div>
+
+        <div style="flex:1; padding:20px 24px; display:flex; flex-direction:column; gap:18px; min-height:0">
+
+          <div style="display:flex; gap:18px; align-items:stretch">
+            <div style="flex:1; background:#FFFFFF; border:1px solid #E7E9EE; border-radius:9px; padding:18px 20px; display:flex; align-items:center; gap:30px">
+              <div style="display:flex; flex-direction:column; gap:5px">
+                <div style="font-size:12px; color:#6B7280">Receita do grupo · 15 dias</div>
+                <div style="font-size:29px; font-weight:600; letter-spacing:-0.025em; color:#1A1D23">2 486 900 MT</div>
+                <div style="font-size:12px; color:#0E8F5F">+8,1% vs período anterior</div>
+              </div>
+              <div style="width:1px; align-self:stretch; background:#F0F1F4"></div>
+              <div style="display:flex; flex-direction:column; gap:5px">
+                <div style="font-size:12px; color:#6B7280">Lucro</div>
+                <div style="font-size:29px; font-weight:600; letter-spacing:-0.025em; color:#1A1D23">812 400 MT</div>
+                <div style="font-size:12px; color:#6B7280">margem 32,7%</div>
+              </div>
+              <div style="width:1px; align-self:stretch; background:#F0F1F4"></div>
+              <div style="flex:1; display:flex; align-items:flex-end; gap:5px; height:74px">
+                {{ chart1d }}
+              </div>
+            </div>
+
+            <div style="width:250px; background:#1A1D23; border-radius:9px; padding:18px 20px; display:flex; flex-direction:column; gap:12px">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase; color:#9CA3AF">Precisa de atenção</div>
+              <div style="display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:center; justify-content:space-between"><span style="font-size:13px; color:#F2ECE4">Stock abaixo do mínimo</span><span style="font-size:14px; font-weight:600; color:#E5736D">8</span></div>
+                <div style="display:flex; align-items:center; justify-content:space-between"><span style="font-size:13px; color:#F2ECE4">Dívidas &gt; 30 dias</span><span style="font-size:14px; font-weight:600; color:#E5736D">3</span></div>
+                <div style="display:flex; align-items:center; justify-content:space-between"><span style="font-size:13px; color:#F2ECE4">Contas abertas &gt; 4h</span><span style="font-size:14px; font-weight:600; color:#E8B84B">2</span></div>
+                <div style="display:flex; align-items:center; justify-content:space-between"><span style="font-size:13px; color:#F2ECE4">Inventários por fechar</span><span style="font-size:14px; font-weight:600; color:#E8B84B">1</span></div>
+                <div style="display:flex; align-items:center; justify-content:space-between"><span style="font-size:13px; color:#F2ECE4">Desvio receita vs real</span><span style="font-size:14px; font-weight:600; color:#E8B84B">4</span></div>
+              </div>
+              <div style="margin-top:auto; padding-top:12px; border-top:1px solid #2F343C; font-size:12.5px; color:#7FA9F5; cursor:pointer">Abrir fila de tarefas</div>
+            </div>
+          </div>
+
+          <div style="background:#FFFFFF; border:1px solid #E7E9EE; border-radius:9px; flex:1; display:flex; flex-direction:column; min-height:0; overflow:hidden">
+            <div style="padding:15px 20px; border-bottom:1px solid #F0F1F4; display:flex; align-items:center; justify-content:space-between">
+              <div style="font-size:14px; font-weight:600; color:#1A1D23">Lojas do grupo</div>
+              <div style="font-size:12.5px; color:#6B7280">Ordenado por receita</div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:2fr 1.1fr 1.1fr 0.9fr 1fr 1.1fr 1fr 1.2fr; gap:0; padding:11px 20px; background:#FAFBFC; border-bottom:1px solid #F0F1F4; font-size:11px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:#6B7280">
+              <div>Loja</div><div style="text-align:right">Receita</div><div style="text-align:right">Lucro</div><div style="text-align:right">Margem</div><div style="text-align:right">Vendas</div><div style="text-align:right">Ticket médio</div><div style="text-align:right">Dívidas</div><div style="text-align:right">Estado</div>
+            </div>
+
+            <div style="flex:1; overflow:hidden">
+              <sc-for list="{{ lojas }}" as="l" hint-placeholder-count="4">
+                <div style="display:grid; grid-template-columns:2fr 1.1fr 1.1fr 0.9fr 1fr 1.1fr 1fr 1.2fr; gap:0; padding:15px 20px; border-bottom:1px solid #F4F5F7; align-items:center" style-hover="background:#FAFBFC">
+                  <div style="display:flex; align-items:center; gap:11px; min-width:0">
+                    <div style="width:3px; height:30px; border-radius:2px; flex-shrink:0; background:{{ l.cor }}"></div>
+                    <div style="display:flex; flex-direction:column; gap:3px; min-width:0">
+                      <div style="font-size:13.5px; font-weight:600; color:#1A1D23; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ l.nome }}</div>
+                      <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#6B7280">{{ l.tipo }} · {{ l.armazens }} armazéns</div>
+                    </div>
+                  </div>
+                  <div style="text-align:right; font-size:13.5px; font-weight:600; color:#1A1D23">{{ l.receita }}</div>
+                  <div style="text-align:right; font-size:13.5px; color:#374151">{{ l.lucro }}</div>
+                  <div style="text-align:right; font-size:13.5px; color:#374151">{{ l.margem }}</div>
+                  <div style="text-align:right; font-size:13.5px; color:#374151">{{ l.vendas }}</div>
+                  <div style="text-align:right; font-size:13.5px; color:#374151">{{ l.ticket }}</div>
+                  <div style="text-align:right; font-size:13.5px; color:{{ l.corDivida }}">{{ l.divida }}</div>
+                  <div style="display:flex; justify-content:flex-end">
+                    <div style="font-size:11.5px; font-weight:500; padding:4px 9px; border-radius:5px; white-space:nowrap; color:{{ l.corEstado }}; background:{{ l.fundoEstado }}">{{ l.estado }}</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="display:grid; grid-template-columns:2fr 1.1fr 1.1fr 0.9fr 1fr 1.1fr 1fr 1.2fr; gap:0; padding:14px 20px; background:#FAFBFC; border-top:1px solid #E7E9EE; align-items:center">
+              <div style="font-size:13px; font-weight:600; color:#1A1D23">Total do grupo</div>
+              <div style="text-align:right; font-size:13.5px; font-weight:600; color:#1A1D23">2 486 900</div>
+              <div style="text-align:right; font-size:13.5px; font-weight:600; color:#1A1D23">812 400</div>
+              <div style="text-align:right; font-size:13.5px; font-weight:600; color:#1A1D23">32,7%</div>
+              <div style="text-align:right; font-size:13.5px; font-weight:600; color:#1A1D23">3 921</div>
+              <div style="text-align:right; font-size:13.5px; font-weight:600; color:#1A1D23">634</div>
+              <div style="text-align:right; font-size:13.5px; font-weight:600; color:#C1443D">43 150</div>
+              <div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  renderVals() {
+    const dias = [
+      [62, 38, 18], [70, 44, 20], [58, 50, 22], [80, 42, 19], [96, 55, 24],
+      [120, 48, 21], [110, 30, 16], [66, 46, 23], [74, 52, 20], [88, 58, 25],
+      [104, 44, 18], [132, 60, 26], [126, 40, 22], [96, 62, 26]
+    ];
+    const cores = ["#D4A24E", "#E8611C", "#3E8E5A"];
+    const chart1c = dias.map((d, i) =>
+      React.createElement("div", {
+        key: i,
+        style: { flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: 2, height: "100%" }
+      }, d.map((v, j) =>
+        React.createElement("div", { key: j, style: { height: v + "px", borderRadius: j === 0 ? "3px 3px 0 0" : 0, background: cores[j] } })
+      ))
+    );
+
+    const totais = dias.map(d => d[0] + d[1] + d[2]);
+    const max = Math.max.apply(null, totais);
+    const chart1d = totais.map((t, i) =>
+      React.createElement("div", {
+        key: i,
+        style: { flex: 1, height: Math.round((t / max) * 72) + "px", borderRadius: "2px 2px 0 0", background: i === totais.length - 1 ? "#2F6FED" : "#C9D9F9" }
+      })
+    );
+
+    const lojas = [
+      { nome: "Bottlestore XPTO", tipo: "bottlestore", cor: "#D4A24E", armazens: 3, receita: "1 284 300", lucro: "438 700", margem: "34,2%", vendas: "1 142", ticket: "1 124", divida: "31 400", corDivida: "#C1443D", estado: "14 contas abertas", corEstado: "#7A5616", fundoEstado: "#F7EEDC" },
+      { nome: "Ferragem Central", tipo: "ferragem", cor: "#E8611C", armazens: 2, receita: "812 450", lucro: "248 900", margem: "30,6%", vendas: "1 386", ticket: "586", divida: "9 250", corDivida: "#C1443D", estado: "Operacional", corEstado: "#2E6E45", fundoEstado: "#EAF3EC" },
+      { nome: "Mercearia D. Ana", tipo: "mercearia", cor: "#3E8E5A", armazens: 2, receita: "268 700", lucro: "84 100", margem: "31,3%", vendas: "1 208", ticket: "222", divida: "2 500", corDivida: "#374151", estado: "Inventário aberto", corEstado: "#7A5616", fundoEstado: "#FBF3E2" },
+      { nome: "Farmácia Sommerschield", tipo: "farmacia", cor: "#0EA5A5", armazens: 1, receita: "121 450", lucro: "40 700", margem: "33,5%", vendas: "185", ticket: "656", divida: "0", corDivida: "#6B7280", estado: "Sync há 2h", corEstado: "#6B7280", fundoEstado: "#F0F1F4" }
+    ];
+
+    const contas = [
+      { id: "Mesa 3", cliente: "Anónimo", tempo: "6h 12m", corTempo: "#E8B84B", fundoTempo: "#2E2413", total: "1 250 MT", itens: 4, ultimo: "há 48m" },
+      { id: "Grupo do João", cliente: "João Sitoe", tempo: "2h 18m", corTempo: "#8A8394", fundoTempo: "#241F30", total: "3 480 MT", itens: 9, ultimo: "há 4m" },
+      { id: "Balcão 2", cliente: "Anónimo", tempo: "22m", corTempo: "#8A8394", fundoTempo: "#241F30", total: "640 MT", itens: 2, ultimo: "há 22m" },
+      { id: "Aniversário Rita", cliente: "Rita Chissano", tempo: "1h 04m", corTempo: "#8A8394", fundoTempo: "#241F30", total: "7 920 MT", itens: 21, ultimo: "há 9m" },
+      { id: "Mesa 7", cliente: "Anónimo", tempo: "3h 40m", corTempo: "#E8B84B", fundoTempo: "#2E2413", total: "2 150 MT", itens: 7, ultimo: "há 1h 10m" },
+      { id: "Carlos M.", cliente: "Carlos Muianga · dívida 8 900", tempo: "48m", corTempo: "#E5736D", fundoTempo: "#2E1717", total: "1 380 MT", itens: 5, ultimo: "há 12m" },
+      { id: "Esplanada 1", cliente: "Anónimo", tempo: "35m", corTempo: "#8A8394", fundoTempo: "#241F30", total: "980 MT", itens: 3, ultimo: "há 8m" },
+      { id: "Turma do Zeca", cliente: "José Macuácua", tempo: "1h 52m", corTempo: "#8A8394", fundoTempo: "#241F30", total: "5 340 MT", itens: 16, ultimo: "há 2m" },
+      { id: "Mesa 12", cliente: "Anónimo", tempo: "14m", corTempo: "#8A8394", fundoTempo: "#241F30", total: "420 MT", itens: 1, ultimo: "há 14m" },
+      { id: "Sala VIP", cliente: "Amélia Nhaca", tempo: "2h 05m", corTempo: "#8A8394", fundoTempo: "#241F30", total: "4 460 MT", itens: 12, ultimo: "há 19m" },
+      { id: "Balcão 4", cliente: "Anónimo", tempo: "9m", corTempo: "#8A8394", fundoTempo: "#241F30", total: "260 MT", itens: 1, ultimo: "há 9m" }
+    ];
+
+    const produtos = [
+      { nome: "2M 550ml", preco: "180 MT", unidade: "unidade", stock: "48", corStock: "#8A8394" },
+      { nome: "Laurentina Preta 550ml", preco: "195 MT", unidade: "unidade", stock: "32", corStock: "#8A8394" },
+      { nome: "Manica 550ml", preco: "175 MT", unidade: "unidade", stock: "61", corStock: "#8A8394" },
+      { nome: "Heineken 330ml", preco: "220 MT", unidade: "unidade", stock: "5", corStock: "#E8B84B" },
+      { nome: "Impala 1L", preco: "890 MT", unidade: "garrafa", stock: "12", corStock: "#8A8394" },
+      { nome: "Whisky J.W. dose simples", preco: "350 MT", unidade: "50 ml", stock: "3 gf", corStock: "#E5736D" },
+      { nome: "Caipirinha de Vodka", preco: "450 MT", unidade: "composto", stock: "28 pos.", corStock: "#4CAF7D" },
+      { nome: "Caipirinha de Gin", preco: "480 MT", unidade: "composto", stock: "19 pos.", corStock: "#4CAF7D" },
+      { nome: "Coca-Cola 500ml", preco: "120 MT", unidade: "unidade", stock: "74", corStock: "#8A8394" },
+      { nome: "Água 500ml", preco: "60 MT", unidade: "unidade", stock: "96", corStock: "#8A8394" },
+      { nome: "¼ Frango c/ acompanhamento", preco: "650 MT", unidade: "composto", stock: "14 pos.", corStock: "#E8B84B" },
+      { nome: "Amendoim torrado", preco: "150 MT", unidade: "100 g", stock: "2,4 kg", corStock: "#8A8394" }
+    ];
+
+    const comanda = [
+      { qtd: "4", nome: "2M 550ml", detalhe: "180 MT · unidade", total: "720 MT" },
+      { qtd: "2", nome: "Caipirinha de Vodka", detalhe: "450 MT · ficha técnica expandida", total: "900 MT" },
+      { qtd: "1", nome: "¼ Frango c/ acompanhamento", detalhe: "650 MT · composto", total: "650 MT" },
+      { qtd: "2", nome: "Whisky J.W. dose dupla", detalhe: "560 MT · 100 ml", total: "1 120 MT" },
+      { qtd: "1", nome: "Água 500ml", detalhe: "60 MT · unidade", total: "60 MT" },
+      { qtd: "1", nome: "Amendoim torrado", detalhe: "150 MT · 100 g", total: "150 MT" }
+    ];
+
+    const artigos = [
+      { nome: "Cimento Cimentos de Moç. 50kg", preco: "620 MT", unidade: "saco", stock: "84", corStock: "#5A6066", fundoStock: "#F4F2ED" },
+      { nome: "Areia fina", preco: "1 800 MT", unidade: "m³", stock: "6", corStock: "#5A6066", fundoStock: "#F4F2ED" },
+      { nome: "Tijolo 12 furos", preco: "24 MT", unidade: "unidade", stock: "2 140", corStock: "#5A6066", fundoStock: "#F4F2ED" },
+      { nome: "Tubo PVC 50mm 3m", preco: "410 MT", unidade: "unidade", stock: "3", corStock: "#C1443D", fundoStock: "#FCEDEC" },
+      { nome: "Joelho PVC 50mm", preco: "65 MT", unidade: "unidade", stock: "56", corStock: "#5A6066", fundoStock: "#F4F2ED" },
+      { nome: "Cabo 2,5mm²", preco: "95 MT", unidade: "metro", stock: "180 m", corStock: "#5A6066", fundoStock: "#F4F2ED" },
+      { nome: "Disjuntor 16A", preco: "340 MT", unidade: "unidade", stock: "22", corStock: "#5A6066", fundoStock: "#F4F2ED" },
+      { nome: "Lâmpada LED 9W", preco: "130 MT", unidade: "unidade", stock: "9", corStock: "#7A5616", fundoStock: "#FBF3E2" },
+      { nome: "Tinta acrílica branca 20L", preco: "3 250 MT", unidade: "balde", stock: "11", corStock: "#5A6066", fundoStock: "#F4F2ED" },
+      { nome: "Parafuso 4×40 (cx 100)", preco: "280 MT", unidade: "caixa 100", stock: "34", corStock: "#5A6066", fundoStock: "#F4F2ED" },
+      { nome: "Chave inglesa 10\"", preco: "890 MT", unidade: "unidade", stock: "7", corStock: "#5A6066", fundoStock: "#F4F2ED" },
+      { nome: "Rede mosquiteira", preco: "220 MT", unidade: "metro", stock: "48 m", corStock: "#5A6066", fundoStock: "#F4F2ED" }
+    ];
+
+    const carrinho = [
+      { qtd: "10", nome: "Cimento 50kg", detalhe: "620 MT · saco", total: "6 200 MT" },
+      { qtd: "4", nome: "Tubo PVC 50mm 3m", detalhe: "410 MT · unidade", total: "1 640 MT" },
+      { qtd: "6", nome: "Joelho PVC 50mm", detalhe: "65 MT · unidade", total: "390 MT" },
+      { qtd: "1", nome: "Parafuso 4×40", detalhe: "280 MT · caixa 100", total: "280 MT" },
+      { qtd: "2", nome: "Lâmpada LED 9W", detalhe: "130 MT · unidade", total: "260 MT" },
+      { qtd: "1", nome: "Rede mosquiteira", detalhe: "220 MT · 0,77 m", total: "170 MT" }
+    ];
+
+    return { chart1c, chart1d, lojas, contas, produtos, comanda, artigos, carrinho };
+  }
+}
+</script>
+</body>
+</html>
