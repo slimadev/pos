@@ -23,16 +23,16 @@ import (
 	"gestao-retalho/backend/usecase"
 )
 
-// UtilizadorAtualID fica fixo no utilizador semente (domain.UtilizadorAdminSeedID)
-// até existir sessão/login reais — a partir daí este valor passa a vir do
-// contexto de autenticação em vez de uma constante. O wizard (Fase 2)
-// já preenche os dados reais desse utilizador, só o mecanismo de "sessão
-// atual" é que continua adiado.
-const UtilizadorAtualID = domain.UtilizadorAdminSeedID
-
 type App struct {
 	ctx context.Context
 	db  *sql.DB
+
+	// utilizadorAtualID começa em 0 ("ninguém autenticado") e só passa a
+	// ser um ID real depois de Login() validar as credenciais — antes
+	// disso, qualquer binding que precise de um utilizador para gravar
+	// (venda, movimento de stock, conta) falha na FK, em vez de gravar
+	// silenciosamente em nome de quem quer que seja.
+	utilizadorAtualID int64
 
 	ProdutoService      *usecase.ProdutoService
 	CategoriaService    *usecase.CategoriaService
@@ -47,6 +47,7 @@ type App struct {
 	FarmaciaService     *usecase.FarmaciaService
 	DividaService       *usecase.DividaService
 	RelatorioService    *usecase.RelatorioService
+	AuthService         *usecase.AuthService
 }
 
 func NewApp(
@@ -64,6 +65,7 @@ func NewApp(
 	farmacia *usecase.FarmaciaService,
 	dividas *usecase.DividaService,
 	relatorios *usecase.RelatorioService,
+	auth *usecase.AuthService,
 ) *App {
 	return &App{
 		db:                  db,
@@ -80,6 +82,7 @@ func NewApp(
 		FarmaciaService:     farmacia,
 		DividaService:       dividas,
 		RelatorioService:    relatorios,
+		AuthService:         auth,
 	}
 }
 
@@ -97,6 +100,40 @@ func (a *App) Ping() (string, error) {
 		return "", fmt.Errorf("ping db: %w", err)
 	}
 	return "pong", nil
+}
+
+// --- Autenticação ------------------------------------------------------------
+//
+// O wizard (Fase 2) já cria um utilizador administrador real (username +
+// password com bcrypt); até aqui nada validava essas credenciais — todas as
+// operações corriam sempre com o mesmo ID fixo. Login() é o único sítio que
+// escreve a.utilizadorAtualID.
+
+type SessaoUtilizador struct {
+	ID       int64
+	Nome     string
+	Username string
+	Role     string
+}
+
+func (a *App) Login(username, password string) (SessaoUtilizador, error) {
+	u, err := a.AuthService.Login(a.ctx, username, password)
+	if err != nil {
+		return SessaoUtilizador{}, err
+	}
+	a.utilizadorAtualID = u.ID
+	return SessaoUtilizador{ID: u.ID, Nome: u.Nome, Username: u.Username, Role: string(u.Role)}, nil
+}
+
+// Logout limpa a sessão em memória — não há nada persistido em disco para
+// apagar (SDD: sem servidor, sem token; a "sessão" só existe enquanto o
+// processo da app está vivo).
+func (a *App) Logout() {
+	a.utilizadorAtualID = 0
+}
+
+func (a *App) SessaoAtiva() bool {
+	return a.utilizadorAtualID != 0
 }
 
 // --- Produtos (SDD 4.1) ---------------------------------------------------
@@ -207,22 +244,22 @@ func (a *App) ListarMovimentosStock(produtoID int64) ([]domain.MovimentoStock, e
 }
 
 func (a *App) RegistarEntradaStock(p usecase.EntradaParams) (domain.MovimentoStock, error) {
-	p.UtilizadorID = UtilizadorAtualID
+	p.UtilizadorID = a.utilizadorAtualID
 	return a.StockService.RegistarEntrada(a.ctx, p)
 }
 
 func (a *App) TransferirStock(p usecase.TransferenciaParams) (domain.MovimentoStock, error) {
-	p.UtilizadorID = UtilizadorAtualID
+	p.UtilizadorID = a.utilizadorAtualID
 	return a.StockService.TransferirStock(a.ctx, p)
 }
 
 func (a *App) RegistarPerdaStock(p usecase.SaidaParams) (domain.MovimentoStock, error) {
-	p.UtilizadorID = UtilizadorAtualID
+	p.UtilizadorID = a.utilizadorAtualID
 	return a.StockService.RegistarPerda(a.ctx, p)
 }
 
 func (a *App) RegistarConsumoInternoStock(p usecase.SaidaParams) (domain.MovimentoStock, error) {
-	p.UtilizadorID = UtilizadorAtualID
+	p.UtilizadorID = a.utilizadorAtualID
 	return a.StockService.RegistarConsumoInterno(a.ctx, p)
 }
 
@@ -234,7 +271,7 @@ type IniciarInventarioResponse struct {
 }
 
 func (a *App) IniciarInventario(armazemID int64) (IniciarInventarioResponse, error) {
-	inv, itens, err := a.StockService.IniciarInventario(a.ctx, domain.NegocioID, armazemID, UtilizadorAtualID)
+	inv, itens, err := a.StockService.IniciarInventario(a.ctx, domain.NegocioID, armazemID, a.utilizadorAtualID)
 	if err != nil {
 		return IniciarInventarioResponse{}, err
 	}
@@ -250,7 +287,7 @@ func (a *App) RegistarContagemInventario(itemID int64, quantidadeContada float64
 }
 
 func (a *App) FecharInventario(inventarioID int64) ([]domain.MovimentoStock, error) {
-	return a.StockService.FecharInventario(a.ctx, inventarioID, UtilizadorAtualID)
+	return a.StockService.FecharInventario(a.ctx, inventarioID, a.utilizadorAtualID)
 }
 
 // --- Configuração / wizard de 1º arranque (SDD secção 9) -------------------
@@ -308,7 +345,7 @@ func (a *App) DesativarCliente(id int64) error {
 // --- Vendas / PDV direto (SDD 4.10) -----------------------------------------
 
 func (a *App) RegistarVendaDireta(p usecase.VendaDiretaParams) (usecase.VendaCompleta, error) {
-	p.UtilizadorID = UtilizadorAtualID
+	p.UtilizadorID = a.utilizadorAtualID
 	return a.VendaService.RegistarVendaDireta(a.ctx, p)
 }
 
@@ -364,11 +401,11 @@ type AbrirContaRequest struct {
 }
 
 func (a *App) AbrirConta(req AbrirContaRequest) (domain.Conta, error) {
-	return a.ContaService.AbrirConta(a.ctx, req.Identificador, req.ClienteID, UtilizadorAtualID)
+	return a.ContaService.AbrirConta(a.ctx, req.Identificador, req.ClienteID, a.utilizadorAtualID)
 }
 
 func (a *App) AdicionarItemConta(p usecase.AdicionarItemContaParams) (domain.ItemConta, error) {
-	p.UtilizadorID = UtilizadorAtualID
+	p.UtilizadorID = a.utilizadorAtualID
 	return a.ContaService.AdicionarItem(a.ctx, p)
 }
 
@@ -377,7 +414,7 @@ func (a *App) TransferirItemConta(itemID, novaContaID int64) error {
 }
 
 func (a *App) CancelarConta(contaID int64, motivo string) (domain.Conta, error) {
-	return a.ContaService.CancelarConta(a.ctx, contaID, UtilizadorAtualID, motivo)
+	return a.ContaService.CancelarConta(a.ctx, contaID, a.utilizadorAtualID, motivo)
 }
 
 type FecharContaResponse struct {
@@ -386,7 +423,7 @@ type FecharContaResponse struct {
 }
 
 func (a *App) FecharContaAberta(contaID int64, p usecase.FecharContaParams) (FecharContaResponse, error) {
-	p.UtilizadorID = UtilizadorAtualID
+	p.UtilizadorID = a.utilizadorAtualID
 	venda, alerta, err := a.ContaService.FecharConta(a.ctx, contaID, p)
 	if err != nil {
 		return FecharContaResponse{}, err
@@ -417,7 +454,7 @@ func (a *App) SimularDisponibilidade(produtoCompostoID, armazemID int64) (float6
 }
 
 func (a *App) RegistarProducao(p usecase.ProducaoParams) (domain.MovimentoStock, error) {
-	p.UtilizadorID = UtilizadorAtualID
+	p.UtilizadorID = a.utilizadorAtualID
 	return a.FichaTecnicaService.RegistarProducao(a.ctx, p)
 }
 
@@ -429,7 +466,7 @@ type EntradaComLoteResponse struct {
 }
 
 func (a *App) RegistarEntradaComLote(p usecase.EntradaComLoteParams) (EntradaComLoteResponse, error) {
-	p.UtilizadorID = UtilizadorAtualID
+	p.UtilizadorID = a.utilizadorAtualID
 	lote, movimento, err := a.FarmaciaService.RegistarEntradaComLote(a.ctx, p)
 	if err != nil {
 		return EntradaComLoteResponse{}, err
@@ -446,7 +483,7 @@ func (a *App) ListarLotesAVencer(dentroDeDias int) ([]domain.Lote, error) {
 }
 
 func (a *App) RegistarReceitaMedica(p usecase.ReceitaMedicaInput) (domain.ReceitaMedica, error) {
-	p.ValidadoPor = UtilizadorAtualID
+	p.ValidadoPor = a.utilizadorAtualID
 	return a.FarmaciaService.RegistarReceitaMedica(a.ctx, p)
 }
 
@@ -486,7 +523,7 @@ type RegistarPagamentoDividaResponse struct {
 
 // RegistarPagamentoDivida é o fluxo independente de nova venda do SDD 4.11.
 func (a *App) RegistarPagamentoDivida(p usecase.RegistarPagamentoDividaParams) (RegistarPagamentoDividaResponse, error) {
-	p.UtilizadorID = UtilizadorAtualID
+	p.UtilizadorID = a.utilizadorAtualID
 	divida, pagamento, err := a.DividaService.RegistarPagamento(a.ctx, p)
 	if err != nil {
 		return RegistarPagamentoDividaResponse{}, err

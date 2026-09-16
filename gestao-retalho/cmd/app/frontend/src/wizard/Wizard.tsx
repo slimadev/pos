@@ -150,6 +150,7 @@ export default function Wizard({ onConcluido }: { onConcluido: () => void }) {
                   placeholder="ex: Mercearia da Dona Ana"
                   value={negocioNome}
                   onChange={(e) => setNegocioNome(e.target.value)}
+                  autoComplete="off"
                 />
               </label>
             </section>
@@ -216,7 +217,7 @@ export default function Wizard({ onConcluido }: { onConcluido: () => void }) {
 
               <label className="wizard-field">
                 Nome do armazém principal
-                <input value={armazemNome} onChange={(e) => setArmazemNome(e.target.value)} />
+                <input value={armazemNome} onChange={(e) => setArmazemNome(e.target.value)} autoComplete="off" />
               </label>
             </section>
           )}
@@ -227,15 +228,20 @@ export default function Wizard({ onConcluido }: { onConcluido: () => void }) {
               <h1>Utilizador administrador</h1>
               <label className="wizard-field">
                 Nome
-                <input value={adminNome} onChange={(e) => setAdminNome(e.target.value)} />
+                <input value={adminNome} onChange={(e) => setAdminNome(e.target.value)} autoComplete="off" />
               </label>
               <label className="wizard-field">
                 Username
-                <input value={adminUsername} onChange={(e) => setAdminUsername(e.target.value)} />
+                <input value={adminUsername} onChange={(e) => setAdminUsername(e.target.value)} autoComplete="off" />
               </label>
               <label className="wizard-field">
                 Password
-                <input type="password" value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} />
+                <input
+                  type="password"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  autoComplete="new-password"
+                />
               </label>
               <label className="wizard-field">
                 Confirmar password
@@ -243,6 +249,7 @@ export default function Wizard({ onConcluido }: { onConcluido: () => void }) {
                   type="password"
                   value={adminPasswordConfirm}
                   onChange={(e) => setAdminPasswordConfirm(e.target.value)}
+                  autoComplete="new-password"
                 />
               </label>
             </section>

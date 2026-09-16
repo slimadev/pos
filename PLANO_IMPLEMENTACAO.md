@@ -240,6 +240,25 @@ Testado com a base de desenvolvimento real (farmácia): `CriarCategoria`/`Listar
 
 ---
 
+## 8.6. Addendum (pós-Fase 10) — Autenticação: wizard → login → app
+
+Pedido explícito do utilizador: ao arrancar (`make run-app`), sem configuração ainda, abrir o wizard (SDD 9.2); depois de o concluir — e em qualquer arranque seguinte, já configurado — pedir sempre login com o utilizador criado no wizard, nunca entrar direto no ecrã principal. O wizard já criava um utilizador administrador real (nome/username/password com bcrypt, passo 4) desde a Fase 2, mas não existia mecanismo nenhum de sessão a validar essas credenciais — `domain.Utilizador` e `api.App` já diziam explicitamente "o mecanismo de sessão/login só chega com a Fase 7", outra promessa que nunca foi cumprida pela fase que prometia (a Fase 7 foi "Clientes e dívidas", nunca teve nada a ver com login) — o mesmo padrão da nota da Fase 1 sobre o `FaseUm.tsx`.
+
+**Backend:**
+- `AuthService.Login(ctx, username, password)`: procura por username (`UtilizadorRepository.ObterPorUsername`, já existia desde a Fase 2, nunca usado), confirma `Ativo`, compara a password com `bcrypt.CompareHashAndPassword`. Erro único `ErrCredenciaisInvalidas` para "não existe" e "password errada" — distinguir os dois ao cliente ajudaria a adivinhar usernames válidos por tentativa e erro.
+- `api.App` ganhou `utilizadorAtualID int64` (campo próprio da instância, não exportado) — começa em 0 ("ninguém autenticado"), só um `Login()` bem-sucedido o preenche. Substituiu a constante `UtilizadorAtualID` (fixa em `domain.UtilizadorAdminSeedID` desde sempre) nos 14 bindings que gravam um utilizador (vendas, movimentos de stock, contas, receitas médicas, etc.) — sem sessão, essas escritas falham na FK em vez de gravar silenciosamente em nome de quem quer que seja.
+- Bindings novos: `Login(username, password) (SessaoUtilizador, error)`, `Logout()`, `SessaoAtiva() bool`. Sem servidor nem token — "sessão" é só o campo em memória, dura o processo da app.
+
+**Frontend:**
+- `App.tsx` ganhou um estado `"login"` na máquina de estados (`a-carregar → wizard → login → pronto`) — `EstaConfigurado()` decide wizard vs. login, nunca vai direto a `pronto`. O tema (`config.Tema`) já é conhecido e aplicado no ecrã de login, antes de autenticar, para o operador reconhecer a loja de imediato.
+- `Login.tsx`: ecrã novo, mesma linguagem visual em cartão dos outros ecrãs (`--color-*`), usa o binding `Login`.
+- Botão "Sair" no cabeçalho do `AppPrincipal`, chama `Logout()` e volta ao ecrã de login.
+- **Achado durante o teste manual, corrigido já nesta entrada:** os campos de username/password (login) e nome do negócio/armazém/administrador (wizard) tinham `autoComplete="username"/"current-password"` — o WebKitGTK deste ambiente de desenvolvimento usa isso (e nalguns casos ignora-o) para sugerir dados guardados a nível de sistema (chegou a preencher o username do sistema operativo em vez do que estava a ser escrito). Num terminal POS partilhado por vários operadores, sugerir a sessão de outro operador é um problema real, não só de teste — todos os campos sensíveis do wizard e do login passaram a `autoComplete="off"` (passwords novas a `"new-password"`, para não sugerir nenhuma guardada).
+
+Testado: `AuthService` com 5 testes (credenciais corretas, password errada, username inexistente, antes do wizard confirmar as credenciais reais, campos vazios). Confirmado ponta a ponta via chamada direta a `api.App.Login` contra a base de dev real. Ecrã de login confirmado visualmente (tema aplicado, erro de credenciais mostrado corretamente) por captura de ecrã real (`xwd`/`netpbm`). **Não confirmado por automação de cliques**: o mesmo WebKitGTK que motivou a correção do `autoComplete` interferiu também com a automação de teclado deste ambiente (sugestões nativas a substituir o texto escrito por scripts, mesmo depois da correção) — ficou por confirmar interativamente pelo utilizador; não é uma limitação que afete o uso normal (humano) da app.
+
+---
+
 ## 10. Fase 9 — Admin universal multi-loja — tela `1c`
 
 - `cmd/admin/main.go`: mesmo `CoreModule`, mas injeta lista de `DBPath` (uma por loja) em vez de uma única conexão (secção 8.5 do SDD).
