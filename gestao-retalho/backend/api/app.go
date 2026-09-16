@@ -29,14 +29,15 @@ type App struct {
 	ctx context.Context
 	db  *sql.DB
 
-	ProdutoService *usecase.ProdutoService
-	ArmazemService *usecase.ArmazemService
-	StockService   *usecase.StockService
-	ConfigService  *usecase.ConfigService
-	ClienteService *usecase.ClienteService
-	VendaService   *usecase.VendaService
-	ReciboService  *usecase.ReciboService
-	ContaService   *usecase.ContaService
+	ProdutoService      *usecase.ProdutoService
+	ArmazemService      *usecase.ArmazemService
+	StockService        *usecase.StockService
+	ConfigService       *usecase.ConfigService
+	ClienteService      *usecase.ClienteService
+	VendaService        *usecase.VendaService
+	ReciboService       *usecase.ReciboService
+	ContaService        *usecase.ContaService
+	FichaTecnicaService *usecase.FichaTecnicaService
 }
 
 func NewApp(
@@ -49,17 +50,19 @@ func NewApp(
 	venda *usecase.VendaService,
 	recibo *usecase.ReciboService,
 	conta *usecase.ContaService,
+	fichas *usecase.FichaTecnicaService,
 ) *App {
 	return &App{
-		db:             db,
-		ProdutoService: produto,
-		ArmazemService: armazem,
-		StockService:   stock,
-		ConfigService:  cfg,
-		ClienteService: cliente,
-		VendaService:   venda,
-		ReciboService:  recibo,
-		ContaService:   conta,
+		db:                  db,
+		ProdutoService:      produto,
+		ArmazemService:      armazem,
+		StockService:        stock,
+		ConfigService:       cfg,
+		ClienteService:      cliente,
+		VendaService:        venda,
+		ReciboService:       recibo,
+		ContaService:        conta,
+		FichaTecnicaService: fichas,
 	}
 }
 
@@ -349,4 +352,31 @@ func (a *App) CancelarConta(contaID int64, motivo string) (domain.Conta, error) 
 func (a *App) FecharContaAberta(contaID int64, p usecase.FecharContaParams) (usecase.VendaCompleta, error) {
 	p.UtilizadorID = UtilizadorAtualID
 	return a.ContaService.FecharConta(a.ctx, contaID, p)
+}
+
+// --- Fichas técnicas / produtos compostos e semi-elaborados (SDD 3.3) ------
+
+func (a *App) ListarIngredientes(produtoCompostoID int64) ([]domain.FichaTecnica, error) {
+	return a.FichaTecnicaService.ListarIngredientes(a.ctx, produtoCompostoID)
+}
+
+func (a *App) DefinirReceita(produtoCompostoID int64, ingredientes []usecase.IngredienteInput) ([]domain.FichaTecnica, error) {
+	return a.FichaTecnicaService.DefinirReceita(a.ctx, produtoCompostoID, ingredientes)
+}
+
+func (a *App) DuplicarReceita(produtoOrigemID, produtoDestinoID int64) ([]domain.FichaTecnica, error) {
+	return a.FichaTecnicaService.DuplicarReceita(a.ctx, produtoOrigemID, produtoDestinoID)
+}
+
+func (a *App) CalcularCustoTeorico(produtoCompostoID, armazemID int64) (float64, error) {
+	return a.FichaTecnicaService.CalcularCustoTeorico(a.ctx, produtoCompostoID, armazemID)
+}
+
+func (a *App) SimularDisponibilidade(produtoCompostoID, armazemID int64) (float64, error) {
+	return a.FichaTecnicaService.SimularDisponibilidade(a.ctx, produtoCompostoID, armazemID)
+}
+
+func (a *App) RegistarProducao(p usecase.ProducaoParams) (domain.MovimentoStock, error) {
+	p.UtilizadorID = UtilizadorAtualID
+	return a.FichaTecnicaService.RegistarProducao(a.ctx, p)
 }

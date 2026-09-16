@@ -18,14 +18,16 @@ type ContaService struct {
 	vendas  *repository.VendaRepository
 	produto *repository.ProdutoRepository
 	armazem *repository.ArmazemRepository
+	fichas  *repository.FichaTecnicaRepository
 }
 
 func NewContaService(
 	vendas *repository.VendaRepository,
 	produto *repository.ProdutoRepository,
 	armazem *repository.ArmazemRepository,
+	fichas *repository.FichaTecnicaRepository,
 ) *ContaService {
-	return &ContaService{vendas: vendas, produto: produto, armazem: armazem}
+	return &ContaService{vendas: vendas, produto: produto, armazem: armazem, fichas: fichas}
 }
 
 func (s *ContaService) ListarAbertas(ctx context.Context, negocioID int64) ([]domain.Conta, error) {
@@ -88,9 +90,9 @@ func (s *ContaService) AdicionarItem(ctx context.Context, p AdicionarItemContaPa
 	if !produto.Ativo {
 		return domain.ItemConta{}, domain.ErrProdutoInativo
 	}
-	if produto.TipoProduto == domain.TipoProdutoComposto {
-		return domain.ItemConta{}, domain.ErrProdutoComposto
-	}
+	// Produtos compostos (SDD 3.3) já podem ser lançados na comanda — a
+	// ficha técnica só é exigida/expandida ao fechar a conta, tal como o
+	// stock de qualquer outro item.
 
 	unidade, err := s.produto.ObterUnidade(ctx, p.UnidadeProdutoID)
 	if err != nil {
@@ -207,19 +209,24 @@ func (s *ContaService) FecharConta(ctx context.Context, contaID int64, p FecharC
 		subtotal += item.Quantidade * item.PrecoUnitarioAplicado
 		descontoLinhas += item.Desconto
 
-		linhas = append(linhas, linhaResolvida{
+		composto := produto.TipoProduto == domain.TipoProdutoComposto
+		linha := linhaResolvida{
 			ProdutoID:        produto.ID,
 			ProdutoNome:      produto.Nome,
+			Composto:         composto,
 			UnidadeProdutoID: unidade.ID,
-			QtdEmUnidadeBase: unidade.QtdEmUnidadeBase,
 			// Preço congelado no momento em que o item foi lançado na
 			// conta (itens_conta.preco_unitario_aplicado), não o preço
 			// de catálogo atual — o cliente vê o preço de quando pediu.
 			PrecoUnitario: item.PrecoUnitarioAplicado,
 			Quantidade:    item.Quantidade,
 			Desconto:      item.Desconto,
-			QtdBase:       item.Quantidade * unidade.QtdEmUnidadeBase,
-		})
+		}
+		if !composto {
+			linha.QtdEmUnidadeBase = unidade.QtdEmUnidadeBase
+			linha.QtdBase = item.Quantidade * unidade.QtdEmUnidadeBase
+		}
+		linhas = append(linhas, linha)
 	}
 
 	descontoTotal := descontoLinhas + p.DescontoTotal
@@ -277,7 +284,7 @@ func (s *ContaService) FecharConta(ctx context.Context, contaID int64, p FecharC
 		}
 		resultado.Venda = venda
 
-		itens, err := criarItensVendaEMovimentos(ctx, tx, venda.ID, p.ArmazemID, p.UtilizadorID, linhas)
+		itens, err := criarItensVendaEMovimentos(ctx, tx, s.fichas, s.produto, venda.ID, p.ArmazemID, p.UtilizadorID, linhas)
 		if err != nil {
 			return err
 		}

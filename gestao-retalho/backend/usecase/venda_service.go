@@ -21,14 +21,16 @@ type VendaService struct {
 	vendas  *repository.VendaRepository
 	produto *repository.ProdutoRepository
 	armazem *repository.ArmazemRepository
+	fichas  *repository.FichaTecnicaRepository
 }
 
 func NewVendaService(
 	vendas *repository.VendaRepository,
 	produto *repository.ProdutoRepository,
 	armazem *repository.ArmazemRepository,
+	fichas *repository.FichaTecnicaRepository,
 ) *VendaService {
-	return &VendaService{vendas: vendas, produto: produto, armazem: armazem}
+	return &VendaService{vendas: vendas, produto: produto, armazem: armazem, fichas: fichas}
 }
 
 type ItemVendaDiretaParams struct {
@@ -150,7 +152,7 @@ func (s *VendaService) RegistarVendaDireta(ctx context.Context, p VendaDiretaPar
 		}
 		resultado.Venda = venda
 
-		itens, err := criarItensVendaEMovimentos(ctx, tx, venda.ID, p.ArmazemID, p.UtilizadorID, linhas)
+		itens, err := criarItensVendaEMovimentos(ctx, tx, s.fichas, s.produto, venda.ID, p.ArmazemID, p.UtilizadorID, linhas)
 		if err != nil {
 			return err
 		}
@@ -177,11 +179,14 @@ func (s *VendaService) RegistarVendaDireta(ctx context.Context, p VendaDiretaPar
 }
 
 // linhaResolvida é uma linha de venda já validada e pronta a virar
-// itens_venda + movimento de stock — venha ela de parâmetros frescos
+// itens_venda + movimento(s) de stock — venha ela de parâmetros frescos
 // (venda direta) ou de itens_conta já persistidos (fecho de conta aberta).
+// Composto=true significa que QtdEmUnidadeBase/QtdBase não se aplicam — o
+// consumo real vem da ficha técnica, expandida em criarItensVendaEMovimentos.
 type linhaResolvida struct {
 	ProdutoID        int64
 	ProdutoNome      string
+	Composto         bool
 	UnidadeProdutoID int64
 	QtdEmUnidadeBase float64
 	PrecoUnitario    float64
@@ -209,12 +214,6 @@ func (s *VendaService) resolverLinhas(ctx context.Context, itens []ItemVendaDire
 		if !produto.Ativo {
 			return nil, 0, 0, domain.ErrProdutoInativo
 		}
-		// Fichas técnicas (expansão de receita ao vender) só chegam na
-		// Fase 5 — até lá, produto composto não é vendável, tal como já
-		// não é possível mexer o seu stock diretamente (SDD 3.2).
-		if produto.TipoProduto == domain.TipoProdutoComposto {
-			return nil, 0, 0, domain.ErrProdutoComposto
-		}
 
 		unidade, err := s.produto.ObterUnidade(ctx, item.UnidadeProdutoID)
 		if err != nil {
@@ -227,43 +226,85 @@ func (s *VendaService) resolverLinhas(ctx context.Context, itens []ItemVendaDire
 		subtotal += item.Quantidade * unidade.PrecoVenda
 		descontoLinhas += item.Desconto
 
-		linhas = append(linhas, linhaResolvida{
+		composto := produto.TipoProduto == domain.TipoProdutoComposto
+		linha := linhaResolvida{
 			ProdutoID:        produto.ID,
 			ProdutoNome:      produto.Nome,
+			Composto:         composto,
 			UnidadeProdutoID: unidade.ID,
-			QtdEmUnidadeBase: unidade.QtdEmUnidadeBase,
 			PrecoUnitario:    unidade.PrecoVenda,
 			Quantidade:       item.Quantidade,
 			Desconto:         item.Desconto,
-			QtdBase:          item.Quantidade * unidade.QtdEmUnidadeBase,
-		})
+		}
+		if !composto {
+			linha.QtdEmUnidadeBase = unidade.QtdEmUnidadeBase
+			linha.QtdBase = item.Quantidade * unidade.QtdEmUnidadeBase
+		}
+		linhas = append(linhas, linha)
 	}
 
 	return linhas, subtotal, descontoLinhas, nil
 }
 
-// criarItensVendaEMovimentos grava um itens_venda e um movimento de stock
-// tipo `venda` por cada linha, dentro da transação corrente. Falha (e
-// aborta tudo, incluindo linhas já processadas nesta chamada — o chamador
-// está sempre dentro de um WithTx) se alguma linha não tiver stock
-// suficiente no armazém indicado.
-func criarItensVendaEMovimentos(ctx context.Context, tx *repository.VendaRepository, vendaID, armazemID, utilizadorID int64, linhas []linhaResolvida) ([]domain.ItemVenda, error) {
+// criarItensVendaEMovimentos grava um itens_venda por linha, dentro da
+// transação corrente. Um produto simples/semi-elaborado gera um único
+// movimento de stock; um produto composto expande a ficha técnica e gera
+// um movimento por ingrediente (SDD 3.3.1) — o cliente só vê "1x
+// Caipirinha de Vodka" no recibo, a expansão é inteiramente interna.
+// Falha (e aborta tudo, incluindo linhas já processadas nesta chamada — o
+// chamador está sempre dentro de um WithTx) se alguma linha, ou algum
+// ingrediente de uma linha composta, não tiver stock suficiente.
+func criarItensVendaEMovimentos(
+	ctx context.Context,
+	tx *repository.VendaRepository,
+	fichas *repository.FichaTecnicaRepository,
+	produtos *repository.ProdutoRepository,
+	vendaID, armazemID, utilizadorID int64,
+	linhas []linhaResolvida,
+) ([]domain.ItemVenda, error) {
 	itens := make([]domain.ItemVenda, 0, len(linhas))
+	referenciaID := strconv.FormatInt(vendaID, 10)
 
 	for _, l := range linhas {
-		stockAtual, err := tx.Stock.ObterStock(ctx, l.ProdutoID, armazemID)
-		if err != nil {
-			return nil, err
-		}
-		if stockAtual.Quantidade < l.QtdBase {
-			return nil, fmt.Errorf("%w: %s — disponível %.3f, pedido %.3f", domain.ErrStockInsuficiente, l.ProdutoNome, stockAtual.Quantidade, l.QtdBase)
+		var custoPorUnidadeVendida float64
+
+		if l.Composto {
+			custo, err := consumirFichaTecnica(ctx, tx, fichas, produtos, l.ProdutoID, l.ProdutoNome, l.Quantidade, armazemID, utilizadorID, referenciaID)
+			if err != nil {
+				return nil, err
+			}
+			custoPorUnidadeVendida = custo
+		} else {
+			stockAtual, err := tx.Stock.ObterStock(ctx, l.ProdutoID, armazemID)
+			if err != nil {
+				return nil, err
+			}
+			if stockAtual.Quantidade < l.QtdBase {
+				return nil, fmt.Errorf("%w: %s — disponível %.3f, pedido %.3f", domain.ErrStockInsuficiente, l.ProdutoNome, stockAtual.Quantidade, l.QtdBase)
+			}
+			// Custo por unidade vendida (não por unidade base) — ver nota
+			// em domain.ItemVenda.
+			custoPorUnidadeVendida = stockAtual.CustoMedioPonderado * l.QtdEmUnidadeBase
+
+			armazemIDCopy := armazemID
+			unidadeIDCopy := l.UnidadeProdutoID
+			custoCopy := stockAtual.CustoMedioPonderado
+			refCopy := referenciaID
+			if _, err := tx.Stock.CriarMovimento(ctx, repository.NovoMovimento{
+				ProdutoID:        l.ProdutoID,
+				ArmazemOrigemID:  &armazemIDCopy,
+				Tipo:             domain.TipoMovimentoVenda,
+				Quantidade:       l.QtdBase,
+				CustoUnitario:    &custoCopy,
+				UnidadeProdutoID: &unidadeIDCopy,
+				ReferenciaID:     &refCopy,
+				UtilizadorID:     utilizadorID,
+			}); err != nil {
+				return nil, fmt.Errorf("baixar stock: %w", err)
+			}
 		}
 
 		subtotalLinha := l.Quantidade*l.PrecoUnitario - l.Desconto
-		// Custo por unidade vendida (não por unidade base) — ver nota em
-		// domain.ItemVenda.
-		custoPorUnidadeVendida := stockAtual.CustoMedioPonderado * l.QtdEmUnidadeBase
-
 		itemGravado, err := tx.CriarItemVenda(ctx, domain.ItemVenda{
 			VendaID:                vendaID,
 			ProdutoID:              l.ProdutoID,
@@ -278,26 +319,71 @@ func criarItensVendaEMovimentos(ctx context.Context, tx *repository.VendaReposit
 			return nil, fmt.Errorf("gravar item de venda: %w", err)
 		}
 		itens = append(itens, itemGravado)
-
-		armazemIDCopy := armazemID
-		unidadeIDCopy := l.UnidadeProdutoID
-		custoCopy := stockAtual.CustoMedioPonderado
-		referenciaID := strconv.FormatInt(vendaID, 10)
-		if _, err := tx.Stock.CriarMovimento(ctx, repository.NovoMovimento{
-			ProdutoID:        l.ProdutoID,
-			ArmazemOrigemID:  &armazemIDCopy,
-			Tipo:             domain.TipoMovimentoVenda,
-			Quantidade:       l.QtdBase,
-			CustoUnitario:    &custoCopy,
-			UnidadeProdutoID: &unidadeIDCopy,
-			ReferenciaID:     &referenciaID,
-			UtilizadorID:     utilizadorID,
-		}); err != nil {
-			return nil, fmt.Errorf("baixar stock: %w", err)
-		}
 	}
 
 	return itens, nil
+}
+
+// consumirFichaTecnica expande a receita de um produto composto (SDD
+// 3.3.1): gera um movimento de stock tipo `venda` por ingrediente
+// (quantidade já ajustada por perda_percentual e escalada pela quantidade
+// vendida), e devolve o custo total dividido pela quantidade vendida —
+// isto é, o custo por unidade do composto, no mesmo formato que
+// CustoUnitarioNoMomento usa para produtos simples.
+func consumirFichaTecnica(
+	ctx context.Context,
+	tx *repository.VendaRepository,
+	fichas *repository.FichaTecnicaRepository,
+	produtos *repository.ProdutoRepository,
+	produtoCompostoID int64,
+	produtoCompostoNome string,
+	quantidadeVendida float64,
+	armazemID, utilizadorID int64,
+	referenciaID string,
+) (custoPorUnidade float64, err error) {
+	ingredientes, err := fichas.ListarIngredientes(ctx, produtoCompostoID)
+	if err != nil {
+		return 0, err
+	}
+	if len(ingredientes) == 0 {
+		return 0, fmt.Errorf("%q não tem ficha técnica definida", produtoCompostoNome)
+	}
+
+	var custoTotal float64
+	for _, ing := range ingredientes {
+		consumoTotal := ing.ConsumoReal() * quantidadeVendida
+
+		stockAtual, err := tx.Stock.ObterStock(ctx, ing.ProdutoIngredienteID, armazemID)
+		if err != nil {
+			return 0, err
+		}
+		if stockAtual.Quantidade < consumoTotal {
+			ingrediente, errNome := produtos.Obter(ctx, ing.ProdutoIngredienteID)
+			nome := ingrediente.Nome
+			if errNome != nil {
+				nome = fmt.Sprintf("#%d", ing.ProdutoIngredienteID)
+			}
+			return 0, fmt.Errorf("%w: %s (ingrediente de %s) — disponível %.3f, pedido %.3f", domain.ErrStockInsuficiente, nome, produtoCompostoNome, stockAtual.Quantidade, consumoTotal)
+		}
+		custoTotal += consumoTotal * stockAtual.CustoMedioPonderado
+
+		armazemIDCopy := armazemID
+		custoCopy := stockAtual.CustoMedioPonderado
+		refCopy := referenciaID
+		if _, err := tx.Stock.CriarMovimento(ctx, repository.NovoMovimento{
+			ProdutoID:       ing.ProdutoIngredienteID,
+			ArmazemOrigemID: &armazemIDCopy,
+			Tipo:            domain.TipoMovimentoVenda,
+			Quantidade:      consumoTotal,
+			CustoUnitario:   &custoCopy,
+			ReferenciaID:    &refCopy,
+			UtilizadorID:    utilizadorID,
+		}); err != nil {
+			return 0, fmt.Errorf("baixar stock do ingrediente: %w", err)
+		}
+	}
+
+	return custoTotal / quantidadeVendida, nil
 }
 
 // ObterVendaCompleta é usado pelo recibo e pelo histórico do dia (SDD 5.3).

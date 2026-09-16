@@ -66,6 +66,14 @@ type Dividas struct {
 	CriadoEm      string  `json:"criado_em"`
 }
 
+type FichasTecnicas struct {
+	ID                   int64   `json:"id"`
+	ProdutoCompostoID    int64   `json:"produto_composto_id"`
+	ProdutoIngredienteID int64   `json:"produto_ingrediente_id"`
+	Quantidade           float64 `json:"quantidade"`
+	PerdaPercentual      float64 `json:"perda_percentual"`
+}
+
 type InventarioItens struct {
 	ID                int64           `json:"id"`
 	InventarioID      int64           `json:"inventario_id"`

@@ -19,11 +19,12 @@ func newTestVendaServices(t *testing.T) (*usecase.ProdutoService, *usecase.Armaz
 	stockRepo := repository.NewStockRepository(db)
 	invRepo := repository.NewInventarioRepository(db)
 	vendaRepo := repository.NewVendaRepository(db, stockRepo)
+	fichaRepo := repository.NewFichaTecnicaRepository(db)
 
 	produtoSvc := usecase.NewProdutoService(produtoRepo)
 	armazemSvc := usecase.NewArmazemService(armazemRepo)
 	stockSvc := usecase.NewStockService(stockRepo, produtoRepo, armazemRepo, invRepo)
-	vendaSvc := usecase.NewVendaService(vendaRepo, produtoRepo, armazemRepo)
+	vendaSvc := usecase.NewVendaService(vendaRepo, produtoRepo, armazemRepo, fichaRepo)
 
 	return produtoSvc, armazemSvc, stockSvc, vendaSvc
 }
@@ -200,7 +201,11 @@ func TestRegistarVendaDireta_BloqueiaPagamentoIncompleto(t *testing.T) {
 	}
 }
 
-func TestRegistarVendaDireta_BloqueiaProdutoComposto(t *testing.T) {
+// TestRegistarVendaDireta_BloqueiaProdutoCompostoSemFichaTecnica cobre o
+// caso em que ainda não Fase 5 completa: um composto sem receita definida
+// não pode ser vendido (nada para expandir). A venda de um composto COM
+// receita está coberta em ficha_tecnica_service_test.go.
+func TestRegistarVendaDireta_BloqueiaProdutoCompostoSemFichaTecnica(t *testing.T) {
 	ctx := context.Background()
 	produtoSvc, armazemSvc, _, vendaSvc := newTestVendaServices(t)
 	armazem := criarArmazem(t, ctx, armazemSvc, "Balcão")
@@ -221,7 +226,7 @@ func TestRegistarVendaDireta_BloqueiaProdutoComposto(t *testing.T) {
 		Pagamentos:   []usecase.PagamentoVendaParams{{Metodo: domain.MetodoDinheiro, Valor: 450}},
 		UtilizadorID: 1,
 	})
-	if !errors.Is(err, domain.ErrProdutoComposto) {
-		t.Fatalf("esperava ErrProdutoComposto (fichas técnicas só na Fase 5), obteve %v", err)
+	if err == nil {
+		t.Fatalf("esperava erro (composto sem ficha técnica definida), obteve nil")
 	}
 }

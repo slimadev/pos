@@ -20,12 +20,13 @@ func newTestContaServices(t *testing.T) (*usecase.ProdutoService, *usecase.Armaz
 	invRepo := repository.NewInventarioRepository(db)
 	clienteRepo := repository.NewClienteRepository(db)
 	vendaRepo := repository.NewVendaRepository(db, stockRepo)
+	fichaRepo := repository.NewFichaTecnicaRepository(db)
 
 	produtoSvc := usecase.NewProdutoService(produtoRepo)
 	armazemSvc := usecase.NewArmazemService(armazemRepo)
 	stockSvc := usecase.NewStockService(stockRepo, produtoRepo, armazemRepo, invRepo)
 	clienteSvc := usecase.NewClienteService(clienteRepo)
-	contaSvc := usecase.NewContaService(vendaRepo, produtoRepo, armazemRepo)
+	contaSvc := usecase.NewContaService(vendaRepo, produtoRepo, armazemRepo, fichaRepo)
 
 	return produtoSvc, armazemSvc, stockSvc, clienteSvc, contaSvc, vendaRepo
 }

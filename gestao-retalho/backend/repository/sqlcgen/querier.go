@@ -22,6 +22,7 @@ type Querier interface {
 	CriarCliente(ctx context.Context, arg CriarClienteParams) (Clientes, error)
 	CriarConta(ctx context.Context, arg CriarContaParams) (Contas, error)
 	CriarDivida(ctx context.Context, arg CriarDividaParams) (Dividas, error)
+	CriarIngrediente(ctx context.Context, arg CriarIngredienteParams) (FichasTecnicas, error)
 	CriarInventario(ctx context.Context, arg CriarInventarioParams) (Inventarios, error)
 	CriarInventarioItem(ctx context.Context, arg CriarInventarioItemParams) error
 	CriarItemConta(ctx context.Context, arg CriarItemContaParams) (ItensConta, error)
@@ -44,6 +45,7 @@ type Querier interface {
 	ListarConfiguracoes(ctx context.Context, negocioID int64) ([]ListarConfiguracoesRow, error)
 	ListarContasAbertas(ctx context.Context, negocioID int64) ([]Contas, error)
 	ListarDividasPorCliente(ctx context.Context, clienteID int64) ([]Dividas, error)
+	ListarIngredientes(ctx context.Context, produtoCompostoID int64) ([]FichasTecnicas, error)
 	ListarInventarioItens(ctx context.Context, inventarioID int64) ([]InventarioItens, error)
 	ListarItensConta(ctx context.Context, contaID int64) ([]ItensConta, error)
 	ListarItensVenda(ctx context.Context, vendaID int64) ([]ItensVenda, error)
@@ -71,6 +73,7 @@ type Querier interface {
 	ObterUtilizadorPorUsername(ctx context.Context, username string) (Utilizadores, error)
 	ObterVenda(ctx context.Context, id int64) (Vendas, error)
 	RegistarContagemInventarioItem(ctx context.Context, arg RegistarContagemInventarioItemParams) error
+	RemoverIngredientes(ctx context.Context, produtoCompostoID int64) error
 	TransferirItemConta(ctx context.Context, arg TransferirItemContaParams) error
 }
 

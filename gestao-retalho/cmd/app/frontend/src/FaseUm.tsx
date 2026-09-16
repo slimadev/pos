@@ -13,6 +13,7 @@ import {
   FecharInventario,
 } from "../wailsjs/go/api/App";
 import { api, domain, usecase } from "../wailsjs/go/models";
+import FichasTecnicasSection from "./FichasTecnicas";
 import "./FaseUm.css";
 
 /**
@@ -43,6 +44,7 @@ export default function FaseUm() {
       <ArmazensSection armazens={armazens} onChange={recarregar} onErro={setErro} />
       <ProdutosSection produtos={produtos} onChange={recarregar} onErro={setErro} />
       <StockSection produtos={produtos} armazens={armazens} onErro={setErro} />
+      <FichasTecnicasSection produtos={produtos} armazens={armazens} onErro={setErro} />
       <InventarioSection produtos={produtos} armazens={armazens} onErro={setErro} />
     </div>
   );

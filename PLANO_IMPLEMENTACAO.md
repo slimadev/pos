@@ -155,6 +155,16 @@ Cobre secção 3.3 do SDD por completo — é a parte mais delicada do domínio.
 
 **Testes:** venda de composto gera exatamente N movimentos (um por ingrediente) com sinal negativo correto; produção gera consumo + criação de stock na mesma transação; simulador de disponibilidade respeita o ingrediente mais restritivo.
 
+> **Estado: concluída.** Decisões tomadas durante a implementação:
+> - `quantidade` em `fichas_tecnicas` é sempre "por 1 unidade produzida/vendida" — mesma convenção para produto composto (por unidade vendida) e semi-elaborado (por unidade do lote produzido). O exemplo do SDD 3.3.2 ("produzir 5kg consome 1.2kg arroz cru") descreve o TOTAL de um lote de 5kg; a receita gravada é esse total dividido por 5 (0.24kg/kg). Um teste apanhou exatamente esta ambiguidade antes de chegar à UI — os valores esperados no teste estavam a assumir a convenção errada, não o código.
+> - `perda_percentual` interpretado como SDD 3.3 descreve textualmente: `quantidade` na receita já é a quantidade **líquida**, e o consumo real de stock é `quantidade / (1 - perda%/100)` — sempre ≥ quantidade, nunca o inverso.
+> - Só produtos `simples`/`semi_elaborado` podem ser ingredientes — um `composto` usado como ingrediente de outro composto exigiria expandir duas fichas técnicas em cascata na venda; o SDD já resolve "receitas em vários níveis" com semi-elaborados produzidos em lote (3.3.2), não com aninhamento de compostos, por isso bloqueei isso explicitamente em `DefinirReceita`.
+> - `criarItensVendaEMovimentos` (partilhado entre venda direta e fecho de conta desde a Fase 4) ganhou um `if l.Composto` que desvia para `consumirFichaTecnica` — gera N movimentos tipo `venda` (um por ingrediente) em vez de 1, mas continua a gravar **um único** `item_venda` (o cliente só vê "1x Caipirinha de Vodka"). `ContaService.AdicionarItem` deixou de bloquear produtos compostos — a ficha técnica só é exigida ao FECHAR a conta, tal como o stock de qualquer item.
+> - Custo por unidade vendida de um composto = soma do custo de todos os ingredientes consumidos ÷ quantidade vendida — mesma convenção de `CustoUnitarioNoMomento` "por unidade vendida" já usada para produtos simples (Fase 3).
+> - `RegistarProducao` reaproveita `custoMedioPonderado` (a mesma função da Fase 1) para atualizar o custo médio do semi-elaborado produzido — produção é tratada exatamente como uma entrada de stock a um custo calculado, não como um mecanismo à parte.
+> - `DefinirReceita` substitui a receita inteira (apaga tudo e regrava) em vez de reconciliar adicionar/remover/editar linha a linha — mais simples e mais seguro para um ecrã de edição, ao custo de perder o histórico de versões da receita (não pedido pelo SDD).
+> - Frontend ficou em `FichasTecnicas.tsx`, integrado no scaffolding do FaseUm (mesma família funcional-sem-tema das Fases 1-4) — não há tela de design dedicada a fichas técnicas nos mocks aprovados, ao contrário das Fases 3/4.
+
 ---
 
 ## 7. Fase 6 — Módulos de nicho (farmácia e mercearia)
