@@ -59,6 +59,11 @@ func (s *ProdutoService) Criar(ctx context.Context, np NovoProduto) (domain.Prod
 	// SDD 3.2: produto composto nunca guarda stock próprio — é sempre
 	// inferido via ficha técnica (Fase 5); simples/semi_elaborado controlam.
 	np.Produto.ControlaStock = np.Produto.TipoProduto != domain.TipoProdutoComposto
+	// Rastreio por lote (Fase 6, SDD 9.4) só faz sentido para quem tem
+	// stock físico próprio — um composto nunca guarda o seu, ver acima.
+	if np.Produto.TipoProduto == domain.TipoProdutoComposto {
+		np.Produto.LoteControlado = false
+	}
 	np.Produto.Ativo = true
 
 	return s.repo.Criar(ctx, np.Produto, np.Unidades)
@@ -67,6 +72,13 @@ func (s *ProdutoService) Criar(ctx context.Context, np NovoProduto) (domain.Prod
 func (s *ProdutoService) Atualizar(ctx context.Context, p domain.Produto) (domain.Produto, error) {
 	if p.Nome == "" {
 		return domain.Produto{}, fmt.Errorf("nome do produto é obrigatório")
+	}
+	atual, err := s.repo.Obter(ctx, p.ID)
+	if err != nil {
+		return domain.Produto{}, err
+	}
+	if atual.TipoProduto == domain.TipoProdutoComposto {
+		p.LoteControlado = false
 	}
 	return s.repo.Atualizar(ctx, p)
 }

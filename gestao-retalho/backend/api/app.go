@@ -38,6 +38,7 @@ type App struct {
 	ReciboService       *usecase.ReciboService
 	ContaService        *usecase.ContaService
 	FichaTecnicaService *usecase.FichaTecnicaService
+	FarmaciaService     *usecase.FarmaciaService
 }
 
 func NewApp(
@@ -51,6 +52,7 @@ func NewApp(
 	recibo *usecase.ReciboService,
 	conta *usecase.ContaService,
 	fichas *usecase.FichaTecnicaService,
+	farmacia *usecase.FarmaciaService,
 ) *App {
 	return &App{
 		db:                  db,
@@ -63,6 +65,7 @@ func NewApp(
 		ReciboService:       recibo,
 		ContaService:        conta,
 		FichaTecnicaService: fichas,
+		FarmaciaService:     farmacia,
 	}
 }
 
@@ -379,4 +382,37 @@ func (a *App) SimularDisponibilidade(produtoCompostoID, armazemID int64) (float6
 func (a *App) RegistarProducao(p usecase.ProducaoParams) (domain.MovimentoStock, error) {
 	p.UtilizadorID = UtilizadorAtualID
 	return a.FichaTecnicaService.RegistarProducao(a.ctx, p)
+}
+
+// --- Farmácia: lotes/validade e receitas médicas (SDD 9.4) ------------------
+
+type EntradaComLoteResponse struct {
+	Lote      domain.Lote
+	Movimento domain.MovimentoStock
+}
+
+func (a *App) RegistarEntradaComLote(p usecase.EntradaComLoteParams) (EntradaComLoteResponse, error) {
+	p.UtilizadorID = UtilizadorAtualID
+	lote, movimento, err := a.FarmaciaService.RegistarEntradaComLote(a.ctx, p)
+	if err != nil {
+		return EntradaComLoteResponse{}, err
+	}
+	return EntradaComLoteResponse{Lote: lote, Movimento: movimento}, nil
+}
+
+func (a *App) ListarLotes(produtoID, armazemID int64) ([]domain.Lote, error) {
+	return a.FarmaciaService.ListarLotes(a.ctx, produtoID, armazemID)
+}
+
+func (a *App) ListarLotesAVencer(dentroDeDias int) ([]domain.Lote, error) {
+	return a.FarmaciaService.ListarLotesAVencer(a.ctx, domain.NegocioID, dentroDeDias)
+}
+
+func (a *App) RegistarReceitaMedica(p usecase.ReceitaMedicaInput) (domain.ReceitaMedica, error) {
+	p.ValidadoPor = UtilizadorAtualID
+	return a.FarmaciaService.RegistarReceitaMedica(a.ctx, p)
+}
+
+func (a *App) ListarReceitasPorVenda(vendaID int64) ([]domain.ReceitaMedica, error) {
+	return a.FarmaciaService.ListarReceitasPorVenda(a.ctx, vendaID)
 }

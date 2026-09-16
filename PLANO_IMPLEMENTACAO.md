@@ -175,7 +175,13 @@ Cobre secção 3.3 do SDD por completo — é a parte mais delicada do domínio.
 
 **Saída:** farmácia vende com controlo de lote/validade e receita médica; mercearia vende produtos a peso livre.
 
----
+> **Estado: concluída.** Decisões tomadas durante a implementação:
+> - `lote_controlado` ficou como flag em `produtos` (não uma tabela de configuração à parte) — decide em runtime, por produto, se a entrada/venda passa pelo caminho de lotes ou pelo caminho normal. `StockService.RegistarEntrada` passou a rejeitar produtos lote-controlados explicitamente (erro claro a apontar para `FarmaciaService.RegistarEntradaComLote`) — sem isto, `stock_atual` e `lotes_produto` divergiam silenciosamente e o FEFO da venda lia lotes vazios.
+> - FEFO ficou embutido na mesma função partilhada que já fazia a expansão de ficha técnica (`criarItensVendaEMovimentos`, Fase 4/5): um produto lote-controlado desvia para `consumirLoteFEFO`, que pode atravessar vários lotes numa só venda (esgota o mais próximo da validade, completa no seguinte) — gera um movimento de stock por lote tocado, cada um ao custo real desse lote, mais preciso que um custo médio único.
+> - `LoteRepository` segue o mesmo padrão de composição do `VendaRepository`/`FichaTecnicaRepository` (Fase 4/5): carrega um `StockRepository` sempre ligado à mesma transação. `VendaRepository` passou a compor também um `LoteRepository` tx-scoped, pela mesma razão — decrementar um lote e gravar o movimento de stock têm de ser atómicos.
+> - `receitas_medicas` ficou como anexo opcional a uma venda já criada (não um bloqueio na hora de vender) — o SDD não define uma regra de "este produto exige receita", por isso não inventei um campo/enforcement que o documento não pede; é só o registo (médico, nº receita, validado por) associado ao `venda_id`.
+> - Venda a granel não precisou de nenhuma mudança no backend (quantidade já é `float64` em todo o lado desde a Fase 1) — só o carrinho do PDV passou a mostrar um input de peso livre em vez do contador +/- quando `produto.UnidadeBase` é "kg"/"g" (heurística simples, sem flag dedicada). Deixei o ponto de extensão para uma balança eletrónica comentado exatamente onde o peso entra no carrinho (`definirQuantidade` em `VendaDireta.tsx`), sem o implementar.
+> - UI de farmácia (`Farmacia.tsx`) ficou na mesma família funcional-sem-tema do FaseUm/FichasTecnicas — sem tela de design dedicada nos mocks aprovados para esta fase.
 
 ## 8. Fase 7 — Clientes e dívidas completos
 

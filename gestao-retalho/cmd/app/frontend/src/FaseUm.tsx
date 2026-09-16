@@ -14,6 +14,7 @@ import {
 } from "../wailsjs/go/api/App";
 import { api, domain, usecase } from "../wailsjs/go/models";
 import FichasTecnicasSection from "./FichasTecnicas";
+import FarmaciaSection from "./Farmacia";
 import "./FaseUm.css";
 
 /**
@@ -45,6 +46,7 @@ export default function FaseUm() {
       <ProdutosSection produtos={produtos} onChange={recarregar} onErro={setErro} />
       <StockSection produtos={produtos} armazens={armazens} onErro={setErro} />
       <FichasTecnicasSection produtos={produtos} armazens={armazens} onErro={setErro} />
+      <FarmaciaSection produtos={produtos} armazens={armazens} onErro={setErro} />
       <InventarioSection produtos={produtos} armazens={armazens} onErro={setErro} />
     </div>
   );
@@ -132,12 +134,14 @@ function ProdutosSection({
   const [unidadeBase, setUnidadeBase] = useState("unidade");
   const [precoCusto, setPrecoCusto] = useState("0");
   const [precoVenda, setPrecoVenda] = useState("0");
+  const [loteControlado, setLoteControlado] = useState(false);
 
   function criar() {
     const produto = new domain.Produto();
     produto.Nome = nome;
     produto.TipoProduto = tipoProduto;
     produto.UnidadeBase = unidadeBase;
+    produto.LoteControlado = loteControlado;
 
     const unidade = new domain.UnidadeProduto();
     unidade.NomeUnidade = unidadeBase;
@@ -172,6 +176,7 @@ function ProdutosSection({
             <th>Tipo</th>
             <th>Unidade base</th>
             <th>Controla stock</th>
+            <th>Lote controlado</th>
           </tr>
         </thead>
         <tbody>
@@ -182,6 +187,7 @@ function ProdutosSection({
               <td>{p.TipoProduto}</td>
               <td>{p.UnidadeBase}</td>
               <td>{p.ControlaStock ? "sim" : "não"}</td>
+              <td>{p.LoteControlado ? "sim" : "não"}</td>
             </tr>
           ))}
         </tbody>
@@ -196,6 +202,10 @@ function ProdutosSection({
         <input placeholder="Unidade base (ex: unidade, kg)" value={unidadeBase} onChange={(e) => setUnidadeBase(e.target.value)} />
         <input placeholder="Preço custo" type="number" value={precoCusto} onChange={(e) => setPrecoCusto(e.target.value)} />
         <input placeholder="Preço venda" type="number" value={precoVenda} onChange={(e) => setPrecoVenda(e.target.value)} />
+        <label>
+          <input type="checkbox" checked={loteControlado} onChange={(e) => setLoteControlado(e.target.checked)} /> lote
+          controlado (farmácia)
+        </label>
         <button disabled={!nome} onClick={criar}>
           + Criar produto
         </button>

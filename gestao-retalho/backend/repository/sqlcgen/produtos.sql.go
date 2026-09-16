@@ -12,17 +12,18 @@ import (
 
 const atualizarProduto = `-- name: AtualizarProduto :one
 UPDATE produtos
-SET categoria_id = ?, nome = ?, stock_minimo = ?, atualizado_em = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+SET categoria_id = ?, nome = ?, stock_minimo = ?, lote_controlado = ?, atualizado_em = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
 WHERE id = ?
 RETURNING id, negocio_id, categoria_id, nome, tipo_produto, unidade_base,
-          stock_minimo, controla_stock, ativo, criado_em, atualizado_em
+          stock_minimo, controla_stock, ativo, criado_em, atualizado_em, lote_controlado
 `
 
 type AtualizarProdutoParams struct {
-	CategoriaID sql.NullInt64   `json:"categoria_id"`
-	Nome        string          `json:"nome"`
-	StockMinimo sql.NullFloat64 `json:"stock_minimo"`
-	ID          int64           `json:"id"`
+	CategoriaID    sql.NullInt64   `json:"categoria_id"`
+	Nome           string          `json:"nome"`
+	StockMinimo    sql.NullFloat64 `json:"stock_minimo"`
+	LoteControlado int64           `json:"lote_controlado"`
+	ID             int64           `json:"id"`
 }
 
 func (q *Queries) AtualizarProduto(ctx context.Context, arg AtualizarProdutoParams) (Produtos, error) {
@@ -30,6 +31,7 @@ func (q *Queries) AtualizarProduto(ctx context.Context, arg AtualizarProdutoPara
 		arg.CategoriaID,
 		arg.Nome,
 		arg.StockMinimo,
+		arg.LoteControlado,
 		arg.ID,
 	)
 	var i Produtos
@@ -45,25 +47,27 @@ func (q *Queries) AtualizarProduto(ctx context.Context, arg AtualizarProdutoPara
 		&i.Ativo,
 		&i.CriadoEm,
 		&i.AtualizadoEm,
+		&i.LoteControlado,
 	)
 	return i, err
 }
 
 const criarProduto = `-- name: CriarProduto :one
-INSERT INTO produtos (negocio_id, categoria_id, nome, tipo_produto, unidade_base, stock_minimo, controla_stock, ativo)
-VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+INSERT INTO produtos (negocio_id, categoria_id, nome, tipo_produto, unidade_base, stock_minimo, controla_stock, lote_controlado, ativo)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
 RETURNING id, negocio_id, categoria_id, nome, tipo_produto, unidade_base,
-          stock_minimo, controla_stock, ativo, criado_em, atualizado_em
+          stock_minimo, controla_stock, ativo, criado_em, atualizado_em, lote_controlado
 `
 
 type CriarProdutoParams struct {
-	NegocioID     int64           `json:"negocio_id"`
-	CategoriaID   sql.NullInt64   `json:"categoria_id"`
-	Nome          string          `json:"nome"`
-	TipoProduto   string          `json:"tipo_produto"`
-	UnidadeBase   string          `json:"unidade_base"`
-	StockMinimo   sql.NullFloat64 `json:"stock_minimo"`
-	ControlaStock int64           `json:"controla_stock"`
+	NegocioID      int64           `json:"negocio_id"`
+	CategoriaID    sql.NullInt64   `json:"categoria_id"`
+	Nome           string          `json:"nome"`
+	TipoProduto    string          `json:"tipo_produto"`
+	UnidadeBase    string          `json:"unidade_base"`
+	StockMinimo    sql.NullFloat64 `json:"stock_minimo"`
+	ControlaStock  int64           `json:"controla_stock"`
+	LoteControlado int64           `json:"lote_controlado"`
 }
 
 func (q *Queries) CriarProduto(ctx context.Context, arg CriarProdutoParams) (Produtos, error) {
@@ -75,6 +79,7 @@ func (q *Queries) CriarProduto(ctx context.Context, arg CriarProdutoParams) (Pro
 		arg.UnidadeBase,
 		arg.StockMinimo,
 		arg.ControlaStock,
+		arg.LoteControlado,
 	)
 	var i Produtos
 	err := row.Scan(
@@ -89,6 +94,7 @@ func (q *Queries) CriarProduto(ctx context.Context, arg CriarProdutoParams) (Pro
 		&i.Ativo,
 		&i.CriadoEm,
 		&i.AtualizadoEm,
+		&i.LoteControlado,
 	)
 	return i, err
 }
@@ -109,7 +115,7 @@ func (q *Queries) DefinirProdutoAtivo(ctx context.Context, arg DefinirProdutoAti
 
 const listarProdutos = `-- name: ListarProdutos :many
 SELECT id, negocio_id, categoria_id, nome, tipo_produto, unidade_base,
-       stock_minimo, controla_stock, ativo, criado_em, atualizado_em
+       stock_minimo, controla_stock, ativo, criado_em, atualizado_em, lote_controlado
 FROM produtos
 WHERE negocio_id = ?
 ORDER BY nome
@@ -136,6 +142,7 @@ func (q *Queries) ListarProdutos(ctx context.Context, negocioID int64) ([]Produt
 			&i.Ativo,
 			&i.CriadoEm,
 			&i.AtualizadoEm,
+			&i.LoteControlado,
 		); err != nil {
 			return nil, err
 		}
@@ -152,7 +159,7 @@ func (q *Queries) ListarProdutos(ctx context.Context, negocioID int64) ([]Produt
 
 const listarProdutosAtivos = `-- name: ListarProdutosAtivos :many
 SELECT id, negocio_id, categoria_id, nome, tipo_produto, unidade_base,
-       stock_minimo, controla_stock, ativo, criado_em, atualizado_em
+       stock_minimo, controla_stock, ativo, criado_em, atualizado_em, lote_controlado
 FROM produtos
 WHERE negocio_id = ? AND ativo = 1
 ORDER BY nome
@@ -179,6 +186,7 @@ func (q *Queries) ListarProdutosAtivos(ctx context.Context, negocioID int64) ([]
 			&i.Ativo,
 			&i.CriadoEm,
 			&i.AtualizadoEm,
+			&i.LoteControlado,
 		); err != nil {
 			return nil, err
 		}
@@ -195,7 +203,7 @@ func (q *Queries) ListarProdutosAtivos(ctx context.Context, negocioID int64) ([]
 
 const obterProduto = `-- name: ObterProduto :one
 SELECT id, negocio_id, categoria_id, nome, tipo_produto, unidade_base,
-       stock_minimo, controla_stock, ativo, criado_em, atualizado_em
+       stock_minimo, controla_stock, ativo, criado_em, atualizado_em, lote_controlado
 FROM produtos
 WHERE id = ?
 `
@@ -215,6 +223,7 @@ func (q *Queries) ObterProduto(ctx context.Context, id int64) (Produtos, error) 
 		&i.Ativo,
 		&i.CriadoEm,
 		&i.AtualizadoEm,
+		&i.LoteControlado,
 	)
 	return i, err
 }

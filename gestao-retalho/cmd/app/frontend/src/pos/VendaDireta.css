@@ -243,6 +243,19 @@
   font-weight: 600;
 }
 
+.pos-peso-granel {
+  width: 60px;
+  flex-shrink: 0;
+  padding: 5px 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: center;
+  border: 1px solid var(--color-surface-border);
+  border-radius: 4px;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
 .pos-carrinho-item-nome {
   flex: 1;
   min-width: 0;

@@ -19,7 +19,8 @@ func newTestContaServices(t *testing.T) (*usecase.ProdutoService, *usecase.Armaz
 	stockRepo := repository.NewStockRepository(db)
 	invRepo := repository.NewInventarioRepository(db)
 	clienteRepo := repository.NewClienteRepository(db)
-	vendaRepo := repository.NewVendaRepository(db, stockRepo)
+	loteRepo := repository.NewLoteRepository(db, stockRepo)
+	vendaRepo := repository.NewVendaRepository(db, stockRepo, loteRepo)
 	fichaRepo := repository.NewFichaTecnicaRepository(db)
 
 	produtoSvc := usecase.NewProdutoService(produtoRepo)

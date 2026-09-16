@@ -117,6 +117,16 @@ type ItensVenda struct {
 	Subtotal               float64 `json:"subtotal"`
 }
 
+type LotesProduto struct {
+	ID            int64   `json:"id"`
+	ProdutoID     int64   `json:"produto_id"`
+	ArmazemID     int64   `json:"armazem_id"`
+	NumeroLote    string  `json:"numero_lote"`
+	DataValidade  string  `json:"data_validade"`
+	Quantidade    float64 `json:"quantidade"`
+	CustoUnitario float64 `json:"custo_unitario"`
+}
+
 type MovimentosStock struct {
 	ID                    int64           `json:"id"`
 	ProdutoID             int64           `json:"produto_id"`
@@ -154,17 +164,28 @@ type ProdutoCustoMedio struct {
 }
 
 type Produtos struct {
-	ID            int64           `json:"id"`
-	NegocioID     int64           `json:"negocio_id"`
-	CategoriaID   sql.NullInt64   `json:"categoria_id"`
-	Nome          string          `json:"nome"`
-	TipoProduto   string          `json:"tipo_produto"`
-	UnidadeBase   string          `json:"unidade_base"`
-	StockMinimo   sql.NullFloat64 `json:"stock_minimo"`
-	ControlaStock int64           `json:"controla_stock"`
-	Ativo         int64           `json:"ativo"`
-	CriadoEm      string          `json:"criado_em"`
-	AtualizadoEm  string          `json:"atualizado_em"`
+	ID             int64           `json:"id"`
+	NegocioID      int64           `json:"negocio_id"`
+	CategoriaID    sql.NullInt64   `json:"categoria_id"`
+	Nome           string          `json:"nome"`
+	TipoProduto    string          `json:"tipo_produto"`
+	UnidadeBase    string          `json:"unidade_base"`
+	StockMinimo    sql.NullFloat64 `json:"stock_minimo"`
+	ControlaStock  int64           `json:"controla_stock"`
+	Ativo          int64           `json:"ativo"`
+	CriadoEm       string          `json:"criado_em"`
+	AtualizadoEm   string          `json:"atualizado_em"`
+	LoteControlado int64           `json:"lote_controlado"`
+}
+
+type ReceitasMedicas struct {
+	ID            int64  `json:"id"`
+	VendaID       int64  `json:"venda_id"`
+	ClienteID     int64  `json:"cliente_id"`
+	Medico        string `json:"medico"`
+	NumeroReceita string `json:"numero_receita"`
+	ValidadoPor   int64  `json:"validado_por"`
+	CriadoEm      string `json:"criado_em"`
 }
 
 type StockAtual struct {

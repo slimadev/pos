@@ -58,15 +58,24 @@ func (s *StockService) RegistarEntrada(ctx context.Context, p EntradaParams) (do
 	if p.CustoUnitario < 0 {
 		return domain.MovimentoStock{}, fmt.Errorf("custo unitário não pode ser negativo")
 	}
-	if _, err := s.validarProdutoParaStock(ctx, p.ProdutoID); err != nil {
+	produto, err := s.validarProdutoParaStock(ctx, p.ProdutoID)
+	if err != nil {
 		return domain.MovimentoStock{}, err
+	}
+	// Produtos com rastreio por lote (Fase 6, SDD 9.4) têm de entrar com
+	// número de lote e validade — usar o fluxo genérico aqui deixaria
+	// stock_atual e lotes_produto divergirem, e o FEFO da venda leria
+	// lotes vazios. FichaTecnicaService/FarmaciaService.RegistarEntradaComLote
+	// é o caminho certo para estes.
+	if produto.LoteControlado {
+		return domain.MovimentoStock{}, fmt.Errorf("%q controla lotes — registe a entrada com número de lote e validade", produto.Nome)
 	}
 	if _, err := s.validarArmazemAtivo(ctx, p.ArmazemDestinoID); err != nil {
 		return domain.MovimentoStock{}, err
 	}
 
 	var movimento domain.MovimentoStock
-	err := s.stock.WithTx(ctx, func(tx *repository.StockRepository) error {
+	err = s.stock.WithTx(ctx, func(tx *repository.StockRepository) error {
 		atual, err := tx.ObterStock(ctx, p.ProdutoID, p.ArmazemDestinoID)
 		if err != nil {
 			return err

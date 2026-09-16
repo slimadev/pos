@@ -12,24 +12,30 @@ import (
 // VendaRepository junta contas/itens_conta/vendas/itens_venda/pagamentos —
 // as cinco tabelas que uma venda direta (SDD 3.5) ou o fecho de uma conta
 // (Fase 4) têm de escrever atomicamente, incluindo os movimentos de stock
-// resultantes. Por isso carrega um StockRepository sempre ligado à mesma
-// transação que as suas próprias queries (ver WithTx).
+// resultantes. Por isso carrega um StockRepository e um LoteRepository
+// sempre ligados à mesma transação que as suas próprias queries (ver
+// WithTx) — consumir por FEFO (Fase 6) tem de decrementar lotes_produto
+// e gravar o movimento de stock atomicamente, tal como a ficha técnica
+// (Fase 5) tem de expandir ingredientes atomicamente.
 type VendaRepository struct {
 	db    *sql.DB
 	q     *sqlcgen.Queries
 	Stock *StockRepository
+	Lotes *LoteRepository
 }
 
-func NewVendaRepository(db *sql.DB, stock *StockRepository) *VendaRepository {
-	return &VendaRepository{db: db, q: sqlcgen.New(db), Stock: stock}
+func NewVendaRepository(db *sql.DB, stock *StockRepository, lotes *LoteRepository) *VendaRepository {
+	return &VendaRepository{db: db, q: sqlcgen.New(db), Stock: stock, Lotes: lotes}
 }
 
 func (r *VendaRepository) WithTx(ctx context.Context, fn func(*VendaRepository) error) error {
 	return runInTx(ctx, r.db, func(tx *sql.Tx) error {
+		txStock := &StockRepository{db: r.db, q: sqlcgen.New(tx)}
 		txRepo := &VendaRepository{
 			db:    r.db,
 			q:     r.q.WithTx(tx),
-			Stock: &StockRepository{db: r.db, q: sqlcgen.New(tx)},
+			Stock: txStock,
+			Lotes: &LoteRepository{db: r.db, q: sqlcgen.New(tx), Stock: txStock},
 		}
 		return fn(txRepo)
 	})

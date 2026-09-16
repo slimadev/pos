@@ -183,10 +183,15 @@ func (s *VendaService) RegistarVendaDireta(ctx context.Context, p VendaDiretaPar
 // (venda direta) ou de itens_conta já persistidos (fecho de conta aberta).
 // Composto=true significa que QtdEmUnidadeBase/QtdBase não se aplicam — o
 // consumo real vem da ficha técnica, expandida em criarItensVendaEMovimentos.
+// LoteControlado=true desvia o consumo para FEFO (Fase 6) em vez do custo
+// médio ponderado normal — as duas flags são mutuamente exclusivas na
+// prática (um composto nunca tem LoteControlado=true, ver
+// ProdutoService.Criar).
 type linhaResolvida struct {
 	ProdutoID        int64
 	ProdutoNome      string
 	Composto         bool
+	LoteControlado   bool
 	UnidadeProdutoID int64
 	QtdEmUnidadeBase float64
 	PrecoUnitario    float64
@@ -231,6 +236,7 @@ func (s *VendaService) resolverLinhas(ctx context.Context, itens []ItemVendaDire
 			ProdutoID:        produto.ID,
 			ProdutoNome:      produto.Nome,
 			Composto:         composto,
+			LoteControlado:   produto.LoteControlado,
 			UnidadeProdutoID: unidade.ID,
 			PrecoUnitario:    unidade.PrecoVenda,
 			Quantidade:       item.Quantidade,
@@ -274,6 +280,16 @@ func criarItensVendaEMovimentos(
 				return nil, err
 			}
 			custoPorUnidadeVendida = custo
+		} else if l.LoteControlado {
+			custoTotal, err := consumirLoteFEFO(ctx, tx, l.ProdutoID, l.ProdutoNome, armazemID, l.QtdBase, utilizadorID, domain.TipoMovimentoVenda, referenciaID)
+			if err != nil {
+				return nil, err
+			}
+			// Custo por unidade vendida (não por unidade base) — mesma
+			// convenção do ramo simples/composto, mas com o custo real dos
+			// lotes efetivamente consumidos (mais preciso que o custo
+			// médio ponderado quando há lotes a preços diferentes).
+			custoPorUnidadeVendida = custoTotal / l.Quantidade
 		} else {
 			stockAtual, err := tx.Stock.ObterStock(ctx, l.ProdutoID, armazemID)
 			if err != nil {
@@ -384,6 +400,71 @@ func consumirFichaTecnica(
 	}
 
 	return custoTotal / quantidadeVendida, nil
+}
+
+// consumirLoteFEFO desconta `quantidadeBase` do produto lote-controlado
+// (Fase 6, SDD 9.4) consumindo os lotes por ordem de validade — o que vence
+// primeiro sai primeiro. Uma venda pode atravessar vários lotes (ex: fecha
+// as últimas 3 unidades de um lote a vencer e completa com o lote
+// seguinte); gera um movimento de stock por lote tocado, cada um ao custo
+// desse lote específico — mais preciso que um custo médio global.
+func consumirLoteFEFO(
+	ctx context.Context,
+	tx *repository.VendaRepository,
+	produtoID int64,
+	produtoNome string,
+	armazemID int64,
+	quantidadeBase float64,
+	utilizadorID int64,
+	tipo domain.TipoMovimento,
+	referenciaID string,
+) (custoTotal float64, err error) {
+	lotes, err := tx.Lotes.ListarFEFO(ctx, produtoID, armazemID)
+	if err != nil {
+		return 0, err
+	}
+
+	restante := quantidadeBase
+	for _, lote := range lotes {
+		if restante <= 0 {
+			break
+		}
+		consumoDoLote := restante
+		if lote.Quantidade < consumoDoLote {
+			consumoDoLote = lote.Quantidade
+		}
+		if consumoDoLote <= 0 {
+			continue
+		}
+
+		if err := tx.Lotes.AtualizarQuantidade(ctx, lote.ID, lote.Quantidade-consumoDoLote); err != nil {
+			return 0, fmt.Errorf("atualizar lote %s: %w", lote.NumeroLote, err)
+		}
+		custoTotal += consumoDoLote * lote.CustoUnitario
+
+		armazemIDCopy := armazemID
+		custoCopy := lote.CustoUnitario
+		refCopy := referenciaID
+		if _, err := tx.Stock.CriarMovimento(ctx, repository.NovoMovimento{
+			ProdutoID:       produtoID,
+			ArmazemOrigemID: &armazemIDCopy,
+			Tipo:            tipo,
+			Quantidade:      consumoDoLote,
+			CustoUnitario:   &custoCopy,
+			ReferenciaID:    &refCopy,
+			UtilizadorID:    utilizadorID,
+		}); err != nil {
+			return 0, fmt.Errorf("baixar stock do lote %s: %w", lote.NumeroLote, err)
+		}
+
+		restante -= consumoDoLote
+	}
+
+	if restante > 0.0001 {
+		return 0, fmt.Errorf("%w: %s — falta %.3f (lotes disponíveis esgotados)", domain.ErrStockInsuficiente, produtoNome, restante)
+	}
+
+	return custoTotal, nil
 }
 
 // ObterVendaCompleta é usado pelo recibo e pelo histórico do dia (SDD 5.3).

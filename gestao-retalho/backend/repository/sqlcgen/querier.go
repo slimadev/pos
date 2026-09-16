@@ -14,6 +14,7 @@ type Querier interface {
 	AtualizarCliente(ctx context.Context, arg AtualizarClienteParams) error
 	AtualizarNegocio(ctx context.Context, arg AtualizarNegocioParams) (Negocios, error)
 	AtualizarProduto(ctx context.Context, arg AtualizarProdutoParams) (Produtos, error)
+	AtualizarQuantidadeLote(ctx context.Context, arg AtualizarQuantidadeLoteParams) error
 	AtualizarUnidadeProduto(ctx context.Context, arg AtualizarUnidadeProdutoParams) error
 	AtualizarUtilizadorAdmin(ctx context.Context, arg AtualizarUtilizadorAdminParams) error
 	CancelarConta(ctx context.Context, arg CancelarContaParams) (Contas, error)
@@ -27,9 +28,11 @@ type Querier interface {
 	CriarInventarioItem(ctx context.Context, arg CriarInventarioItemParams) error
 	CriarItemConta(ctx context.Context, arg CriarItemContaParams) (ItensConta, error)
 	CriarItemVenda(ctx context.Context, arg CriarItemVendaParams) (ItensVenda, error)
+	CriarLote(ctx context.Context, arg CriarLoteParams) (LotesProduto, error)
 	CriarMovimentoStock(ctx context.Context, arg CriarMovimentoStockParams) (MovimentosStock, error)
 	CriarPagamento(ctx context.Context, arg CriarPagamentoParams) (Pagamentos, error)
 	CriarProduto(ctx context.Context, arg CriarProdutoParams) (Produtos, error)
+	CriarReceitaMedica(ctx context.Context, arg CriarReceitaMedicaParams) (ReceitasMedicas, error)
 	CriarUnidadeProduto(ctx context.Context, arg CriarUnidadeProdutoParams) (UnidadesProduto, error)
 	CriarVenda(ctx context.Context, arg CriarVendaParams) (Vendas, error)
 	DefinirArmazemAtivo(ctx context.Context, arg DefinirArmazemAtivoParams) error
@@ -49,10 +52,13 @@ type Querier interface {
 	ListarInventarioItens(ctx context.Context, inventarioID int64) ([]InventarioItens, error)
 	ListarItensConta(ctx context.Context, contaID int64) ([]ItensConta, error)
 	ListarItensVenda(ctx context.Context, vendaID int64) ([]ItensVenda, error)
+	ListarLotesAVencer(ctx context.Context, arg ListarLotesAVencerParams) ([]LotesProduto, error)
+	ListarLotesFEFO(ctx context.Context, arg ListarLotesFEFOParams) ([]LotesProduto, error)
 	ListarMovimentosPorProduto(ctx context.Context, produtoID int64) ([]MovimentosStock, error)
 	ListarPagamentos(ctx context.Context, vendaID int64) ([]Pagamentos, error)
 	ListarProdutos(ctx context.Context, negocioID int64) ([]Produtos, error)
 	ListarProdutosAtivos(ctx context.Context, negocioID int64) ([]Produtos, error)
+	ListarReceitasPorVenda(ctx context.Context, vendaID int64) ([]ReceitasMedicas, error)
 	ListarStockParaInventario(ctx context.Context, arg ListarStockParaInventarioParams) ([]ListarStockParaInventarioRow, error)
 	ListarStockPorArmazem(ctx context.Context, armazemID sql.NullInt64) ([]StockAtual, error)
 	ListarUnidadesPorProduto(ctx context.Context, produtoID int64) ([]UnidadesProduto, error)

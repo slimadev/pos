@@ -19,6 +19,7 @@ interface ItemCarrinho {
   unidadeNome: string;
   precoVenda: number;
   quantidade: number;
+  granel: boolean;
 }
 
 interface LinhaPagamento {
@@ -27,6 +28,14 @@ interface LinhaPagamento {
 }
 
 const METODOS = ["dinheiro", "mpesa", "emola", "cartao", "transferencia"];
+
+// Venda a granel (SDD 9.4, mercearia): sem tabela nova, só reutiliza
+// unidade_base = kg (ou g) para aceitar peso livre em vez de contagem por
+// unidade. Heurística simples — não há flag dedicada no produto.
+const UNIDADES_GRANEL = ["kg", "g"];
+function ehGranel(produto: domain.Produto): boolean {
+  return UNIDADES_GRANEL.includes(produto.UnidadeBase.toLowerCase());
+}
 
 /**
  * PDV direto (SDD 4.10, tela de design `2c`) — pesquisa/leitor sempre
@@ -114,11 +123,12 @@ export default function VendaDireta() {
   function adicionarAoCarrinho(produto: domain.Produto) {
     const unidade = unidadesPadrao.get(produto.ID);
     if (!unidade) return;
+    const granel = ehGranel(produto);
     setCarrinho((prev) => {
       const existente = prev.find((i) => i.produtoId === produto.ID);
       if (existente) {
         return prev.map((i) =>
-          i.produtoId === produto.ID ? { ...i, quantidade: i.quantidade + 1 } : i,
+          i.produtoId === produto.ID ? { ...i, quantidade: i.quantidade + (granel ? 0.1 : 1) } : i,
         );
       }
       return [
@@ -129,7 +139,11 @@ export default function VendaDireta() {
           unidadeId: unidade.ID,
           unidadeNome: unidade.NomeUnidade,
           precoVenda: unidade.PrecoVenda,
-          quantidade: 1,
+          // Peso inicial de 0.1kg por omissão para granel — o operador
+          // ajusta ao peso real a seguir (à mão, ou via balança no futuro:
+          // ver definirQuantidade).
+          quantidade: granel ? 0.1 : 1,
+          granel,
         },
       ];
     });
@@ -139,6 +153,21 @@ export default function VendaDireta() {
     setCarrinho((prev) =>
       prev
         .map((i) => (i.produtoId === produtoId ? { ...i, quantidade: i.quantidade + delta } : i))
+        .filter((i) => i.quantidade > 0),
+    );
+  }
+
+  // definirQuantidade é o ponto de entrada para o peso de um item granel —
+  // hoje só aceita o que o operador escreve. Uma balança eletrónica futura
+  // (porta série/USB, SDD 9.4) entraria aqui: em vez de onChange do input,
+  // um listener do lado do Go leria o peso do periférico e chamaria isto
+  // diretamente, sem o operador escrever nada.
+  function definirQuantidade(produtoId: number, valor: string) {
+    const quantidade = Number(valor);
+    if (!Number.isFinite(quantidade) || quantidade < 0) return;
+    setCarrinho((prev) =>
+      prev
+        .map((i) => (i.produtoId === produtoId ? { ...i, quantidade } : i))
         .filter((i) => i.quantidade > 0),
     );
   }
@@ -294,11 +323,23 @@ export default function VendaDireta() {
         <div className="pos-carrinho-itens">
           {carrinho.map((i) => (
             <div key={i.produtoId} className="pos-carrinho-item">
-              <div className="pos-qtd-stepper">
-                <button onClick={() => alterarQuantidade(i.produtoId, -1)}>−</button>
-                <span>{i.quantidade}</span>
-                <button onClick={() => alterarQuantidade(i.produtoId, 1)}>+</button>
-              </div>
+              {i.granel ? (
+                <input
+                  className="pos-peso-granel"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={i.quantidade}
+                  onChange={(e) => definirQuantidade(i.produtoId, e.target.value)}
+                  title="Peso em kg — escrito à mão até haver balança integrada"
+                />
+              ) : (
+                <div className="pos-qtd-stepper">
+                  <button onClick={() => alterarQuantidade(i.produtoId, -1)}>−</button>
+                  <span>{i.quantidade}</span>
+                  <button onClick={() => alterarQuantidade(i.produtoId, 1)}>+</button>
+                </div>
+              )}
               <div className="pos-carrinho-item-nome">
                 <div>{i.produtoNome}</div>
                 <div className="pos-carrinho-item-detalhe">

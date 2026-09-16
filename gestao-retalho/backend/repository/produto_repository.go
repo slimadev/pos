@@ -68,13 +68,14 @@ func (r *ProdutoRepository) Criar(ctx context.Context, p domain.Produto, unidade
 		q := r.q.WithTx(tx)
 
 		row, err := q.CriarProduto(ctx, sqlcgen.CriarProdutoParams{
-			NegocioID:     p.NegocioID,
-			CategoriaID:   ptrToNullInt64(p.CategoriaID),
-			Nome:          p.Nome,
-			TipoProduto:   string(p.TipoProduto),
-			UnidadeBase:   p.UnidadeBase,
-			StockMinimo:   ptrToNullFloat64(p.StockMinimo),
-			ControlaStock: boolToInt64(p.ControlaStock),
+			NegocioID:      p.NegocioID,
+			CategoriaID:    ptrToNullInt64(p.CategoriaID),
+			Nome:           p.Nome,
+			TipoProduto:    string(p.TipoProduto),
+			UnidadeBase:    p.UnidadeBase,
+			StockMinimo:    ptrToNullFloat64(p.StockMinimo),
+			ControlaStock:  boolToInt64(p.ControlaStock),
+			LoteControlado: boolToInt64(p.LoteControlado),
 		})
 		if err != nil {
 			return err
@@ -107,10 +108,11 @@ func (r *ProdutoRepository) Criar(ctx context.Context, p domain.Produto, unidade
 
 func (r *ProdutoRepository) Atualizar(ctx context.Context, p domain.Produto) (domain.Produto, error) {
 	row, err := r.q.AtualizarProduto(ctx, sqlcgen.AtualizarProdutoParams{
-		CategoriaID: ptrToNullInt64(p.CategoriaID),
-		Nome:        p.Nome,
-		StockMinimo: ptrToNullFloat64(p.StockMinimo),
-		ID:          p.ID,
+		CategoriaID:    ptrToNullInt64(p.CategoriaID),
+		Nome:           p.Nome,
+		StockMinimo:    ptrToNullFloat64(p.StockMinimo),
+		LoteControlado: boolToInt64(p.LoteControlado),
+		ID:             p.ID,
 	})
 	if err != nil {
 		return domain.Produto{}, err
@@ -144,17 +146,18 @@ func (r *ProdutoRepository) CriarUnidade(ctx context.Context, u domain.UnidadePr
 
 func produtoFromRow(row sqlcgen.Produtos) domain.Produto {
 	return domain.Produto{
-		ID:            row.ID,
-		NegocioID:     row.NegocioID,
-		CategoriaID:   nullInt64ToPtr(row.CategoriaID),
-		Nome:          row.Nome,
-		TipoProduto:   domain.TipoProduto(row.TipoProduto),
-		UnidadeBase:   row.UnidadeBase,
-		StockMinimo:   nullFloat64ToPtr(row.StockMinimo),
-		ControlaStock: int64ToBool(row.ControlaStock),
-		Ativo:         int64ToBool(row.Ativo),
-		CriadoEm:      parseTimestamp(row.CriadoEm),
-		AtualizadoEm:  parseTimestamp(row.AtualizadoEm),
+		ID:             row.ID,
+		NegocioID:      row.NegocioID,
+		CategoriaID:    nullInt64ToPtr(row.CategoriaID),
+		Nome:           row.Nome,
+		TipoProduto:    domain.TipoProduto(row.TipoProduto),
+		UnidadeBase:    row.UnidadeBase,
+		StockMinimo:    nullFloat64ToPtr(row.StockMinimo),
+		ControlaStock:  int64ToBool(row.ControlaStock),
+		LoteControlado: int64ToBool(row.LoteControlado),
+		Ativo:          int64ToBool(row.Ativo),
+		CriadoEm:       parseTimestamp(row.CriadoEm),
+		AtualizadoEm:   parseTimestamp(row.AtualizadoEm),
 	}
 }
 

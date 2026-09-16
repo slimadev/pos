@@ -214,6 +214,7 @@ func (s *ContaService) FecharConta(ctx context.Context, contaID int64, p FecharC
 			ProdutoID:        produto.ID,
 			ProdutoNome:      produto.Nome,
 			Composto:         composto,
+			LoteControlado:   produto.LoteControlado,
 			UnidadeProdutoID: unidade.ID,
 			// Preço congelado no momento em que o item foi lançado na
 			// conta (itens_conta.preco_unitario_aplicado), não o preço

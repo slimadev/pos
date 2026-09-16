@@ -18,7 +18,8 @@ func newTestVendaServices(t *testing.T) (*usecase.ProdutoService, *usecase.Armaz
 	armazemRepo := repository.NewArmazemRepository(db)
 	stockRepo := repository.NewStockRepository(db)
 	invRepo := repository.NewInventarioRepository(db)
-	vendaRepo := repository.NewVendaRepository(db, stockRepo)
+	loteRepo := repository.NewLoteRepository(db, stockRepo)
+	vendaRepo := repository.NewVendaRepository(db, stockRepo, loteRepo)
 	fichaRepo := repository.NewFichaTecnicaRepository(db)
 
 	produtoSvc := usecase.NewProdutoService(produtoRepo)
