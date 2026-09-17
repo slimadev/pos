@@ -133,22 +133,20 @@ func (a *AdminApp) exigirSessao() error {
 	return nil
 }
 
-// --- Loja / dashboard ---------------------------------------------------------
+// ObterLojaAtual identifica a única loja que este cmd/admin serve — nome e
+// tipo de negócio, não dados de vendas/clientes, por isso não exige sessão
+// (tal como ObterPresetsNegocio): o ecrã de Login já mostra a identidade e
+// a cor da loja antes de autenticar, tal como o resto da app depois de
+// entrar (decisão pós-Fase 10, a pedido explícito).
+func (a *AdminApp) ObterLojaAtual() (LojaAtual, error) {
+	return a.Lojas.ObterAtual(a.ctx)
+}
+
+// --- Dashboard ---------------------------------------------------------------
 //
 // Ao contrário do cmd/app (onde utilizador_id só serve para atribuição em
 // auditoria, nunca bloqueia nada), aqui a sessão é mesmo um controlo de
 // acesso: sem login, nenhuma destas chamadas expõe dados da loja nenhuns.
-
-// ObterLojaAtual identifica a única loja que este cmd/admin serve — o
-// frontend usa isto para mostrar o nome real (em vez de "Administração"
-// genérico) e para colorir a app inteira com a cor do tipo de negócio
-// (decisão pós-Fase 10, a pedido explícito).
-func (a *AdminApp) ObterLojaAtual() (LojaAtual, error) {
-	if err := a.exigirSessao(); err != nil {
-		return LojaAtual{}, err
-	}
-	return a.Lojas.ObterAtual(a.ctx)
-}
 
 func (a *AdminApp) ObterDashboard() (Dashboard, error) {
 	if err := a.exigirSessao(); err != nil {

@@ -84,3 +84,31 @@ func TestAdminApp_ConfigurarPrimeiroArranqueComLojaInvalidaMantemAdministrador(t
 		t.Error("administrador devia ter sido criado mesmo com a loja a falhar")
 	}
 }
+
+// TestAdminApp_ObterLojaAtualNaoExigeSessao cobre o pedido de colorir o
+// ecrã de Login com a cor do tipo de negócio antes de autenticar — nome e
+// tipo da loja não são dado sensível (ao contrário do dashboard), por isso
+// esta chamada tem de funcionar mesmo sem login nenhum.
+func TestAdminApp_ObterLojaAtualNaoExigeSessao(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	app := novoAdminAppTeste(t)
+
+	if _, err := app.ConfigurarPrimeiroArranque(admin.ConfigurarPrimeiroArranqueParams{
+		NegocioNome:   "Ferragem Cossa",
+		TipoNegocio:   domain.TipoNegocioFerragem,
+		AdminNome:     "Nelson Matola",
+		AdminUsername: "nelson",
+		AdminPassword: "admin123",
+	}); err != nil {
+		t.Fatalf("configurar primeiro arranque: %v", err)
+	}
+	app.Logout()
+
+	loja, err := app.ObterLojaAtual()
+	if err != nil {
+		t.Fatalf("obter loja atual sem sessão: %v", err)
+	}
+	if loja.Nome != "Ferragem Cossa" || loja.TipoNegocio != string(domain.TipoNegocioFerragem) {
+		t.Fatalf("loja = %+v, want Ferragem Cossa/ferragem", loja)
+	}
+}

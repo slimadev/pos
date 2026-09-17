@@ -42,6 +42,7 @@ const NAV: { chave: Ecra; nome: string; Icone: IconeSvg; stub?: boolean }[] = [
 ];
 
 type Estado = { tipo: "a-carregar" } | { tipo: "configurar" } | { tipo: "login" } | { tipo: "pronto" };
+type LojaAtual = { Nome: string; TipoNegocio: string };
 
 /**
  * Arranque do cmd/admin: admin.db vazio (primeiro arranque de sempre)
@@ -52,9 +53,15 @@ type Estado = { tipo: "a-carregar" } | { tipo: "configurar" } | { tipo: "login" 
  * (cmd/app) não tem login nenhum — só este, aqui, é que existe. Um
  * administrador serve sempre exatamente uma loja (que pode ter vários
  * armazéns internamente) — não há registo de várias lojas separadas.
+ *
+ * A identidade/cor da loja (nome, `data-tipo-negocio` no `<html>`) é
+ * carregada aqui, uma vez, e aplica-se tanto ao ecrã de Login como ao
+ * resto da app depois de entrar — pedido explícito: "o ecrã de login
+ * também deve ter a cor de tipo de loja setado".
  */
 export default function App() {
   const [estado, setEstado] = useState<Estado>({ tipo: "a-carregar" });
+  const [loja, setLoja] = useState<LojaAtual | null>(null);
 
   const verificar = () => {
     PrecisaConfigurarAdmin()
@@ -62,18 +69,40 @@ export default function App() {
       .catch(() => setEstado({ tipo: "login" }));
   };
 
-  useEffect(verificar, []);
+  const carregarLoja = () => {
+    ObterLojaAtual()
+      .then((l) => {
+        setLoja(l);
+        document.documentElement.setAttribute("data-tipo-negocio", l.TipoNegocio);
+      })
+      .catch(() => {
+        // Sem loja configurada ainda (ex: primeiro arranque, ou a criação
+        // falhou) — fica com a marca/cor genéricas, não bloqueia a app.
+      });
+  };
+
+  useEffect(() => {
+    verificar();
+    carregarLoja();
+  }, []);
 
   if (estado.tipo === "a-carregar") {
     return null;
   }
   if (estado.tipo === "configurar") {
-    return <Configurar onConcluido={() => setEstado({ tipo: "pronto" })} />;
+    return (
+      <Configurar
+        onConcluido={() => {
+          carregarLoja();
+          setEstado({ tipo: "pronto" });
+        }}
+      />
+    );
   }
   if (estado.tipo === "login") {
-    return <Login onEntrar={() => setEstado({ tipo: "pronto" })} />;
+    return <Login loja={loja} onEntrar={() => setEstado({ tipo: "pronto" })} />;
   }
-  return <AdminPrincipal onSair={() => Logout().finally(verificar)} />;
+  return <AdminPrincipal loja={loja} onSair={() => Logout().finally(verificar)} />;
 }
 
 /**
@@ -87,24 +116,10 @@ export default function App() {
  * (cmd/app) — o admin foca-se na visão agregada (SDD 8.5) e, agora, em
  * categorias.
  */
-function AdminPrincipal({ onSair }: { onSair: () => void }) {
+function AdminPrincipal({ loja, onSair }: { loja: LojaAtual | null; onSair: () => void }) {
   const [ecra, setEcra] = useState<Ecra>("dashboard");
   const [stubNome, setStubNome] = useState("");
   const [erro, setErro] = useState<string | null>(null);
-  const [loja, setLoja] = useState<{ Nome: string; TipoNegocio: string } | null>(null);
-
-  useEffect(() => {
-    ObterLojaAtual()
-      .then((l) => {
-        setLoja(l);
-        document.documentElement.setAttribute("data-tipo-negocio", l.TipoNegocio);
-      })
-      .catch(() => {
-        // Sem loja configurada ainda (ex: a criação falhou no primeiro
-        // arranque) — fica com a marca/cor genéricas, não bloqueia o resto
-        // da app; o Dashboard mostra o aviso específico para este caso.
-      });
-  }, []);
 
   return (
     <div className="admin-shell">

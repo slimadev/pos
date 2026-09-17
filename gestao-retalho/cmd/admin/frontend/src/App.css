@@ -571,8 +571,17 @@ body {
   text-align: center;
 }
 
+.login-tipo {
+  margin: 2px 0 0;
+  font-size: 10.5px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-align: center;
+}
+
 .login-sub {
-  margin: 0 0 20px;
+  margin: 6px 0 20px;
   font-size: 13px;
   color: var(--text-secondary);
   text-align: center;
