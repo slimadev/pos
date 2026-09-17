@@ -587,6 +587,15 @@ body {
   background: var(--bg);
 }
 
+/* Configurar.tsx é mais alto que um login/registo normal (junta a loja e o
+   administrador num só ecrã) — centrar verticalmente corta o topo quando
+   não cabe no ecrã; alinhado ao topo com scroll fica sempre legível. */
+.login-shell--alto {
+  align-items: flex-start;
+  overflow-y: auto;
+  padding: 32px 16px;
+}
+
 .login-card {
   width: 340px;
   display: flex;
@@ -673,4 +682,92 @@ body {
 .login-botao:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Primeiro arranque (Configurar.tsx): mesma linguagem visual do login-card,
+   mas mais largo e com secções — junta tipo de negócio/nome/logótipo da
+   primeira loja com o utilizador/password do único administrador. */
+.config-card {
+  width: 480px;
+}
+
+.config-secao {
+  width: 100%;
+  margin: 18px 0 4px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  text-align: left;
+}
+
+.config-tipos {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.config-tipo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  text-align: left;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  background: var(--bg);
+  cursor: pointer;
+}
+
+.config-tipo-nome {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.config-tipo-desc {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+.config-tipo--ativo {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.config-logo-linha {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.config-logo-preview {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  object-fit: cover;
+  flex: none;
+}
+
+.config-logo-preview--vazio {
+  background: var(--border);
+}
+
+.config-logo-botao {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  background: none;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 7px 10px;
+  cursor: pointer;
 }

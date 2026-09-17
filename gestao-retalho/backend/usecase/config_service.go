@@ -60,6 +60,7 @@ type EstadoConfig struct {
 	Negocio       domain.Negocio
 	ModulosAtivos []domain.Modulo
 	Tema          domain.Tema
+	Logo          string // "" = sem logótipo (ver FinalizarWizardParams.Logo)
 }
 
 func (s *ConfigService) ObterEstado(ctx context.Context) (EstadoConfig, error) {
@@ -87,7 +88,7 @@ func (s *ConfigService) ObterEstado(ctx context.Context) (EstadoConfig, error) {
 		tema = domain.TemaAdmin
 	}
 
-	return EstadoConfig{Negocio: negocio, ModulosAtivos: modulos, Tema: tema}, nil
+	return EstadoConfig{Negocio: negocio, ModulosAtivos: modulos, Tema: tema, Logo: todas["logo"]}, nil
 }
 
 // FinalizarWizardParams junta os quatro passos do wizard (SDD 9.2) numa só
@@ -98,6 +99,7 @@ type FinalizarWizardParams struct {
 	TipoNegocio          domain.TipoNegocio
 	ModulosAtivos        []domain.Modulo // só usado quando TipoNegocio == Personalizado
 	ArmazemPrincipalNome string
+	Logo                 string // data URL opcional (ex: "data:image/png;base64,..."), "" = sem logótipo
 	AdminNome            string
 	AdminUsername        string
 	AdminPassword        string
@@ -141,6 +143,9 @@ func (s *ConfigService) FinalizarWizard(ctx context.Context, p FinalizarWizardPa
 	}
 	if err := s.configs.Definir(ctx, "tema", string(tema)); err != nil {
 		return fmt.Errorf("gravar tema: %w", err)
+	}
+	if err := s.configs.Definir(ctx, "logo", p.Logo); err != nil {
+		return fmt.Errorf("gravar logótipo: %w", err)
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(p.AdminPassword), bcrypt.DefaultCost)

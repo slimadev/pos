@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"gestao-retalho/backend/domain"
 	"gestao-retalho/backend/repository"
 )
 
@@ -54,6 +55,59 @@ func (a *AdminApp) CriarAdministrador(nome, username, password string) (SessaoAd
 	}
 	a.administradorAtualID = admin.ID
 	return SessaoAdministrador{ID: admin.ID, Nome: admin.Nome, Username: admin.Username}, nil
+}
+
+// ObterPresetsNegocio expõe a mesma tabela de presets que o wizard do
+// cmd/app usa (SDD 9.1) — sem sessão exigida, é só uma lista estática, e o
+// primeiro arranque do cmd/admin precisa dela antes de existir qualquer
+// administrador autenticado.
+func (a *AdminApp) ObterPresetsNegocio() []domain.PresetNegocio {
+	return domain.PresetsNegocio
+}
+
+// ConfigurarPrimeiroArranqueParams junta, num só ecrã, o que antes estava
+// dividido em dois arranques separados (o wizard de uma loja em cmd/app, o
+// "Configurar" do administrador em cmd/admin) — pedido explícito do
+// utilizador: tipo de negócio + nome + logótipo da primeira loja, e
+// user/pass do único administrador de todo o sistema.
+type ConfigurarPrimeiroArranqueParams struct {
+	NegocioNome   string
+	TipoNegocio   domain.TipoNegocio
+	Logo          string
+	AdminNome     string
+	AdminUsername string
+	AdminPassword string
+}
+
+// ConfigurarPrimeiroArranqueResultado devolve sempre a sessão do
+// administrador se este foi criado com sucesso — a criação da loja é
+// tratada como um passo separado que pode falhar sem invalidar o
+// administrador já criado (evita o "administrador já existe" confuso numa
+// nova tentativa só por a loja ter falhado). AvisoLoja fica vazio quando
+// tudo correu bem; se não, o frontend mostra o aviso mas continua para o
+// dashboard — a loja pode sempre ser adicionada depois em "Lojas".
+type ConfigurarPrimeiroArranqueResultado struct {
+	Sessao    SessaoAdministrador
+	AvisoLoja string
+}
+
+func (a *AdminApp) ConfigurarPrimeiroArranque(p ConfigurarPrimeiroArranqueParams) (ConfigurarPrimeiroArranqueResultado, error) {
+	sessao, err := a.CriarAdministrador(p.AdminNome, p.AdminUsername, p.AdminPassword)
+	if err != nil {
+		return ConfigurarPrimeiroArranqueResultado{}, err
+	}
+
+	resultado := ConfigurarPrimeiroArranqueResultado{Sessao: sessao}
+	if _, err := a.Lojas.CriarComWizard(a.ctx, CriarLojaWizardParams{
+		Nome:          p.NegocioNome,
+		TipoNegocio:   p.TipoNegocio,
+		Logo:          p.Logo,
+		AdminNome:     p.AdminNome,
+		AdminUsername: p.AdminUsername,
+	}); err != nil {
+		resultado.AvisoLoja = err.Error()
+	}
+	return resultado, nil
 }
 
 func (a *AdminApp) Login(username, password string) (SessaoAdministrador, error) {

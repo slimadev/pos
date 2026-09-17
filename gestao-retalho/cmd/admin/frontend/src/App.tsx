@@ -45,10 +45,11 @@ type Estado = { tipo: "a-carregar" } | { tipo: "configurar" } | { tipo: "login" 
 
 /**
  * Arranque do cmd/admin: admin.db vazio (primeiro arranque de sempre)
- * mostra "Configurar" (criar o único administrador de todo o sistema —
- * decisão pós-Fase 10, a pedido explícito); já configurado, pede sempre
- * login antes de mostrar o dashboard. As lojas (cmd/app) não têm login
- * nenhum — só este, aqui, é que existe.
+ * mostra "Configurar" — cria a primeira loja (tipo de negócio, nome,
+ * logótipo) e o único administrador de todo o sistema, tudo num só ecrã
+ * (Fase 10 addendum, a pedido explícito); já configurado, pede sempre
+ * login antes de mostrar o dashboard (o "Admin Geral"). As lojas (cmd/app)
+ * não têm login nenhum — só este, aqui, é que existe.
  */
 export default function App() {
   const [estado, setEstado] = useState<Estado>({ tipo: "a-carregar" });

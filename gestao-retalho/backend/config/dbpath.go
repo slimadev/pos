@@ -4,8 +4,10 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // DBPath is the filesystem path to a loja's SQLite database file.
@@ -80,6 +82,62 @@ func dataDir() (string, error) {
 		return "", err
 	}
 	return filepath.Join(base, appDirName), nil
+}
+
+// ResolveNovaLojaDBPath returns a fresh .db path for a loja created
+// directly from the admin's first-run setup (Fase 10 addendum) — one file
+// per loja in a "lojas" subfolder next to the admin's own data, named after
+// a slug of nome with a numeric suffix if that slug is already taken.
+func ResolveNovaLojaDBPath(nome string) (DBPath, error) {
+	base, err := os.UserConfigDir()
+	if err != nil {
+		return "", err
+	}
+	dir := filepath.Join(base, adminDirName, "lojas")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return "", err
+	}
+
+	slug := slugify(nome)
+	if slug == "" {
+		slug = "loja"
+	}
+	caminho := filepath.Join(dir, slug+".db")
+	for i := 2; ; i++ {
+		if _, err := os.Stat(caminho); os.IsNotExist(err) {
+			break
+		}
+		caminho = filepath.Join(dir, fmt.Sprintf("%s-%d.db", slug, i))
+	}
+	return DBPath(caminho), nil
+}
+
+var acentos = strings.NewReplacer(
+	"á", "a", "à", "a", "â", "a", "ã", "a", "ä", "a",
+	"é", "e", "è", "e", "ê", "e", "ë", "e",
+	"í", "i", "ì", "i", "î", "i", "ï", "i",
+	"ó", "o", "ò", "o", "ô", "o", "õ", "o", "ö", "o",
+	"ú", "u", "ù", "u", "û", "u", "ü", "u",
+	"ç", "c", "ñ", "n",
+)
+
+func slugify(s string) string {
+	s = acentos.Replace(strings.ToLower(strings.TrimSpace(s)))
+	var b strings.Builder
+	prevDash := false
+	for _, r := range s {
+		switch {
+		case r >= 'a' && r <= 'z' || r >= '0' && r <= '9':
+			b.WriteRune(r)
+			prevDash = false
+		default:
+			if !prevDash && b.Len() > 0 {
+				b.WriteRune('-')
+				prevDash = true
+			}
+		}
+	}
+	return strings.TrimRight(b.String(), "-")
 }
 
 // ResolveAdminDBPath returns the path to the admin executable's own
