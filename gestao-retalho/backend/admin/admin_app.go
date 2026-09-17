@@ -21,13 +21,14 @@ type AdminApp struct {
 	// explícito: um administrador para todas as lojas, não um por loja).
 	administradorAtualID int64
 
-	Lojas     *LojasService
-	Dashboard *DashboardService
-	Auth      *AuthService
+	Lojas      *LojasService
+	Dashboard  *DashboardService
+	Auth       *AuthService
+	Categorias *CategoriasService
 }
 
-func NewAdminApp(lojas *LojasService, dashboard *DashboardService, auth *AuthService) *AdminApp {
-	return &AdminApp{Lojas: lojas, Dashboard: dashboard, Auth: auth}
+func NewAdminApp(lojas *LojasService, dashboard *DashboardService, auth *AuthService, categorias *CategoriasService) *AdminApp {
+	return &AdminApp{Lojas: lojas, Dashboard: dashboard, Auth: auth, Categorias: categorias}
 }
 
 func (a *AdminApp) OnStartup(ctx context.Context) {
@@ -179,4 +180,24 @@ func (a *AdminApp) ObterDashboard() (Dashboard, error) {
 		return Dashboard{}, err
 	}
 	return a.Dashboard.ObterDashboard(a.ctx)
+}
+
+// --- Categorias, por loja -------------------------------------------------------
+//
+// Categorias são dado de negócio (vivem dentro da base da loja, nunca em
+// admin.db) — estes bindings só escolhem qual loja abrir a cada chamada,
+// tal como CriarLoja já valida uma loja ligando-se a ela (AbrirLoja).
+
+func (a *AdminApp) ListarCategoriasDaLoja(lojaID int64) ([]domain.Categoria, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Categorias.Listar(a.ctx, lojaID)
+}
+
+func (a *AdminApp) CriarCategoriaDaLoja(lojaID int64, c domain.Categoria) (domain.Categoria, error) {
+	if err := a.exigirSessao(); err != nil {
+		return domain.Categoria{}, err
+	}
+	return a.Categorias.Criar(a.ctx, lojaID, c)
 }

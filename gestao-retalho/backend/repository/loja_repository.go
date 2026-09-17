@@ -67,6 +67,13 @@ func (r *LojaRepository) ListarAtivas(ctx context.Context) ([]Loja, error) {
 	return out, rows.Err()
 }
 
+func (r *LojaRepository) Obter(ctx context.Context, id int64) (Loja, error) {
+	row := r.db.QueryRowContext(ctx,
+		`SELECT id, nome, caminho_db, ativo, criado_em FROM lojas WHERE id = ?`, id,
+	)
+	return scanLoja(row)
+}
+
 func (r *LojaRepository) Criar(ctx context.Context, nome, caminhoDB string) (Loja, error) {
 	row := r.db.QueryRowContext(ctx,
 		`INSERT INTO lojas (nome, caminho_db) VALUES (?, ?) RETURNING id, nome, caminho_db, ativo, criado_em`,

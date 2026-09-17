@@ -19,6 +19,7 @@ var Module = fx.Options(
 	fx.Provide(NewLojasService),
 	fx.Provide(NewDashboardService),
 	fx.Provide(NewAuthService),
+	fx.Provide(NewCategoriasService),
 
 	fx.Provide(NewAdminApp),
 )

@@ -3,6 +3,7 @@ import type { ComponentType, SVGProps } from "react";
 import {
   Squares2X2Icon,
   CubeIcon,
+  TagIcon,
   ClipboardDocumentListIcon,
   BuildingOffice2Icon,
   ArchiveBoxIcon,
@@ -19,8 +20,9 @@ import Configurar from "./Configurar";
 import Login from "./Login";
 import Dashboard from "./Dashboard";
 import LojasScreen from "./Lojas";
+import CategoriasScreen from "./Categorias";
 
-type Ecra = "dashboard" | "lojas" | "stub";
+type Ecra = "dashboard" | "lojas" | "categorias" | "stub";
 type IconeSvg = ComponentType<SVGProps<SVGSVGElement>>;
 
 // Ícones outline de uma biblioteca única e neutra (SDD 7.3: "Lucide/Feather"
@@ -30,6 +32,7 @@ type IconeSvg = ComponentType<SVGProps<SVGSVGElement>>;
 const NAV: { chave: Ecra; nome: string; Icone: IconeSvg; stub?: boolean }[] = [
   { chave: "dashboard", nome: "Dashboard", Icone: Squares2X2Icon },
   { chave: "stub", nome: "Produtos", Icone: CubeIcon, stub: true },
+  { chave: "categorias", nome: "Categorias", Icone: TagIcon },
   { chave: "stub", nome: "Fichas técnicas", Icone: ClipboardDocumentListIcon, stub: true },
   { chave: "stub", nome: "Armazéns", Icone: BuildingOffice2Icon, stub: true },
   { chave: "stub", nome: "Stock", Icone: ArchiveBoxIcon, stub: true },
@@ -75,12 +78,13 @@ export default function App() {
 }
 
 /**
- * Sidebar fiel à tela `1c` dos mocks aprovados (SDD 7.3/8.5, Fase 9). Só
- * "Dashboard" e "Lojas" têm ecrã real nesta fase: o resto da sidebar
- * existe por fidelidade visual ao mock, mas a gestão detalhada de
- * produtos/stock/vendas/etc. continua a acontecer no executável de cada
- * loja (cmd/app) — o admin foca-se na visão agregada (SDD 8.5: "visão
- * agregada primeiro") e no registo de lojas.
+ * Sidebar fiel à tela `1c` dos mocks aprovados (SDD 7.3/8.5, Fase 9), com
+ * "Categorias" adicionado fora do mock (Fase 10 addendum, a pedido
+ * explícito). "Dashboard", "Lojas" e "Categorias" têm ecrã real; o resto
+ * da sidebar existe por fidelidade visual ao mock, mas a gestão detalhada
+ * de produtos/stock/vendas/etc. continua a acontecer no executável de
+ * cada loja (cmd/app) — o admin foca-se na visão agregada (SDD 8.5:
+ * "visão agregada primeiro"), no registo de lojas e, agora, em categorias.
  */
 function AdminPrincipal({ onSair }: { onSair: () => void }) {
   const [ecra, setEcra] = useState<Ecra>("dashboard");
@@ -124,6 +128,7 @@ function AdminPrincipal({ onSair }: { onSair: () => void }) {
         )}
         {ecra === "dashboard" && <Dashboard onErro={setErro} />}
         {ecra === "lojas" && <LojasScreen onErro={setErro} />}
+        {ecra === "categorias" && <CategoriasScreen onErro={setErro} />}
         {ecra === "stub" && (
           <div className="admin-lojas-screen">
             <h2 style={{ margin: 0 }}>{stubNome}</h2>

@@ -13,7 +13,7 @@ func novoAdminAppTeste(t *testing.T) *admin.AdminApp {
 	repo := novoLojaRepositoryTeste(t)
 	administradores := novoAdministradorRepositoryTeste(t)
 	auth := admin.NewAuthService(administradores)
-	app := admin.NewAdminApp(admin.NewLojasService(repo), admin.NewDashboardService(repo), auth)
+	app := admin.NewAdminApp(admin.NewLojasService(repo), admin.NewDashboardService(repo), auth, admin.NewCategoriasService(repo))
 	app.OnStartup(context.Background())
 	return app
 }
