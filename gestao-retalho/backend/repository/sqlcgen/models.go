@@ -21,6 +21,7 @@ type Categorias struct {
 	NegocioID      int64         `json:"negocio_id"`
 	Nome           string        `json:"nome"`
 	CategoriaPaiID sql.NullInt64 `json:"categoria_pai_id"`
+	Ativo          int64         `json:"ativo"`
 }
 
 type Clientes struct {

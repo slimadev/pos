@@ -173,6 +173,18 @@ func (a *App) CriarCategoria(c domain.Categoria) (domain.Categoria, error) {
 	return a.CategoriaService.Criar(a.ctx, c)
 }
 
+func (a *App) AtualizarCategoria(c domain.Categoria) error {
+	return a.CategoriaService.Atualizar(a.ctx, c)
+}
+
+func (a *App) AtivarCategoria(id int64) error {
+	return a.CategoriaService.Ativar(a.ctx, id)
+}
+
+func (a *App) DesativarCategoria(id int64) error {
+	return a.CategoriaService.Desativar(a.ctx, id)
+}
+
 // --- Armazéns (SDD 4.3) ----------------------------------------------------
 
 func (a *App) ListarArmazens() ([]domain.Armazem, error) {

@@ -6,4 +6,5 @@ type Categoria struct {
 	NegocioID      int64
 	Nome           string
 	CategoriaPaiID *int64
+	Ativo          bool
 }

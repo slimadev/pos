@@ -11,6 +11,7 @@ import (
 
 type Querier interface {
 	AtualizarArmazem(ctx context.Context, arg AtualizarArmazemParams) error
+	AtualizarCategoria(ctx context.Context, arg AtualizarCategoriaParams) error
 	AtualizarCliente(ctx context.Context, arg AtualizarClienteParams) error
 	AtualizarDivida(ctx context.Context, arg AtualizarDividaParams) (Dividas, error)
 	AtualizarNegocio(ctx context.Context, arg AtualizarNegocioParams) (Negocios, error)
@@ -38,6 +39,7 @@ type Querier interface {
 	CriarUnidadeProduto(ctx context.Context, arg CriarUnidadeProdutoParams) (UnidadesProduto, error)
 	CriarVenda(ctx context.Context, arg CriarVendaParams) (Vendas, error)
 	DefinirArmazemAtivo(ctx context.Context, arg DefinirArmazemAtivoParams) error
+	DefinirCategoriaAtiva(ctx context.Context, arg DefinirCategoriaAtivaParams) error
 	DefinirClienteAtivo(ctx context.Context, arg DefinirClienteAtivoParams) error
 	DefinirConfiguracao(ctx context.Context, arg DefinirConfiguracaoParams) error
 	DefinirCustoMedioProdutoArmazem(ctx context.Context, arg DefinirCustoMedioProdutoArmazemParams) error

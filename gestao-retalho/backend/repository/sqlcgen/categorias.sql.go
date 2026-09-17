@@ -10,10 +10,25 @@ import (
 	"database/sql"
 )
 
+const atualizarCategoria = `-- name: AtualizarCategoria :exec
+UPDATE categorias SET nome = ?, categoria_pai_id = ? WHERE id = ?
+`
+
+type AtualizarCategoriaParams struct {
+	Nome           string        `json:"nome"`
+	CategoriaPaiID sql.NullInt64 `json:"categoria_pai_id"`
+	ID             int64         `json:"id"`
+}
+
+func (q *Queries) AtualizarCategoria(ctx context.Context, arg AtualizarCategoriaParams) error {
+	_, err := q.db.ExecContext(ctx, atualizarCategoria, arg.Nome, arg.CategoriaPaiID, arg.ID)
+	return err
+}
+
 const criarCategoria = `-- name: CriarCategoria :one
-INSERT INTO categorias (negocio_id, nome, categoria_pai_id)
-VALUES (?, ?, ?)
-RETURNING id, negocio_id, nome, categoria_pai_id
+INSERT INTO categorias (negocio_id, nome, categoria_pai_id, ativo)
+VALUES (?, ?, ?, 1)
+RETURNING id, negocio_id, nome, categoria_pai_id, ativo
 `
 
 type CriarCategoriaParams struct {
@@ -30,12 +45,27 @@ func (q *Queries) CriarCategoria(ctx context.Context, arg CriarCategoriaParams) 
 		&i.NegocioID,
 		&i.Nome,
 		&i.CategoriaPaiID,
+		&i.Ativo,
 	)
 	return i, err
 }
 
+const definirCategoriaAtiva = `-- name: DefinirCategoriaAtiva :exec
+UPDATE categorias SET ativo = ? WHERE id = ?
+`
+
+type DefinirCategoriaAtivaParams struct {
+	Ativo int64 `json:"ativo"`
+	ID    int64 `json:"id"`
+}
+
+func (q *Queries) DefinirCategoriaAtiva(ctx context.Context, arg DefinirCategoriaAtivaParams) error {
+	_, err := q.db.ExecContext(ctx, definirCategoriaAtiva, arg.Ativo, arg.ID)
+	return err
+}
+
 const listarCategorias = `-- name: ListarCategorias :many
-SELECT id, negocio_id, nome, categoria_pai_id
+SELECT id, negocio_id, nome, categoria_pai_id, ativo
 FROM categorias
 WHERE negocio_id = ?
 ORDER BY nome
@@ -55,6 +85,7 @@ func (q *Queries) ListarCategorias(ctx context.Context, negocioID int64) ([]Cate
 			&i.NegocioID,
 			&i.Nome,
 			&i.CategoriaPaiID,
+			&i.Ativo,
 		); err != nil {
 			return nil, err
 		}

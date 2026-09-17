@@ -201,3 +201,24 @@ func (a *AdminApp) CriarCategoriaDaLoja(lojaID int64, c domain.Categoria) (domai
 	}
 	return a.Categorias.Criar(a.ctx, lojaID, c)
 }
+
+func (a *AdminApp) AtualizarCategoriaDaLoja(lojaID int64, c domain.Categoria) error {
+	if err := a.exigirSessao(); err != nil {
+		return err
+	}
+	return a.Categorias.Atualizar(a.ctx, lojaID, c)
+}
+
+func (a *AdminApp) AtivarCategoriaDaLoja(lojaID, categoriaID int64) error {
+	if err := a.exigirSessao(); err != nil {
+		return err
+	}
+	return a.Categorias.DefinirAtiva(a.ctx, lojaID, categoriaID, true)
+}
+
+func (a *AdminApp) DesativarCategoriaDaLoja(lojaID, categoriaID int64) error {
+	if err := a.exigirSessao(); err != nil {
+		return err
+	}
+	return a.Categorias.DefinirAtiva(a.ctx, lojaID, categoriaID, false)
+}

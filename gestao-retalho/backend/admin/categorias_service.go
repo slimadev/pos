@@ -50,3 +50,36 @@ func (s *CategoriasService) Criar(ctx context.Context, lojaID int64, c domain.Ca
 
 	return app.CriarCategoria(c)
 }
+
+func (s *CategoriasService) Atualizar(ctx context.Context, lojaID int64, c domain.Categoria) error {
+	loja, err := s.lojas.Obter(ctx, lojaID)
+	if err != nil {
+		return fmt.Errorf("loja não encontrada: %w", err)
+	}
+
+	app, fechar, err := AbrirLoja(loja.CaminhoDB)
+	if err != nil {
+		return err
+	}
+	defer fechar()
+
+	return app.AtualizarCategoria(c)
+}
+
+func (s *CategoriasService) DefinirAtiva(ctx context.Context, lojaID, categoriaID int64, ativo bool) error {
+	loja, err := s.lojas.Obter(ctx, lojaID)
+	if err != nil {
+		return fmt.Errorf("loja não encontrada: %w", err)
+	}
+
+	app, fechar, err := AbrirLoja(loja.CaminhoDB)
+	if err != nil {
+		return err
+	}
+	defer fechar()
+
+	if ativo {
+		return app.AtivarCategoria(categoriaID)
+	}
+	return app.DesativarCategoria(categoriaID)
+}

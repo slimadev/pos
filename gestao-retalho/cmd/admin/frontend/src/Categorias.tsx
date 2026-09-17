@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { ListarLojas, ListarCategoriasDaLoja, CriarCategoriaDaLoja } from "../wailsjs/go/admin/AdminApp";
+import {
+  ListarLojas,
+  ListarCategoriasDaLoja,
+  CriarCategoriaDaLoja,
+  AtualizarCategoriaDaLoja,
+  AtivarCategoriaDaLoja,
+  DesativarCategoriaDaLoja,
+} from "../wailsjs/go/admin/AdminApp";
 import { domain, repository } from "../wailsjs/go/models";
 
 /**
@@ -61,9 +68,7 @@ export default function CategoriasScreen({ onErro }: { onErro: (e: string) => vo
 function CategoriasDaLoja({ lojaID, onErro }: { lojaID: number; onErro: (e: string) => void }) {
   const [categorias, setCategorias] = useState<domain.Categoria[]>([]);
   const [aCarregar, setACarregar] = useState(true);
-  const [nome, setNome] = useState("");
-  const [categoriaPaiId, setCategoriaPaiId] = useState<number | "">("");
-  const [aGuardar, setAGuardar] = useState(false);
+  const [emEdicao, setEmEdicao] = useState<domain.Categoria | null>(null);
 
   function carregar() {
     ListarCategoriasDaLoja(lojaID)
@@ -77,21 +82,9 @@ function CategoriasDaLoja({ lojaID, onErro }: { lojaID: number; onErro: (e: stri
 
   const nomeCategoria = (id: number) => categorias.find((c) => c.ID === id)?.Nome ?? `#${id}`;
 
-  function criar() {
-    if (!nome.trim()) return;
-    const c = new domain.Categoria();
-    c.Nome = nome.trim();
-    c.CategoriaPaiID = categoriaPaiId === "" ? undefined : Number(categoriaPaiId);
-
-    setAGuardar(true);
-    CriarCategoriaDaLoja(lojaID, c)
-      .then(() => {
-        setNome("");
-        setCategoriaPaiId("");
-        carregar();
-      })
-      .catch((e) => onErro(String(e)))
-      .finally(() => setAGuardar(false));
+  function alternarAtivo(c: domain.Categoria) {
+    const acao = c.Ativo ? DesativarCategoriaDaLoja(lojaID, c.ID) : AtivarCategoriaDaLoja(lojaID, c.ID);
+    acao.then(carregar).catch((e) => onErro(String(e)));
   }
 
   return (
@@ -101,6 +94,8 @@ function CategoriasDaLoja({ lojaID, onErro }: { lojaID: number; onErro: (e: stri
           <tr>
             <th>Nome</th>
             <th>Categoria-mãe</th>
+            <th>Ativa</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -108,33 +103,99 @@ function CategoriasDaLoja({ lojaID, onErro }: { lojaID: number; onErro: (e: stri
             <tr key={c.ID}>
               <td>{c.Nome}</td>
               <td>{c.CategoriaPaiID != null ? nomeCategoria(c.CategoriaPaiID) : "—"}</td>
+              <td>{c.Ativo ? "sim" : "não"}</td>
+              <td className="admin-form">
+                <button className="admin-btn-secundario" onClick={() => setEmEdicao(c)}>
+                  Editar
+                </button>
+                <button className="admin-btn-secundario" onClick={() => alternarAtivo(c)}>
+                  {c.Ativo ? "Desativar" : "Ativar"}
+                </button>
+              </td>
             </tr>
           ))}
           {categorias.length === 0 && (
             <tr>
-              <td colSpan={2}>{aCarregar ? "A carregar…" : "Sem categorias — crie uma abaixo."}</td>
+              <td colSpan={4}>{aCarregar ? "A carregar…" : "Sem categorias — crie uma abaixo."}</td>
             </tr>
           )}
         </tbody>
       </table>
 
-      <div className="admin-form">
-        <input placeholder="Nome da categoria" value={nome} onChange={(e) => setNome(e.target.value)} />
-        <select
-          value={categoriaPaiId}
-          onChange={(e) => setCategoriaPaiId(e.target.value ? Number(e.target.value) : "")}
-        >
-          <option value="">Sem categoria-mãe</option>
-          {categorias.map((c) => (
+      <CategoriaForm
+        key={emEdicao?.ID ?? "nova"}
+        lojaID={lojaID}
+        categoria={emEdicao}
+        categorias={categorias}
+        onGuardado={() => {
+          setEmEdicao(null);
+          carregar();
+        }}
+        onCancelar={() => setEmEdicao(null)}
+        onErro={onErro}
+      />
+    </>
+  );
+}
+
+function CategoriaForm({
+  lojaID,
+  categoria,
+  categorias,
+  onGuardado,
+  onCancelar,
+  onErro,
+}: {
+  lojaID: number;
+  categoria: domain.Categoria | null;
+  categorias: domain.Categoria[];
+  onGuardado: () => void;
+  onCancelar: () => void;
+  onErro: (e: string) => void;
+}) {
+  const [nome, setNome] = useState(categoria?.Nome ?? "");
+  const [categoriaPaiId, setCategoriaPaiId] = useState<number | "">(categoria?.CategoriaPaiID ?? "");
+  const [aGuardar, setAGuardar] = useState(false);
+
+  function guardar() {
+    if (!nome.trim()) return;
+    const c = new domain.Categoria();
+    c.ID = categoria?.ID ?? 0;
+    c.Nome = nome.trim();
+    c.CategoriaPaiID = categoriaPaiId === "" ? undefined : Number(categoriaPaiId);
+
+    setAGuardar(true);
+    const pedido = categoria ? AtualizarCategoriaDaLoja(lojaID, c) : CriarCategoriaDaLoja(lojaID, c);
+    pedido
+      .then(onGuardado)
+      .catch((e) => onErro(String(e)))
+      .finally(() => setAGuardar(false));
+  }
+
+  return (
+    <div className="admin-form">
+      <input placeholder="Nome da categoria" value={nome} onChange={(e) => setNome(e.target.value)} />
+      <select
+        value={categoriaPaiId}
+        onChange={(e) => setCategoriaPaiId(e.target.value ? Number(e.target.value) : "")}
+      >
+        <option value="">Sem categoria-mãe</option>
+        {categorias
+          .filter((c) => c.ID !== categoria?.ID)
+          .map((c) => (
             <option key={c.ID} value={c.ID}>
               {c.Nome}
             </option>
           ))}
-        </select>
-        <button className="admin-btn" disabled={!nome.trim() || aGuardar} onClick={criar}>
-          {aGuardar ? "A guardar…" : "+ Criar categoria"}
+      </select>
+      <button className="admin-btn" disabled={!nome.trim() || aGuardar} onClick={guardar}>
+        {aGuardar ? "A guardar…" : categoria ? "Guardar alterações" : "+ Criar categoria"}
+      </button>
+      {categoria && (
+        <button className="admin-btn-secundario" onClick={onCancelar}>
+          Cancelar
         </button>
-      </div>
-    </>
+      )}
+    </div>
   );
 }

@@ -40,11 +40,27 @@ func (r *CategoriaRepository) Criar(ctx context.Context, c domain.Categoria) (do
 	return categoriaFromRow(row), nil
 }
 
+func (r *CategoriaRepository) Atualizar(ctx context.Context, c domain.Categoria) error {
+	return r.q.AtualizarCategoria(ctx, sqlcgen.AtualizarCategoriaParams{
+		Nome:           c.Nome,
+		CategoriaPaiID: ptrToNullInt64(c.CategoriaPaiID),
+		ID:             c.ID,
+	})
+}
+
+func (r *CategoriaRepository) DefinirAtiva(ctx context.Context, id int64, ativo bool) error {
+	return r.q.DefinirCategoriaAtiva(ctx, sqlcgen.DefinirCategoriaAtivaParams{
+		Ativo: boolToInt64(ativo),
+		ID:    id,
+	})
+}
+
 func categoriaFromRow(row sqlcgen.Categorias) domain.Categoria {
 	return domain.Categoria{
 		ID:             row.ID,
 		NegocioID:      row.NegocioID,
 		Nome:           row.Nome,
 		CategoriaPaiID: nullInt64ToPtr(row.CategoriaPaiID),
+		Ativo:          int64ToBool(row.Ativo),
 	}
 }

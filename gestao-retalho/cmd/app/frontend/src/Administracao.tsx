@@ -22,6 +22,9 @@ import {
   DesativarProduto,
   ListarCategorias,
   CriarCategoria,
+  AtualizarCategoria,
+  AtivarCategoria,
+  DesativarCategoria,
   ObterStock,
   RegistarEntradaStock,
   TransferirStock,
@@ -222,20 +225,12 @@ function CategoriasSection({
   onChange: () => void;
   onErro: (e: string) => void;
 }) {
-  const [nome, setNome] = useState("");
-  const [categoriaPaiId, setCategoriaPaiId] = useState<number | "">("");
+  const [emEdicao, setEmEdicao] = useState<domain.Categoria | null>(null);
 
   const nomeCategoria = (id: number) => categorias.find((c) => c.ID === id)?.Nome ?? `#${id}`;
 
-  function criar() {
-    const c = new domain.Categoria();
-    c.Nome = nome;
-    c.CategoriaPaiID = categoriaPaiId === "" ? undefined : Number(categoriaPaiId);
-    run(() => CriarCategoria(c), onErro, () => {
-      setNome("");
-      setCategoriaPaiId("");
-      onChange();
-    });
+  function alternarAtivo(c: domain.Categoria) {
+    run(() => (c.Ativo ? DesativarCategoria(c.ID) : AtivarCategoria(c.ID)), onErro, onChange);
   }
 
   return (
@@ -246,6 +241,8 @@ function CategoriasSection({
           <tr>
             <th>Nome</th>
             <th>Categoria-mãe</th>
+            <th>Ativo</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -253,30 +250,78 @@ function CategoriasSection({
             <tr key={c.ID}>
               <td>{c.Nome}</td>
               <td>{c.CategoriaPaiID != null ? nomeCategoria(c.CategoriaPaiID) : "—"}</td>
+              <td>{c.Ativo ? "sim" : "não"}</td>
+              <td>
+                <button onClick={() => setEmEdicao(c)}>Editar</button>{" "}
+                <button onClick={() => alternarAtivo(c)}>{c.Ativo ? "Desativar" : "Ativar"}</button>
+              </td>
             </tr>
           ))}
           {categorias.length === 0 && (
             <tr>
-              <td colSpan={2}>Sem categorias — crie uma abaixo.</td>
+              <td colSpan={4}>Sem categorias — crie uma abaixo.</td>
             </tr>
           )}
         </tbody>
       </table>
-      <div className="fase1-form">
-        <input placeholder="Nome da categoria" value={nome} onChange={(e) => setNome(e.target.value)} />
-        <select value={categoriaPaiId} onChange={(e) => setCategoriaPaiId(e.target.value ? Number(e.target.value) : "")}>
-          <option value="">Sem categoria-mãe</option>
-          {categorias.map((c) => (
+      <CategoriaForm
+        key={emEdicao?.ID ?? "nova"}
+        categoria={emEdicao}
+        categorias={categorias}
+        onGuardado={() => {
+          setEmEdicao(null);
+          onChange();
+        }}
+        onCancelar={() => setEmEdicao(null)}
+        onErro={onErro}
+      />
+    </section>
+  );
+}
+
+function CategoriaForm({
+  categoria,
+  categorias,
+  onGuardado,
+  onCancelar,
+  onErro,
+}: {
+  categoria: domain.Categoria | null;
+  categorias: domain.Categoria[];
+  onGuardado: () => void;
+  onCancelar: () => void;
+  onErro: (e: string) => void;
+}) {
+  const [nome, setNome] = useState(categoria?.Nome ?? "");
+  const [categoriaPaiId, setCategoriaPaiId] = useState<number | "">(categoria?.CategoriaPaiID ?? "");
+
+  function guardar() {
+    const c = new domain.Categoria();
+    c.ID = categoria?.ID ?? 0;
+    c.Nome = nome;
+    c.CategoriaPaiID = categoriaPaiId === "" ? undefined : Number(categoriaPaiId);
+    const pedido = categoria ? AtualizarCategoria(c) : CriarCategoria(c);
+    run(() => pedido, onErro, onGuardado);
+  }
+
+  return (
+    <div className="fase1-form">
+      <input placeholder="Nome da categoria" value={nome} onChange={(e) => setNome(e.target.value)} />
+      <select value={categoriaPaiId} onChange={(e) => setCategoriaPaiId(e.target.value ? Number(e.target.value) : "")}>
+        <option value="">Sem categoria-mãe</option>
+        {categorias
+          .filter((c) => c.ID !== categoria?.ID)
+          .map((c) => (
             <option key={c.ID} value={c.ID}>
               {c.Nome}
             </option>
           ))}
-        </select>
-        <button disabled={!nome} onClick={criar}>
-          + Criar categoria
-        </button>
-      </div>
-    </section>
+      </select>
+      <button disabled={!nome} onClick={guardar}>
+        {categoria ? "Guardar alterações" : "+ Criar categoria"}
+      </button>
+      {categoria && <button onClick={onCancelar}>Cancelar</button>}
+    </div>
   );
 }
 
