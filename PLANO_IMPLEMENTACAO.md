@@ -275,7 +275,28 @@ Testado: `admin.AuthService` com 6 testes (configurar antes de existir administr
 
 ---
 
+## 8.7. Addendum (pós-Fase 10) — Categorias: registo, edição, (des)ativação; cmd/admin volta a servir uma só loja
+
+Três pedidos explícitos seguidos, o último a reverter parte do desenho do segundo:
+
+**1. "Implemente o registo de categorias no admin"** — `Categorias` era um item de sidebar do `cmd/admin` sem ecrã nenhum (fidelidade visual ao mock `1c`, sem gestão). Ganhou CRUD real: `admin.CategoriasService` resolve a loja a gerir, abre a ligação (`AbrirLoja`) e delega no mesmo `CategoriaService`/`CategoriaRepository` que o `cmd/app` já usava — categorias continuam dado de negócio, nunca copiadas para `admin.db`.
+
+**2. "Não tem como alterar ou inativar categoria depois de salvar"** — categorias só tinham `Listar`/`Criar`; as outras tabelas de cadastro (armazéns, produtos, clientes) já tinham `ativo` desde a migration inicial (000001), categorias ficou por fazer e nunca teve `Atualizar`. Migration 000007 (`ALTER TABLE categorias ADD COLUMN ativo`, default 1) + `AtualizarCategoria`/`DefinirCategoriaAtiva` no sqlc, no `CategoriaRepository`/`CategoriaService`/`api.App` (mesmo padrão do `ArmazemRepository`/`ArmazemService`) e nos bindings do `admin.CategoriasService`/`AdminApp`. Frontend (`CategoriasSection` em `cmd/app`, `Categorias.tsx` em `cmd/admin`): coluna "Ativo" + botões Editar/Ativar/Desativar — "Editar" reaproveita o formulário de criar (`key={categoria?.ID ?? "nova"}` força remonte ao trocar de categoria em edição, mesmo truque já usado em `Lojas.tsx`).
+
+**3. "Remove a criação de loja no admin porque esse deve funcionar apenas para uma [loja], com que pode ter armazéns. [...] o admin deve ter a cor de tipo de loja setado"** — reverte o desenho multi-loja da Fase 9 (ver secção 10 abaixo): o `cmd/admin` passa a servir sempre a mesma e única loja, criada uma vez em "Configurar" (addendum 8.6, extensão), nunca trocada depois. Confirmado por pergunta direta que o alcance incluía remover "Lojas" da sidebar por completo e simplificar o Dashboard (não só tirar o botão de criar):
+- `repository.LojaRepository` perdeu `Listar`/`ListarAtivas`/`Obter(id)`/`Atualizar`/`DefinirAtiva` (só serviam o CRUD multi-loja removido); ganhou `ObterUnica` — a tabela nunca tem mais do que uma linha.
+- `admin.LojasService` perdeu tudo exceto `CriarComWizard` (a única forma de criar a loja, sempre a partir de "Configurar"); ganhou `ObterAtual` (nome/tipo/tema da loja).
+- `admin.CategoriasService`/`AdminApp`: os bindings de categoria deixaram de receber `lojaID` — resolvem sempre a loja única internamente.
+- `admin.DashboardService`: reescrito de agregação multi-loja (cartões por loja, série por tipo de negócio agrupada, "% do grupo") para os KPIs/alertas/série de 14 dias de uma loja só; `Dashboard.TemLoja` cobre o estado "ainda sem loja configurada" (ex: se `CriarComWizard` falhou no primeiro arranque e ninguém a registou manualmente entretanto — já não há "Lojas" para o fazer).
+- Cor da app pelo tipo de negócio: `AdminApp.ObterLojaAtual()` novo, chamado uma vez ao entrar em `AdminPrincipal`; `data-tipo-negocio` no `<html>`, `--accent`/`--accent-hover`/`--accent-bg` remapeados por tipo em `App.css`, reaproveitando as cores já auditadas (WCAG, Fase 10) em vez de inventar tons novos — "personalizado" fica no azul neutro genérico. A sidebar mostra o nome real da loja + tag do tipo em vez de "Administração" genérico.
+
+Testado: suites de `lojas`/`categorias`/`dashboard` em `backend/admin` reescritas para o novo desenho (`TemLoja=false` sem loja, loja offline devolve erro em vez de silenciar) — 21 testes a passar; `CategoriaService` em `backend/usecase` ganhou 4 testes (`Atualizar` exige nome e renomeia, `Ativar`/`Desativar`). Confirmado ponta a ponta na base de dev real (Ferragem Cossa): login, sidebar e nav ativa já na cor laranja do tema, Categorias a carregar direto sem seletor de loja nenhum, "Editar"/"Desativar" a funcionar com dados reais — via `xdotool type` diretamente sobre o campo já focado (sem clicar antes num campo por coordenadas, que continua pouco fiável neste WebKitGTK).
+
+---
+
 ## 10. Fase 9 — Admin universal multi-loja — tela `1c`
+
+> **Nota (addendum 8.7):** o desenho multi-loja desta fase — registo de várias lojas, dashboard agregado com cartões por loja e comparação entre negócios — foi revertido a pedido explícito do utilizador depois da Fase 10. Esta secção fica como registo histórico da implementação original; o estado atual está descrito no addendum 8.7 acima.
 
 - `cmd/admin/main.go`: mesmo `CoreModule`, mas injeta lista de `DBPath` (uma por loja) em vez de uma única conexão (secção 8.5 do SDD).
 - Repositórios/serviços do admin operam sobre múltiplas conexões SQLite simultâneas, agregando nos relatórios comparativos.
