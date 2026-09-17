@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"gestao-retalho/backend/domain"
-	"gestao-retalho/backend/repository"
 )
 
 // AdminApp é o struct que o Wails liga ao frontend de cmd/admin — mesmo
@@ -86,7 +85,7 @@ type ConfigurarPrimeiroArranqueParams struct {
 // administrador já criado (evita o "administrador já existe" confuso numa
 // nova tentativa só por a loja ter falhado). AvisoLoja fica vazio quando
 // tudo correu bem; se não, o frontend mostra o aviso mas continua para o
-// dashboard — a loja pode sempre ser adicionada depois em "Lojas".
+// dashboard, que fica vazio até a loja ficar configurada.
 type ConfigurarPrimeiroArranqueResultado struct {
 	Sessao    SessaoAdministrador
 	AvisoLoja string
@@ -134,45 +133,21 @@ func (a *AdminApp) exigirSessao() error {
 	return nil
 }
 
-// --- Lojas / dashboard ---------------------------------------------------------
+// --- Loja / dashboard ---------------------------------------------------------
 //
 // Ao contrário do cmd/app (onde utilizador_id só serve para atribuição em
 // auditoria, nunca bloqueia nada), aqui a sessão é mesmo um controlo de
-// acesso: sem login, nenhuma destas chamadas expõe dados de lojas nenhumas.
+// acesso: sem login, nenhuma destas chamadas expõe dados da loja nenhuns.
 
-func (a *AdminApp) ListarLojas() ([]repository.Loja, error) {
+// ObterLojaAtual identifica a única loja que este cmd/admin serve — o
+// frontend usa isto para mostrar o nome real (em vez de "Administração"
+// genérico) e para colorir a app inteira com a cor do tipo de negócio
+// (decisão pós-Fase 10, a pedido explícito).
+func (a *AdminApp) ObterLojaAtual() (LojaAtual, error) {
 	if err := a.exigirSessao(); err != nil {
-		return nil, err
+		return LojaAtual{}, err
 	}
-	return a.Lojas.Listar(a.ctx)
-}
-
-func (a *AdminApp) CriarLoja(nome, caminhoDB string) (repository.Loja, error) {
-	if err := a.exigirSessao(); err != nil {
-		return repository.Loja{}, err
-	}
-	return a.Lojas.Criar(a.ctx, nome, caminhoDB)
-}
-
-func (a *AdminApp) AtualizarLoja(id int64, nome, caminhoDB string) error {
-	if err := a.exigirSessao(); err != nil {
-		return err
-	}
-	return a.Lojas.Atualizar(a.ctx, id, nome, caminhoDB)
-}
-
-func (a *AdminApp) AtivarLoja(id int64) error {
-	if err := a.exigirSessao(); err != nil {
-		return err
-	}
-	return a.Lojas.Ativar(a.ctx, id)
-}
-
-func (a *AdminApp) DesativarLoja(id int64) error {
-	if err := a.exigirSessao(); err != nil {
-		return err
-	}
-	return a.Lojas.Desativar(a.ctx, id)
+	return a.Lojas.ObterAtual(a.ctx)
 }
 
 func (a *AdminApp) ObterDashboard() (Dashboard, error) {
@@ -182,43 +157,43 @@ func (a *AdminApp) ObterDashboard() (Dashboard, error) {
 	return a.Dashboard.ObterDashboard(a.ctx)
 }
 
-// --- Categorias, por loja -------------------------------------------------------
+// --- Categorias ------------------------------------------------------------
 //
 // Categorias são dado de negócio (vivem dentro da base da loja, nunca em
-// admin.db) — estes bindings só escolhem qual loja abrir a cada chamada,
-// tal como CriarLoja já valida uma loja ligando-se a ela (AbrirLoja).
+// admin.db) — estes bindings só abrem a ligação à única loja a cada
+// chamada, nunca mantêm uma ligação persistente (ver AbrirLoja).
 
-func (a *AdminApp) ListarCategoriasDaLoja(lojaID int64) ([]domain.Categoria, error) {
+func (a *AdminApp) ListarCategorias() ([]domain.Categoria, error) {
 	if err := a.exigirSessao(); err != nil {
 		return nil, err
 	}
-	return a.Categorias.Listar(a.ctx, lojaID)
+	return a.Categorias.Listar(a.ctx)
 }
 
-func (a *AdminApp) CriarCategoriaDaLoja(lojaID int64, c domain.Categoria) (domain.Categoria, error) {
+func (a *AdminApp) CriarCategoria(c domain.Categoria) (domain.Categoria, error) {
 	if err := a.exigirSessao(); err != nil {
 		return domain.Categoria{}, err
 	}
-	return a.Categorias.Criar(a.ctx, lojaID, c)
+	return a.Categorias.Criar(a.ctx, c)
 }
 
-func (a *AdminApp) AtualizarCategoriaDaLoja(lojaID int64, c domain.Categoria) error {
+func (a *AdminApp) AtualizarCategoria(c domain.Categoria) error {
 	if err := a.exigirSessao(); err != nil {
 		return err
 	}
-	return a.Categorias.Atualizar(a.ctx, lojaID, c)
+	return a.Categorias.Atualizar(a.ctx, c)
 }
 
-func (a *AdminApp) AtivarCategoriaDaLoja(lojaID, categoriaID int64) error {
+func (a *AdminApp) AtivarCategoria(categoriaID int64) error {
 	if err := a.exigirSessao(); err != nil {
 		return err
 	}
-	return a.Categorias.DefinirAtiva(a.ctx, lojaID, categoriaID, true)
+	return a.Categorias.DefinirAtiva(a.ctx, categoriaID, true)
 }
 
-func (a *AdminApp) DesativarCategoriaDaLoja(lojaID, categoriaID int64) error {
+func (a *AdminApp) DesativarCategoria(categoriaID int64) error {
 	if err := a.exigirSessao(); err != nil {
 		return err
 	}
-	return a.Categorias.DefinirAtiva(a.ctx, lojaID, categoriaID, false)
+	return a.Categorias.DefinirAtiva(a.ctx, categoriaID, false)
 }

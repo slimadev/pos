@@ -12,17 +12,15 @@ import {
   UserGroupIcon,
   ChartBarIcon,
   UserCircleIcon,
-  BuildingStorefrontIcon,
   ArrowRightStartOnRectangleIcon,
 } from "@heroicons/react/24/outline";
-import { PrecisaConfigurarAdmin, Logout } from "../wailsjs/go/admin/AdminApp";
+import { PrecisaConfigurarAdmin, Logout, ObterLojaAtual } from "../wailsjs/go/admin/AdminApp";
 import Configurar from "./Configurar";
 import Login from "./Login";
 import Dashboard from "./Dashboard";
-import LojasScreen from "./Lojas";
 import CategoriasScreen from "./Categorias";
 
-type Ecra = "dashboard" | "lojas" | "categorias" | "stub";
+type Ecra = "dashboard" | "categorias" | "stub";
 type IconeSvg = ComponentType<SVGProps<SVGSVGElement>>;
 
 // Ícones outline de uma biblioteca única e neutra (SDD 7.3: "Lucide/Feather"
@@ -41,18 +39,19 @@ const NAV: { chave: Ecra; nome: string; Icone: IconeSvg; stub?: boolean }[] = [
   { chave: "stub", nome: "Clientes e dívidas", Icone: UserGroupIcon, stub: true },
   { chave: "stub", nome: "Relatórios", Icone: ChartBarIcon, stub: true },
   { chave: "stub", nome: "Utilizadores", Icone: UserCircleIcon, stub: true },
-  { chave: "lojas", nome: "Lojas", Icone: BuildingStorefrontIcon },
 ];
 
 type Estado = { tipo: "a-carregar" } | { tipo: "configurar" } | { tipo: "login" } | { tipo: "pronto" };
 
 /**
  * Arranque do cmd/admin: admin.db vazio (primeiro arranque de sempre)
- * mostra "Configurar" — cria a primeira loja (tipo de negócio, nome,
- * logótipo) e o único administrador de todo o sistema, tudo num só ecrã
- * (Fase 10 addendum, a pedido explícito); já configurado, pede sempre
- * login antes de mostrar o dashboard (o "Admin Geral"). As lojas (cmd/app)
- * não têm login nenhum — só este, aqui, é que existe.
+ * mostra "Configurar" — cria a única loja que este cmd/admin serve (tipo
+ * de negócio, nome, logótipo) e o único administrador de todo o sistema,
+ * tudo num só ecrã (Fase 10 addendum, a pedido explícito); já configurado,
+ * pede sempre login antes de mostrar o dashboard (o "Admin Geral"). A loja
+ * (cmd/app) não tem login nenhum — só este, aqui, é que existe. Um
+ * administrador serve sempre exatamente uma loja (que pode ter vários
+ * armazéns internamente) — não há registo de várias lojas separadas.
  */
 export default function App() {
   const [estado, setEstado] = useState<Estado>({ tipo: "a-carregar" });
@@ -80,23 +79,42 @@ export default function App() {
 /**
  * Sidebar fiel à tela `1c` dos mocks aprovados (SDD 7.3/8.5, Fase 9), com
  * "Categorias" adicionado fora do mock (Fase 10 addendum, a pedido
- * explícito). "Dashboard", "Lojas" e "Categorias" têm ecrã real; o resto
- * da sidebar existe por fidelidade visual ao mock, mas a gestão detalhada
- * de produtos/stock/vendas/etc. continua a acontecer no executável de
- * cada loja (cmd/app) — o admin foca-se na visão agregada (SDD 8.5:
- * "visão agregada primeiro"), no registo de lojas e, agora, em categorias.
+ * explícito) e "Lojas" removido (também a pedido explícito — deixou de
+ * fazer sentido um registo de várias lojas quando cada cmd/admin serve
+ * sempre uma só). "Dashboard" e "Categorias" têm ecrã real; o resto da
+ * sidebar existe por fidelidade visual ao mock, mas a gestão detalhada de
+ * produtos/stock/vendas/etc. continua a acontecer no executável da loja
+ * (cmd/app) — o admin foca-se na visão agregada (SDD 8.5) e, agora, em
+ * categorias.
  */
 function AdminPrincipal({ onSair }: { onSair: () => void }) {
   const [ecra, setEcra] = useState<Ecra>("dashboard");
   const [stubNome, setStubNome] = useState("");
   const [erro, setErro] = useState<string | null>(null);
+  const [loja, setLoja] = useState<{ Nome: string; TipoNegocio: string } | null>(null);
+
+  useEffect(() => {
+    ObterLojaAtual()
+      .then((l) => {
+        setLoja(l);
+        document.documentElement.setAttribute("data-tipo-negocio", l.TipoNegocio);
+      })
+      .catch(() => {
+        // Sem loja configurada ainda (ex: a criação falhou no primeiro
+        // arranque) — fica com a marca/cor genéricas, não bloqueia o resto
+        // da app; o Dashboard mostra o aviso específico para este caso.
+      });
+  }, []);
 
   return (
     <div className="admin-shell">
       <aside className="admin-sidebar">
         <div className="admin-sidebar-brand">
           <div className="admin-sidebar-brand-mark" />
-          <div className="admin-sidebar-brand-nome">Administração</div>
+          <div>
+            <div className="admin-sidebar-brand-nome">{loja?.Nome ?? "Administração"}</div>
+            {loja && <div className="admin-sidebar-brand-tag">{loja.TipoNegocio}</div>}
+          </div>
         </div>
         <nav className="admin-sidebar-nav">
           {NAV.map((item) => (
@@ -127,15 +145,13 @@ function AdminPrincipal({ onSair }: { onSair: () => void }) {
           </div>
         )}
         {ecra === "dashboard" && <Dashboard onErro={setErro} />}
-        {ecra === "lojas" && <LojasScreen onErro={setErro} />}
         {ecra === "categorias" && <CategoriasScreen onErro={setErro} />}
         {ecra === "stub" && (
           <div className="admin-lojas-screen">
             <h2 style={{ margin: 0 }}>{stubNome}</h2>
             <p style={{ color: "var(--text-secondary)", maxWidth: 520 }}>
-              Esta secção gere-se a partir do executável de cada loja — abre a app da loja para gestão
-              detalhada de {stubNome.toLowerCase()}. O admin universal foca-se na visão agregada
-              (Dashboard) e no registo de lojas (Lojas).
+              Esta secção gere-se a partir do executável da loja — abre a app da loja para gestão detalhada de{" "}
+              {stubNome.toLowerCase()}. O admin foca-se na visão agregada (Dashboard) e, agora, em categorias.
             </p>
           </div>
         )}

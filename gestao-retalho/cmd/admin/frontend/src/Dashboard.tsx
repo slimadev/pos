@@ -9,19 +9,6 @@ import {
 import { ObterDashboard } from "../wailsjs/go/admin/AdminApp";
 import { admin } from "../wailsjs/go/models";
 
-type CoresTipo = { barra: string; bg: string; texto: string; nome: string };
-
-const CORES: Record<string, CoresTipo> = {
-  bottlestore: { barra: "var(--bottlestore)", bg: "var(--bottlestore-bg)", texto: "var(--bottlestore-text)", nome: "Bottlestore" },
-  ferragem: { barra: "var(--ferragem)", bg: "var(--ferragem-bg)", texto: "var(--ferragem-text)", nome: "Ferragem" },
-  mercearia: { barra: "var(--mercearia)", bg: "var(--mercearia-bg)", texto: "var(--mercearia-text)", nome: "Mercearia" },
-  farmacia: { barra: "var(--farmacia)", bg: "var(--farmacia-bg)", texto: "var(--farmacia-text)", nome: "Farmácia" },
-};
-
-function coresDoTipo(tipo: string): CoresTipo {
-  return CORES[tipo] ?? { barra: "var(--personalizado)", bg: "var(--personalizado-bg)", texto: "var(--personalizado-text)", nome: tipo || "—" };
-}
-
 const mt = (n: number) => `${Math.round(n).toLocaleString("pt-PT")} MT`;
 
 function formatarDia(dia: string): string {
@@ -30,12 +17,10 @@ function formatarDia(dia: string): string {
 }
 
 /**
- * Dashboard multi-loja (SDD 7.3/8.5, tela `1c`, Fase 9) — KPIs do grupo,
- * gráfico de barras empilhadas "vendas por loja, últimos 14 dias"
- * (agrupado por tipo de negócio para bater com a legenda do mock), cartões
- * por loja com tag de tipo colorida, painel de alertas e "mais vendidos
- * hoje". "Comparativo entre negócios" (SDD 6) é este próprio ecrã — não há
- * um relatório à parte para isso.
+ * Dashboard da única loja que este cmd/admin serve (decisão pós-Fase 10, a
+ * pedido explícito) — KPIs do dia, gráfico "vendas, últimos 14 dias",
+ * painel de alertas e "mais vendidos hoje". Sem cartões por loja nem
+ * comparação entre negócios — só existe uma loja.
  */
 export default function Dashboard({ onErro }: { onErro: (e: string) => void }) {
   const [d, setD] = useState<admin.Dashboard | null>(null);
@@ -64,10 +49,17 @@ export default function Dashboard({ onErro }: { onErro: (e: string) => void }) {
     );
   }
 
-  const maxDiaTotal = Math.max(
-    1,
-    ...d.SerieVendasPorLoja.map((p) => Object.values(p.PorTipo).reduce((acc, v) => acc + v, 0)),
-  );
+  if (!d.TemLoja) {
+    return (
+      <div className="admin-content">
+        <p style={{ color: "var(--text-secondary)", maxWidth: 480 }}>
+          Nenhuma loja configurada ainda — conclua o assistente de configuração para começar a ver dados aqui.
+        </p>
+      </div>
+    );
+  }
+
+  const maxDiaTotal = Math.max(1, ...d.SerieVendas14Dias.map((p) => p.Total));
   const maxVendido = Math.max(1, ...d.MaisVendidosHoje.map((i) => i.Quantidade));
 
   return (
@@ -76,8 +68,7 @@ export default function Dashboard({ onErro }: { onErro: (e: string) => void }) {
         <div style={{ display: "flex", alignItems: "baseline" }}>
           <div className="admin-topbar-titulo">Dashboard</div>
           <div className="admin-topbar-sub">
-            {new Date().toLocaleDateString("pt-PT", { weekday: "long", day: "2-digit", month: "long" })} ·{" "}
-            {d.Lojas.filter((l) => l.Online).length} loja(s) ligada(s)
+            {new Date().toLocaleDateString("pt-PT", { weekday: "long", day: "2-digit", month: "long" })}
           </div>
         </div>
         <button className="admin-btn-secundario admin-btn-com-icone" onClick={recarregar} disabled={aCarregar}>
@@ -132,85 +123,21 @@ export default function Dashboard({ onErro }: { onErro: (e: string) => void }) {
 
           <div className="admin-card admin-chart-card">
             <div className="admin-chart-header">
-              <div className="admin-chart-titulo">Vendas por loja, últimos 14 dias</div>
-              <div className="admin-legenda">
-                {d.TiposNegocio.map((tipo) => (
-                  <div key={tipo} className="admin-legenda-item">
-                    <div className="admin-legenda-dot" style={{ background: coresDoTipo(tipo).barra }} />
-                    <span>{coresDoTipo(tipo).nome}</span>
-                  </div>
-                ))}
-              </div>
+              <div className="admin-chart-titulo">Vendas, últimos 14 dias</div>
             </div>
-            {d.SerieVendasPorLoja.length === 0 ? (
+            {d.SerieVendas14Dias.length === 0 ? (
               <div className="admin-chart-vazio">Sem vendas nos últimos 14 dias.</div>
             ) : (
               <div className="admin-chart">
-                {d.SerieVendasPorLoja.map((ponto) => (
+                {d.SerieVendas14Dias.map((ponto) => (
                   <div key={ponto.Dia} className="admin-chart-col" title={formatarDia(ponto.Dia)}>
-                    {Object.entries(ponto.PorTipo).map(([tipo, valor]) => (
-                      <div
-                        key={tipo}
-                        className="admin-chart-seg"
-                        style={{ height: `${(valor / maxDiaTotal) * 150}px`, background: coresDoTipo(tipo).barra }}
-                      />
-                    ))}
+                    <div
+                      className="admin-chart-seg"
+                      style={{ height: `${(ponto.Total / maxDiaTotal) * 150}px`, background: "var(--accent)" }}
+                    />
                   </div>
                 ))}
               </div>
-            )}
-          </div>
-
-          <div className="admin-lojas-grid">
-            {d.Lojas.map((loja) => {
-              const cores = coresDoTipo(loja.TipoNegocio);
-              return (
-                <div key={loja.LojaID} className="admin-loja-card" style={{ borderTopColor: cores.barra }}>
-                  <div className="admin-loja-card-header">
-                    <div className="admin-loja-nome">{loja.Nome}</div>
-                    {loja.Online && (
-                      <div className="admin-tag" style={{ background: cores.bg, color: cores.texto }}>
-                        {loja.TipoNegocio || "—"}
-                      </div>
-                    )}
-                  </div>
-                  {!loja.Online ? (
-                    <div className="admin-loja-offline">Offline — {loja.Erro}</div>
-                  ) : (
-                    <>
-                      <div className="admin-loja-total">
-                        <div className="admin-loja-total-valor">{mt(loja.TotalVendido14Dias)}</div>
-                        <div className="admin-loja-total-pct">{loja.PercentualDoGrupo.toFixed(0)}% do total do grupo</div>
-                      </div>
-                      <div className="admin-loja-metrics">
-                        {loja.TemContasAbertas ? (
-                          <div className="admin-loja-metric">
-                            <span className="admin-loja-metric-label">Contas abertas</span>
-                            <span className="admin-loja-metric-valor">{loja.ContasAbertas}</span>
-                          </div>
-                        ) : (
-                          <div className="admin-loja-metric">
-                            <span className="admin-loja-metric-label">Vendas hoje</span>
-                            <span className="admin-loja-metric-valor">{loja.VendasHoje}</span>
-                          </div>
-                        )}
-                        <div className="admin-loja-metric">
-                          <span className="admin-loja-metric-label">Stock mínimo</span>
-                          <span
-                            className="admin-loja-metric-valor"
-                            style={loja.ProdutosAbaixoMinimo > 0 ? { color: "var(--danger)" } : undefined}
-                          >
-                            {loja.ProdutosAbaixoMinimo} produto(s)
-                          </span>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              );
-            })}
-            {d.Lojas.length === 0 && (
-              <p style={{ color: "var(--text-secondary)" }}>Nenhuma loja ativa registada — adicione uma em "Lojas".</p>
             )}
           </div>
         </div>
@@ -230,9 +157,7 @@ export default function Dashboard({ onErro }: { onErro: (e: string) => void }) {
                   />
                   <div>
                     <div className="admin-alerta-titulo">{a.Titulo}</div>
-                    <div className="admin-alerta-detalhe">
-                      {a.LojaNome} · {a.Detalhe}
-                    </div>
+                    <div className="admin-alerta-detalhe">{a.Detalhe}</div>
                   </div>
                 </div>
               ))}
@@ -252,7 +177,7 @@ export default function Dashboard({ onErro }: { onErro: (e: string) => void }) {
                   <div className="admin-barra-fundo">
                     <div
                       className="admin-barra-valor"
-                      style={{ width: `${(item.Quantidade / maxVendido) * 100}%`, background: coresDoTipo(item.TipoNegocio).barra }}
+                      style={{ width: `${(item.Quantidade / maxVendido) * 100}%`, background: "var(--accent)" }}
                     />
                   </div>
                 </div>

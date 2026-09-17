@@ -45,12 +45,12 @@ func TestAdminApp_ConfigurarPrimeiroArranqueCriaAdministradorELoja(t *testing.T)
 	}
 
 	// A sessão já deve estar ativa — sem precisar de Login() depois.
-	lojas, err := app.ListarLojas()
+	loja, err := app.ObterLojaAtual()
 	if err != nil {
-		t.Fatalf("listar lojas com sessão recém-criada: %v", err)
+		t.Fatalf("obter loja atual com sessão recém-criada: %v", err)
 	}
-	if len(lojas) != 1 || lojas[0].Nome != "Ferragem Cossa" {
-		t.Fatalf("lojas = %+v, want 1 loja Ferragem Cossa", lojas)
+	if loja.Nome != "Ferragem Cossa" || loja.TipoNegocio != string(domain.TipoNegocioFerragem) {
+		t.Fatalf("loja = %+v, want Ferragem Cossa/ferragem", loja)
 	}
 }
 

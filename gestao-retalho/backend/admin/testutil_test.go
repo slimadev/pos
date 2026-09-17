@@ -91,20 +91,6 @@ func novaLojaTeste(t *testing.T, nomeFicheiro, nomeNegocio string, tipo domain.T
 	}
 }
 
-// novaBaseNaoConfigurada só corre as migrations, sem passar pelo wizard —
-// usado para testar que LojasService.Criar rejeita uma loja ainda não
-// configurada.
-func novaBaseNaoConfigurada(t *testing.T, nomeFicheiro string) string {
-	t.Helper()
-	caminho := filepath.Join(t.TempDir(), nomeFicheiro)
-	db, err := repository.NewSQLiteConn(config.DBPath(caminho))
-	if err != nil {
-		t.Fatalf("abrir base de teste: %v", err)
-	}
-	t.Cleanup(func() { _ = db.Close() })
-	return caminho
-}
-
 // novoAdminDBTeste devolve um repository.LojaRepository sobre um admin.db
 // em memória — mesmo padrão dos testes de usecase, só que a tabela `lojas`
 // vive na migração própria do admin (migrations_admin), não na partilhada.

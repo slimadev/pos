@@ -3,7 +3,6 @@ package admin
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 
 	"gestao-retalho/backend/config"
@@ -12,9 +11,11 @@ import (
 	"gestao-retalho/backend/usecase"
 )
 
-// LojasService é o CRUD de "Lojas" da tela `1c` (SDD, Fase 9) — gere só o
-// registo (nome + caminho do ficheiro .db); os dados de negócio continuam
-// inteiramente dentro da base de cada loja, nunca copiados para admin.db.
+// LojasService resolve e cria a única loja que este cmd/admin serve
+// (decisão pós-Fase 10, a pedido explícito: um administrador, uma loja, que
+// pode ter vários armazéns internamente — nunca um registo de várias lojas
+// separadas). Dados de negócio continuam inteiramente dentro da base da
+// loja, nunca copiados para admin.db.
 type LojasService struct {
 	repo *repository.LojaRepository
 }
@@ -23,53 +24,15 @@ func NewLojasService(repo *repository.LojaRepository) *LojasService {
 	return &LojasService{repo: repo}
 }
 
-func (s *LojasService) Listar(ctx context.Context) ([]repository.Loja, error) {
-	return s.repo.Listar(ctx)
-}
-
-// Criar valida que o caminho aponta para um ficheiro existente e já
-// configurado (wizard concluído) antes de o registar — evita o erro comum
-// de escrever mal o caminho e só descobrir no dashboard, com um cartão
-// "offline" sem explicação.
-func (s *LojasService) Criar(ctx context.Context, nome, caminhoDB string) (repository.Loja, error) {
-	nome = strings.TrimSpace(nome)
-	caminhoDB = strings.TrimSpace(caminhoDB)
-	if nome == "" {
-		return repository.Loja{}, fmt.Errorf("nome da loja é obrigatório")
-	}
-	if caminhoDB == "" {
-		return repository.Loja{}, fmt.Errorf("caminho do ficheiro .db é obrigatório")
-	}
-	if _, err := os.Stat(caminhoDB); err != nil {
-		return repository.Loja{}, fmt.Errorf("ficheiro não encontrado em %s", caminhoDB)
-	}
-
-	app, fechar, err := AbrirLoja(caminhoDB)
-	if err != nil {
-		return repository.Loja{}, fmt.Errorf("não foi possível ligar à base: %w", err)
-	}
-	defer fechar()
-
-	configurada, err := app.EstaConfigurado()
-	if err != nil {
-		return repository.Loja{}, fmt.Errorf("base em %s não parece ser uma loja válida: %w", caminhoDB, err)
-	}
-	if !configurada {
-		return repository.Loja{}, fmt.Errorf("a loja em %s ainda não concluiu o assistente de configuração", caminhoDB)
-	}
-
-	return s.repo.Criar(ctx, nome, caminhoDB)
-}
-
 // senhaAuditoriaPlaceholder preenche a validação de FinalizarWizard (exige
-// password >= 6 caracteres) para o utilizador semente de uma loja criada
-// por aqui — nunca serve para autenticar nada (o único login de todo o
-// sistema é o do cmd/admin, ver AuthService); é só atribuição em
-// utilizador_id para auditoria de vendas/movimentos dentro dessa loja.
+// password >= 6 caracteres) para o utilizador semente da loja — nunca serve
+// para autenticar nada (o único login de todo o sistema é o do cmd/admin,
+// ver AuthService); é só atribuição em utilizador_id para auditoria de
+// vendas/movimentos dentro dessa loja.
 const senhaAuditoriaPlaceholder = "auditoria-sem-login"
 
 // CriarLojaWizardParams junta o que o primeiro arranque do cmd/admin
-// precisa para criar uma loja nova de raiz (Fase 10 addendum) — tipo de
+// precisa para criar a única loja de raiz (Fase 10 addendum) — tipo de
 // negócio, nome e logótipo, mais os dados do administrador central que
 // ficam gravados dentro da loja só para atribuição de auditoria.
 type CriarLojaWizardParams struct {
@@ -80,11 +43,9 @@ type CriarLojaWizardParams struct {
 	AdminUsername string
 }
 
-// CriarComWizard cria o ficheiro .db de uma loja nova (em vez de esperar
-// que já exista, como Criar), corre o mesmo FinalizarWizard que o cmd/app
-// correria manualmente, e só depois regista o resultado — dados de negócio
-// continuam inteiramente dentro da base da loja, admin.db só fica com o
-// essencial para lá chegar (ver comentário de repository.Loja).
+// CriarComWizard cria o ficheiro .db da loja (em vez de esperar que já
+// exista), corre o mesmo FinalizarWizard que o cmd/app correria
+// manualmente, e só depois regista o resultado em admin.db.
 func (s *LojasService) CriarComWizard(ctx context.Context, p CriarLojaWizardParams) (repository.Loja, error) {
 	nome := strings.TrimSpace(p.Nome)
 	if nome == "" {
@@ -120,22 +81,38 @@ func (s *LojasService) CriarComWizard(ctx context.Context, p CriarLojaWizardPara
 	return s.repo.Criar(ctx, nome, string(caminho))
 }
 
-func (s *LojasService) Atualizar(ctx context.Context, id int64, nome, caminhoDB string) error {
-	nome = strings.TrimSpace(nome)
-	caminhoDB = strings.TrimSpace(caminhoDB)
-	if nome == "" {
-		return fmt.Errorf("nome da loja é obrigatório")
-	}
-	if caminhoDB == "" {
-		return fmt.Errorf("caminho do ficheiro .db é obrigatório")
-	}
-	return s.repo.Atualizar(ctx, id, nome, caminhoDB)
+// LojaAtual identifica a única loja que este cmd/admin serve — usada para
+// colorir a app inteira (sidebar, botões) com a cor do tipo de negócio em
+// vez do azul neutro genérico, e para mostrar o nome real em vez de
+// "Administração".
+type LojaAtual struct {
+	Nome        string
+	TipoNegocio string
+	Tema        string
 }
 
-func (s *LojasService) Ativar(ctx context.Context, id int64) error {
-	return s.repo.DefinirAtiva(ctx, id, true)
-}
+func (s *LojasService) ObterAtual(ctx context.Context) (LojaAtual, error) {
+	loja, existe, err := s.repo.ObterUnica(ctx)
+	if err != nil {
+		return LojaAtual{}, err
+	}
+	if !existe {
+		return LojaAtual{}, fmt.Errorf("nenhuma loja configurada")
+	}
 
-func (s *LojasService) Desativar(ctx context.Context, id int64) error {
-	return s.repo.DefinirAtiva(ctx, id, false)
+	app, fechar, err := AbrirLoja(loja.CaminhoDB)
+	if err != nil {
+		return LojaAtual{}, err
+	}
+	defer fechar()
+
+	estado, err := app.ObterEstadoConfig()
+	if err != nil {
+		return LojaAtual{}, err
+	}
+	return LojaAtual{
+		Nome:        estado.Negocio.Nome,
+		TipoNegocio: string(estado.Negocio.TipoNegocio),
+		Tema:        string(estado.Tema),
+	}, nil
 }

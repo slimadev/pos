@@ -3,15 +3,16 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"fmt"
+	"errors"
 	"time"
 )
 
-// Loja é uma entrada no registo de lojas conhecidas pelo executável de
-// administração universal (SDD 8.5, Fase 9) — não confundir com
-// domain.Negocio, que vive dentro de cada base de loja e descreve o
-// negócio em si (nome, tipo). Loja só sabe o essencial para lá chegar:
-// como se chama no admin e onde está o ficheiro .db.
+// Loja é o registo, em admin.db, da única loja que este cmd/admin serve
+// (decisão pós-Fase 10, a pedido explícito — um administrador, uma loja,
+// que pode ter vários armazéns internamente). Não confundir com
+// domain.Negocio, que vive dentro da base da loja e descreve o negócio em
+// si (nome, tipo); Loja só sabe o essencial para lá chegar: como se chama
+// no admin e onde está o ficheiro .db.
 type Loja struct {
 	ID        int64
 	Nome      string
@@ -31,47 +32,19 @@ func NewLojaRepository(db *sql.DB) *LojaRepository {
 	return &LojaRepository{db: db}
 }
 
-func (r *LojaRepository) Listar(ctx context.Context) ([]Loja, error) {
-	rows, err := r.db.QueryContext(ctx, `SELECT id, nome, caminho_db, ativo, criado_em FROM lojas ORDER BY nome`)
+// ObterUnica devolve a única loja registada (existe=false antes do
+// primeiro arranque terminar de a criar) — a tabela nunca tem mais do que
+// uma linha, já que só ConfigurarPrimeiroArranque grava aqui.
+func (r *LojaRepository) ObterUnica(ctx context.Context) (loja Loja, existe bool, err error) {
+	row := r.db.QueryRowContext(ctx, `SELECT id, nome, caminho_db, ativo, criado_em FROM lojas LIMIT 1`)
+	loja, err = scanLoja(row)
+	if errors.Is(err, sql.ErrNoRows) {
+		return Loja{}, false, nil
+	}
 	if err != nil {
-		return nil, err
+		return Loja{}, false, err
 	}
-	defer rows.Close()
-
-	out := make([]Loja, 0)
-	for rows.Next() {
-		l, err := scanLoja(rows)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, l)
-	}
-	return out, rows.Err()
-}
-
-func (r *LojaRepository) ListarAtivas(ctx context.Context) ([]Loja, error) {
-	rows, err := r.db.QueryContext(ctx, `SELECT id, nome, caminho_db, ativo, criado_em FROM lojas WHERE ativo = 1 ORDER BY nome`)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	out := make([]Loja, 0)
-	for rows.Next() {
-		l, err := scanLoja(rows)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, l)
-	}
-	return out, rows.Err()
-}
-
-func (r *LojaRepository) Obter(ctx context.Context, id int64) (Loja, error) {
-	row := r.db.QueryRowContext(ctx,
-		`SELECT id, nome, caminho_db, ativo, criado_em FROM lojas WHERE id = ?`, id,
-	)
-	return scanLoja(row)
+	return loja, true, nil
 }
 
 func (r *LojaRepository) Criar(ctx context.Context, nome, caminhoDB string) (Loja, error) {
@@ -80,33 +53,6 @@ func (r *LojaRepository) Criar(ctx context.Context, nome, caminhoDB string) (Loj
 		nome, caminhoDB,
 	)
 	return scanLoja(row)
-}
-
-func (r *LojaRepository) Atualizar(ctx context.Context, id int64, nome, caminhoDB string) error {
-	res, err := r.db.ExecContext(ctx, `UPDATE lojas SET nome = ?, caminho_db = ? WHERE id = ?`, nome, caminhoDB, id)
-	if err != nil {
-		return err
-	}
-	return exigirLinhaAfetada(res)
-}
-
-func (r *LojaRepository) DefinirAtiva(ctx context.Context, id int64, ativo bool) error {
-	res, err := r.db.ExecContext(ctx, `UPDATE lojas SET ativo = ? WHERE id = ?`, boolToInt64(ativo), id)
-	if err != nil {
-		return err
-	}
-	return exigirLinhaAfetada(res)
-}
-
-func exigirLinhaAfetada(res sql.Result) error {
-	n, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if n == 0 {
-		return fmt.Errorf("loja não encontrada")
-	}
-	return nil
 }
 
 // scanner cobre tanto *sql.Rows como *sql.Row — ambos implementam Scan.

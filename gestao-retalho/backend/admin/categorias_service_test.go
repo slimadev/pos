@@ -8,30 +8,28 @@ import (
 	"gestao-retalho/backend/domain"
 )
 
-func TestCategoriasService_ListarRejeitaLojaInexistente(t *testing.T) {
+func TestCategoriasService_ListarRejeitaSemLojaConfigurada(t *testing.T) {
 	ctx := context.Background()
 	repo := novoLojaRepositoryTeste(t)
 	svc := admin.NewCategoriasService(repo)
 
-	_, err := svc.Listar(ctx, 999)
+	_, err := svc.Listar(ctx)
 	if err == nil {
-		t.Fatal("esperava erro para loja inexistente")
+		t.Fatal("esperava erro sem nenhuma loja registada")
 	}
 }
 
 func TestCategoriasService_ListarNuncaDevolveNil(t *testing.T) {
 	ctx := context.Background()
 	repo := novoLojaRepositoryTeste(t)
-	lojasSvc := admin.NewLojasService(repo)
 	svc := admin.NewCategoriasService(repo)
 
 	loja := novaLojaTeste(t, "loja-sem-categorias.db", "Ferragem Central", domain.TipoNegocioFerragem)
-	registada, err := lojasSvc.Criar(ctx, "Ferragem Central", loja.Caminho)
-	if err != nil {
+	if _, err := repo.Criar(ctx, "Ferragem Central", loja.Caminho); err != nil {
 		t.Fatalf("registar loja: %v", err)
 	}
 
-	categorias, err := svc.Listar(ctx, registada.ID)
+	categorias, err := svc.Listar(ctx)
 	if err != nil {
 		t.Fatalf("listar categorias: %v", err)
 	}
@@ -43,16 +41,14 @@ func TestCategoriasService_ListarNuncaDevolveNil(t *testing.T) {
 func TestCategoriasService_CriarEListar(t *testing.T) {
 	ctx := context.Background()
 	repo := novoLojaRepositoryTeste(t)
-	lojasSvc := admin.NewLojasService(repo)
 	svc := admin.NewCategoriasService(repo)
 
 	loja := novaLojaTeste(t, "loja-categorias.db", "Bottlestore XPTO", domain.TipoNegocioBottlestore)
-	registada, err := lojasSvc.Criar(ctx, "Bottlestore XPTO", loja.Caminho)
-	if err != nil {
+	if _, err := repo.Criar(ctx, "Bottlestore XPTO", loja.Caminho); err != nil {
 		t.Fatalf("registar loja: %v", err)
 	}
 
-	criada, err := svc.Criar(ctx, registada.ID, domain.Categoria{Nome: "Bebidas"})
+	criada, err := svc.Criar(ctx, domain.Categoria{Nome: "Bebidas"})
 	if err != nil {
 		t.Fatalf("criar categoria: %v", err)
 	}
@@ -62,7 +58,7 @@ func TestCategoriasService_CriarEListar(t *testing.T) {
 
 	// O wizard já semeia categorias por preset (bottlestore: Cervejas,
 	// Refrigerantes) — "Bebidas" só precisa de aparecer entre elas.
-	categorias, err := svc.Listar(ctx, registada.ID)
+	categorias, err := svc.Listar(ctx)
 	if err != nil {
 		t.Fatalf("listar categorias: %v", err)
 	}
@@ -80,28 +76,26 @@ func TestCategoriasService_CriarEListar(t *testing.T) {
 func TestCategoriasService_AtualizarEDefinirAtiva(t *testing.T) {
 	ctx := context.Background()
 	repo := novoLojaRepositoryTeste(t)
-	lojasSvc := admin.NewLojasService(repo)
 	svc := admin.NewCategoriasService(repo)
 
 	loja := novaLojaTeste(t, "loja-categorias-editar.db", "Ferragem Central", domain.TipoNegocioFerragem)
-	registada, err := lojasSvc.Criar(ctx, "Ferragem Central", loja.Caminho)
-	if err != nil {
+	if _, err := repo.Criar(ctx, "Ferragem Central", loja.Caminho); err != nil {
 		t.Fatalf("registar loja: %v", err)
 	}
 
-	criada, err := svc.Criar(ctx, registada.ID, domain.Categoria{Nome: "Ferramentas"})
+	criada, err := svc.Criar(ctx, domain.Categoria{Nome: "Ferramentas"})
 	if err != nil {
 		t.Fatalf("criar categoria: %v", err)
 	}
 
-	if err := svc.Atualizar(ctx, registada.ID, domain.Categoria{ID: criada.ID, Nome: "Ferramentas manuais"}); err != nil {
+	if err := svc.Atualizar(ctx, domain.Categoria{ID: criada.ID, Nome: "Ferramentas manuais"}); err != nil {
 		t.Fatalf("atualizar categoria: %v", err)
 	}
-	if err := svc.DefinirAtiva(ctx, registada.ID, criada.ID, false); err != nil {
+	if err := svc.DefinirAtiva(ctx, criada.ID, false); err != nil {
 		t.Fatalf("desativar categoria: %v", err)
 	}
 
-	categorias, err := svc.Listar(ctx, registada.ID)
+	categorias, err := svc.Listar(ctx)
 	if err != nil {
 		t.Fatalf("listar categorias: %v", err)
 	}
@@ -122,12 +116,12 @@ func TestCategoriasService_AtualizarEDefinirAtiva(t *testing.T) {
 	}
 }
 
-func TestCategoriasService_AtualizarRejeitaLojaInexistente(t *testing.T) {
+func TestCategoriasService_AtualizarRejeitaSemLojaConfigurada(t *testing.T) {
 	ctx := context.Background()
 	repo := novoLojaRepositoryTeste(t)
 	svc := admin.NewCategoriasService(repo)
 
-	if err := svc.Atualizar(ctx, 999, domain.Categoria{ID: 1, Nome: "X"}); err == nil {
-		t.Fatal("esperava erro para loja inexistente")
+	if err := svc.Atualizar(ctx, domain.Categoria{ID: 1, Nome: "X"}); err == nil {
+		t.Fatal("esperava erro sem nenhuma loja registada")
 	}
 }

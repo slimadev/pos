@@ -1,94 +1,44 @@
 import { useEffect, useState } from "react";
 import {
-  ListarLojas,
-  ListarCategoriasDaLoja,
-  CriarCategoriaDaLoja,
-  AtualizarCategoriaDaLoja,
-  AtivarCategoriaDaLoja,
-  DesativarCategoriaDaLoja,
+  ListarCategorias,
+  CriarCategoria,
+  AtualizarCategoria,
+  AtivarCategoria,
+  DesativarCategoria,
 } from "../wailsjs/go/admin/AdminApp";
-import { domain, repository } from "../wailsjs/go/models";
+import { domain } from "../wailsjs/go/models";
 
 /**
- * Registo de categorias a partir do cmd/admin — categorias são dado de
- * negócio (vivem dentro da base de cada loja, SDD 8.5), por isso o ecrã
- * começa por escolher qual loja gerir antes de listar/criar nada; sem
- * lojas registadas não há o que escolher (aponta para "Lojas").
+ * Registo de categorias da única loja que este cmd/admin serve — dado de
+ * negócio, continua a viver dentro da base da loja (SDD 8.5), este ecrã só
+ * escolhe a ligação a abrir (feito no backend, ver admin.CategoriasService).
  */
 export default function CategoriasScreen({ onErro }: { onErro: (e: string) => void }) {
-  const [lojas, setLojas] = useState<repository.Loja[]>([]);
-  const [lojaID, setLojaID] = useState<number | "">("");
+  const [categorias, setCategorias] = useState<domain.Categoria[]>([]);
+  const [aCarregar, setACarregar] = useState(true);
+  const [emEdicao, setEmEdicao] = useState<domain.Categoria | null>(null);
 
-  useEffect(() => {
-    ListarLojas()
-      .then((ls) => {
-        setLojas(ls);
-        if (ls.length > 0) setLojaID(ls[0].ID);
-      })
-      .catch((e) => onErro(String(e)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- onErro é um setter estável vindo de App
-  }, []);
+  function carregar() {
+    ListarCategorias()
+      .then(setCategorias)
+      .catch((e) => onErro(String(e)))
+      .finally(() => setACarregar(false));
+  }
 
-  if (lojas.length === 0) {
-    return (
-      <div className="admin-lojas-screen">
-        <h2 style={{ margin: 0 }}>Categorias</h2>
-        <p style={{ color: "var(--text-secondary)", maxWidth: 520 }}>
-          Nenhuma loja registada ainda — registe uma primeiro em "Lojas" para lhe gerir as categorias.
-        </p>
-      </div>
-    );
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- onErro é um setter estável vindo de App
+  useEffect(carregar, []);
+
+  const nomeCategoria = (id: number) => categorias.find((c) => c.ID === id)?.Nome ?? `#${id}`;
+
+  function alternarAtivo(c: domain.Categoria) {
+    const acao = c.Ativo ? DesativarCategoria(c.ID) : AtivarCategoria(c.ID);
+    acao.then(carregar).catch((e) => onErro(String(e)));
   }
 
   return (
     <div className="admin-lojas-screen">
       <h2 style={{ margin: 0 }}>Categorias</h2>
 
-      <div className="admin-form">
-        <label>
-          Loja:{" "}
-          <select value={lojaID} onChange={(e) => setLojaID(e.target.value ? Number(e.target.value) : "")}>
-            {lojas.map((l) => (
-              <option key={l.ID} value={l.ID}>
-                {l.Nome}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-
-      {/* key={lojaID} força um remonte ao trocar de loja — cada instância
-          carrega as suas próprias categorias do zero, em vez de reagir a
-          uma mudança de prop dentro de um efeito já montado. */}
-      {lojaID !== "" && <CategoriasDaLoja key={lojaID} lojaID={lojaID} onErro={onErro} />}
-    </div>
-  );
-}
-
-function CategoriasDaLoja({ lojaID, onErro }: { lojaID: number; onErro: (e: string) => void }) {
-  const [categorias, setCategorias] = useState<domain.Categoria[]>([]);
-  const [aCarregar, setACarregar] = useState(true);
-  const [emEdicao, setEmEdicao] = useState<domain.Categoria | null>(null);
-
-  function carregar() {
-    ListarCategoriasDaLoja(lojaID)
-      .then(setCategorias)
-      .catch((e) => onErro(String(e)))
-      .finally(() => setACarregar(false));
-  }
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- onErro é um setter estável vindo de App; lojaID está fixo por instância (key troca-a)
-  useEffect(carregar, []);
-
-  const nomeCategoria = (id: number) => categorias.find((c) => c.ID === id)?.Nome ?? `#${id}`;
-
-  function alternarAtivo(c: domain.Categoria) {
-    const acao = c.Ativo ? DesativarCategoriaDaLoja(lojaID, c.ID) : AtivarCategoriaDaLoja(lojaID, c.ID);
-    acao.then(carregar).catch((e) => onErro(String(e)));
-  }
-
-  return (
-    <>
       <table className="admin-tabela">
         <thead>
           <tr>
@@ -124,7 +74,6 @@ function CategoriasDaLoja({ lojaID, onErro }: { lojaID: number; onErro: (e: stri
 
       <CategoriaForm
         key={emEdicao?.ID ?? "nova"}
-        lojaID={lojaID}
         categoria={emEdicao}
         categorias={categorias}
         onGuardado={() => {
@@ -134,19 +83,17 @@ function CategoriasDaLoja({ lojaID, onErro }: { lojaID: number; onErro: (e: stri
         onCancelar={() => setEmEdicao(null)}
         onErro={onErro}
       />
-    </>
+    </div>
   );
 }
 
 function CategoriaForm({
-  lojaID,
   categoria,
   categorias,
   onGuardado,
   onCancelar,
   onErro,
 }: {
-  lojaID: number;
   categoria: domain.Categoria | null;
   categorias: domain.Categoria[];
   onGuardado: () => void;
@@ -165,7 +112,7 @@ function CategoriaForm({
     c.CategoriaPaiID = categoriaPaiId === "" ? undefined : Number(categoriaPaiId);
 
     setAGuardar(true);
-    const pedido = categoria ? AtualizarCategoriaDaLoja(lojaID, c) : CriarCategoriaDaLoja(lojaID, c);
+    const pedido = categoria ? AtualizarCategoria(c) : CriarCategoria(c);
     pedido
       .then(onGuardado)
       .catch((e) => onErro(String(e)))

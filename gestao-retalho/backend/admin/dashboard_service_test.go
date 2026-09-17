@@ -42,25 +42,17 @@ func venderHoje(t *testing.T, ctx context.Context, loja lojaTeste, produto domai
 	}
 }
 
-func TestDashboardService_AgregaVendasDeVariasLojas(t *testing.T) {
+func TestDashboardService_AgregaDadosDaLoja(t *testing.T) {
 	ctx := context.Background()
 	repo := novoLojaRepositoryTeste(t)
-	lojasSvc := admin.NewLojasService(repo)
 	dashboardSvc := admin.NewDashboardService(repo)
 
-	bottle := novaLojaTeste(t, "bottlestore.db", "Bottlestore XPTO", domain.TipoNegocioBottlestore)
-	produto, unidade := criarProdutoEStock(t, ctx, bottle, "Cerveja", 80, 50, nil)
-	venderHoje(t, ctx, bottle, produto, unidade, 2, 160)
-
 	ferragem := novaLojaTeste(t, "ferragem.db", "Ferragem Central", domain.TipoNegocioFerragem)
-	produto2, unidade2 := criarProdutoEStock(t, ctx, ferragem, "Cimento", 600, 20, nil)
-	venderHoje(t, ctx, ferragem, produto2, unidade2, 1, 600)
+	produto, unidade := criarProdutoEStock(t, ctx, ferragem, "Cimento", 600, 20, nil)
+	venderHoje(t, ctx, ferragem, produto, unidade, 1, 600)
 
-	if _, err := lojasSvc.Criar(ctx, "Bottlestore XPTO", bottle.Caminho); err != nil {
-		t.Fatalf("registar bottlestore: %v", err)
-	}
-	if _, err := lojasSvc.Criar(ctx, "Ferragem Central", ferragem.Caminho); err != nil {
-		t.Fatalf("registar ferragem: %v", err)
+	if _, err := repo.Criar(ctx, "Ferragem Central", ferragem.Caminho); err != nil {
+		t.Fatalf("registar loja: %v", err)
 	}
 
 	d, err := dashboardSvc.ObterDashboard(ctx)
@@ -68,93 +60,51 @@ func TestDashboardService_AgregaVendasDeVariasLojas(t *testing.T) {
 		t.Fatalf("obter dashboard: %v", err)
 	}
 
-	if d.VendasHoje != 760 {
-		t.Errorf("vendas hoje = %v, want 760 (160+600)", d.VendasHoje)
+	if !d.TemLoja {
+		t.Fatal("TemLoja = false, want true com a loja registada")
 	}
-	if len(d.Lojas) != 2 {
-		t.Fatalf("lojas = %d, want 2", len(d.Lojas))
+	if d.NegocioNome != "Ferragem Central" || d.TipoNegocio != "ferragem" {
+		t.Errorf("negócio = %q/%q, want Ferragem Central/ferragem", d.NegocioNome, d.TipoNegocio)
 	}
-	for _, c := range d.Lojas {
-		if !c.Online {
-			t.Errorf("loja %q devia estar online, erro: %s", c.Nome, c.Erro)
-		}
+	if d.VendasHoje != 600 {
+		t.Errorf("vendas hoje = %v, want 600", d.VendasHoje)
 	}
-	tipos := map[string]bool{}
-	for _, tipo := range d.TiposNegocio {
-		tipos[tipo] = true
-	}
-	if !tipos["bottlestore"] || !tipos["ferragem"] {
-		t.Errorf("tipos negocio = %v, want conter bottlestore e ferragem", d.TiposNegocio)
-	}
-
-	if len(d.SerieVendasPorLoja) == 0 {
+	if len(d.SerieVendas14Dias) == 0 {
 		t.Fatal("série de 14 dias vazia")
 	}
-	ultimoDia := d.SerieVendasPorLoja[len(d.SerieVendasPorLoja)-1]
-	if ultimoDia.PorTipo["bottlestore"] != 160 || ultimoDia.PorTipo["ferragem"] != 600 {
-		t.Errorf("série de hoje = %+v, want bottlestore=160 ferragem=600", ultimoDia.PorTipo)
+	ultimoDia := d.SerieVendas14Dias[len(d.SerieVendas14Dias)-1]
+	if ultimoDia.Total != 600 {
+		t.Errorf("total do último dia = %v, want 600", ultimoDia.Total)
 	}
 }
 
-func TestDashboardService_LojaOfflineNaoInterrompeAgregacao(t *testing.T) {
+func TestDashboardService_LojaOfflineDevolveErro(t *testing.T) {
 	ctx := context.Background()
 	repo := novoLojaRepositoryTeste(t)
-	lojasSvc := admin.NewLojasService(repo)
 	dashboardSvc := admin.NewDashboardService(repo)
 
-	loja := novaLojaTeste(t, "loja-viva.db", "Mercearia D. Ana", domain.TipoNegocioMercearia)
-	produto, unidade := criarProdutoEStock(t, ctx, loja, "Arroz 5kg", 250, 30, nil)
-	venderHoje(t, ctx, loja, produto, unidade, 1, 250)
-
-	if _, err := lojasSvc.Criar(ctx, "Mercearia D. Ana", loja.Caminho); err != nil {
-		t.Fatalf("registar loja viva: %v", err)
-	}
-	// Insere diretamente no registo (contorna a validação de
-	// LojasService.Criar de propósito) para simular uma loja cujo
-	// ficheiro desapareceu depois de registada — o dashboard tem de
-	// continuar a agregar as outras em vez de falhar tudo.
+	// Insere diretamente no registo (contorna qualquer validação de
+	// caminho) para simular uma loja cujo ficheiro desapareceu — o
+	// dashboard tem de devolver um erro claro, não rebentar.
 	if _, err := repo.Criar(ctx, "Loja Desaparecida", "/caminho/que/nao/existe.db"); err != nil {
 		t.Fatalf("registar loja fantasma: %v", err)
 	}
 
-	d, err := dashboardSvc.ObterDashboard(ctx)
-	if err != nil {
-		t.Fatalf("obter dashboard: %v", err)
-	}
-	if len(d.Lojas) != 2 {
-		t.Fatalf("lojas = %d, want 2", len(d.Lojas))
-	}
-
-	var online, offline int
-	for _, c := range d.Lojas {
-		if c.Online {
-			online++
-		} else {
-			offline++
-			if c.Erro == "" {
-				t.Errorf("loja offline devia ter Erro preenchido")
-			}
-		}
-	}
-	if online != 1 || offline != 1 {
-		t.Errorf("online=%d offline=%d, want 1 e 1", online, offline)
-	}
-	if d.VendasHoje != 250 {
-		t.Errorf("vendas hoje = %v, want 250 (só a loja viva)", d.VendasHoje)
+	if _, err := dashboardSvc.ObterDashboard(ctx); err == nil {
+		t.Fatal("esperava erro para loja cujo ficheiro não existe")
 	}
 }
 
 func TestDashboardService_AlertaStockAbaixoDoMinimo(t *testing.T) {
 	ctx := context.Background()
 	repo := novoLojaRepositoryTeste(t)
-	lojasSvc := admin.NewLojasService(repo)
 	dashboardSvc := admin.NewDashboardService(repo)
 
 	loja := novaLojaTeste(t, "loja-stock.db", "Farmácia Sommerschield", domain.TipoNegocioFarmacia)
 	minimo := 50.0
 	criarProdutoEStock(t, ctx, loja, "Paracetamol", 20, 5, &minimo)
 
-	if _, err := lojasSvc.Criar(ctx, "Farmácia Sommerschield", loja.Caminho); err != nil {
+	if _, err := repo.Criar(ctx, "Farmácia Sommerschield", loja.Caminho); err != nil {
 		t.Fatalf("registar loja: %v", err)
 	}
 
@@ -162,65 +112,64 @@ func TestDashboardService_AlertaStockAbaixoDoMinimo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("obter dashboard: %v", err)
 	}
-	if len(d.Lojas) != 1 || d.Lojas[0].ProdutosAbaixoMinimo != 1 {
-		t.Fatalf("lojas = %+v, want 1 loja com 1 produto abaixo do mínimo", d.Lojas)
+	if d.ProdutosAbaixoMinimo != 1 {
+		t.Fatalf("ProdutosAbaixoMinimo = %d, want 1", d.ProdutosAbaixoMinimo)
 	}
 
 	achouAlerta := false
 	for _, a := range d.Alertas {
-		if a.Severidade == "alta" && a.LojaNome == "Farmácia Sommerschield" {
+		if a.Severidade == "alta" {
 			achouAlerta = true
 		}
 	}
 	if !achouAlerta {
-		t.Errorf("alertas = %+v, want um alerta alta para a farmácia", d.Alertas)
+		t.Errorf("alertas = %+v, want um alerta alta de stock", d.Alertas)
 	}
 }
 
-// TestDashboardService_CamposNuncaSaoNilMesmoSemLojasNemDados apanha uma
+// TestDashboardService_CamposNuncaSaoNilMesmoSemLojaNemDados apanha uma
 // classe de bug real: em Go, um slice construído só por `append` fica nil
 // se nunca crescer, e nil marshalla para `null` em JSON, não `[]`. O
 // frontend faz `d.Alertas.length`/`.map()` sem guarda nenhuma — um `null`
 // aí não é "lista vazia", é um ecrã inteiro em branco (sem error boundary).
-// Isto tem de valer tanto com zero lojas registadas como com uma loja sem
+// Isto tem de valer tanto sem loja nenhuma registada como com uma loja sem
 // nenhum dado (o caso mais comum: nenhum alerta a apresentar).
-func TestDashboardService_CamposNuncaSaoNilMesmoSemLojasNemDados(t *testing.T) {
+func TestDashboardService_CamposNuncaSaoNilMesmoSemLojaNemDados(t *testing.T) {
 	ctx := context.Background()
 	repo := novoLojaRepositoryTeste(t)
 	dashboardSvc := admin.NewDashboardService(repo)
 
 	d, err := dashboardSvc.ObterDashboard(ctx)
 	if err != nil {
-		t.Fatalf("obter dashboard sem lojas: %v", err)
+		t.Fatalf("obter dashboard sem loja: %v", err)
 	}
-	if d.Lojas == nil {
-		t.Error("Lojas é nil (want slice vazio) sem nenhuma loja registada")
+	if d.TemLoja {
+		t.Error("TemLoja = true, want false sem nenhuma loja registada")
 	}
 	if d.Alertas == nil {
 		t.Error("Alertas é nil (want slice vazio) sem nenhuma loja registada")
 	}
-	if d.SerieVendasPorLoja == nil {
-		t.Error("SerieVendasPorLoja é nil (want slice vazio) sem nenhuma loja registada")
+	if d.SerieVendas14Dias == nil {
+		t.Error("SerieVendas14Dias é nil (want slice vazio) sem nenhuma loja registada")
 	}
 	if d.MaisVendidosHoje == nil {
 		t.Error("MaisVendidosHoje é nil (want slice vazio) sem nenhuma loja registada")
-	}
-	if d.TiposNegocio == nil {
-		t.Error("TiposNegocio é nil (want slice vazio) sem nenhuma loja registada")
 	}
 
 	// Uma loja registada mas sem nenhuma venda/stock-mínimo/dívida tem
 	// exatamente zero alertas — o caso normal do dia a dia, não uma
 	// exceção.
-	lojasSvc := admin.NewLojasService(repo)
 	loja := novaLojaTeste(t, "loja-silenciosa.db", "Mercearia Silenciosa", domain.TipoNegocioMercearia)
-	if _, err := lojasSvc.Criar(ctx, "Mercearia Silenciosa", loja.Caminho); err != nil {
+	if _, err := repo.Criar(ctx, "Mercearia Silenciosa", loja.Caminho); err != nil {
 		t.Fatalf("registar loja: %v", err)
 	}
 
 	d, err = dashboardSvc.ObterDashboard(ctx)
 	if err != nil {
 		t.Fatalf("obter dashboard com loja sem dados: %v", err)
+	}
+	if !d.TemLoja {
+		t.Error("TemLoja = false, want true com a loja registada")
 	}
 	if d.Alertas == nil {
 		t.Error("Alertas é nil (want slice vazio) com loja sem nenhum alerta a disparar")

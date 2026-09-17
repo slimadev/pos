@@ -36,6 +36,32 @@
   --personalizado-text: #4b5563;
 }
 
+/* Cor da app inteira (sidebar, botões) conforme o tipo de negócio da
+   única loja que este cmd/admin serve (decisão pós-Fase 10, a pedido
+   explícito: "a cor de tipo de loja setado") — reaproveita as mesmas
+   cores já auditadas (WCAG, Fase 10) em vez de inventar tons novos.
+   "personalizado" fica com o azul neutro genérico, sem override. */
+:root[data-tipo-negocio="ferragem"] {
+  --accent: var(--ferragem);
+  --accent-hover: var(--ferragem-text);
+  --accent-bg: var(--ferragem-bg);
+}
+:root[data-tipo-negocio="bottlestore"] {
+  --accent: var(--bottlestore);
+  --accent-hover: var(--bottlestore-text);
+  --accent-bg: var(--bottlestore-bg);
+}
+:root[data-tipo-negocio="mercearia"] {
+  --accent: var(--mercearia);
+  --accent-hover: var(--mercearia-text);
+  --accent-bg: var(--mercearia-bg);
+}
+:root[data-tipo-negocio="farmacia"] {
+  --accent: var(--farmacia);
+  --accent-hover: var(--farmacia-text);
+  --accent-bg: var(--farmacia-bg);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -83,6 +109,14 @@ body {
 .admin-sidebar-brand-nome {
   font-size: 14px;
   font-weight: 600;
+  line-height: 1.3;
+}
+
+.admin-sidebar-brand-tag {
+  font-size: 10.5px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .admin-sidebar-nav {
@@ -263,24 +297,6 @@ body {
   font-size: 14px;
   font-weight: 600;
 }
-.admin-legenda {
-  display: flex;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-.admin-legenda-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-.admin-legenda-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 2px;
-}
-
 .admin-chart {
   display: flex;
   align-items: flex-end;
@@ -304,75 +320,6 @@ body {
 .admin-chart-vazio {
   color: var(--text-secondary);
   font-size: 13px;
-}
-
-.admin-lojas-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.admin-loja-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-top: 3px solid var(--text-secondary);
-  border-radius: 9px;
-  padding: 16px 17px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.admin-loja-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.admin-loja-nome {
-  font-size: 13.5px;
-  font-weight: 600;
-}
-.admin-tag {
-  font-size: 11px;
-  font-weight: 500;
-  padding: 3px 7px;
-  border-radius: 4px;
-  white-space: nowrap;
-}
-.admin-loja-total {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-.admin-loja-total-valor {
-  font-size: 19px;
-  font-weight: 600;
-}
-.admin-loja-total-pct {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-.admin-loja-metrics {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  border-top: 1px solid #f0f1f4;
-  padding-top: 11px;
-}
-.admin-loja-metric {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12.5px;
-}
-.admin-loja-metric-label {
-  color: var(--text-secondary);
-}
-.admin-loja-metric-valor {
-  font-weight: 500;
-}
-.admin-loja-offline {
-  font-size: 12px;
-  color: var(--danger);
 }
 
 .admin-side {

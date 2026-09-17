@@ -4,15 +4,15 @@ import (
 	"context"
 	"fmt"
 
+	"gestao-retalho/backend/api"
 	"gestao-retalho/backend/domain"
 	"gestao-retalho/backend/repository"
 )
 
-// CategoriasService gere categorias de uma loja específica a partir do
-// cmd/admin — dados de negócio continuam inteiramente dentro da base da
-// loja (SDD 8.5), este serviço só resolve qual ligação abrir (AbrirLoja),
-// delega no mesmo CategoriaService que o cmd/app usaria e fecha a seguir,
-// tal como LojasService.Criar já faz para validar uma loja nova.
+// CategoriasService gere categorias da única loja que este cmd/admin serve
+// — dados de negócio continuam inteiramente dentro da base da loja (SDD
+// 8.5), este serviço só resolve a ligação (AbrirLoja) e delega no mesmo
+// CategoriaService que o cmd/app usaria.
 type CategoriasService struct {
 	lojas *repository.LojaRepository
 }
@@ -21,13 +21,8 @@ func NewCategoriasService(lojas *repository.LojaRepository) *CategoriasService {
 	return &CategoriasService{lojas: lojas}
 }
 
-func (s *CategoriasService) Listar(ctx context.Context, lojaID int64) ([]domain.Categoria, error) {
-	loja, err := s.lojas.Obter(ctx, lojaID)
-	if err != nil {
-		return nil, fmt.Errorf("loja não encontrada: %w", err)
-	}
-
-	app, fechar, err := AbrirLoja(loja.CaminhoDB)
+func (s *CategoriasService) Listar(ctx context.Context) ([]domain.Categoria, error) {
+	app, fechar, err := s.abrirLoja(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -36,13 +31,8 @@ func (s *CategoriasService) Listar(ctx context.Context, lojaID int64) ([]domain.
 	return app.ListarCategorias()
 }
 
-func (s *CategoriasService) Criar(ctx context.Context, lojaID int64, c domain.Categoria) (domain.Categoria, error) {
-	loja, err := s.lojas.Obter(ctx, lojaID)
-	if err != nil {
-		return domain.Categoria{}, fmt.Errorf("loja não encontrada: %w", err)
-	}
-
-	app, fechar, err := AbrirLoja(loja.CaminhoDB)
+func (s *CategoriasService) Criar(ctx context.Context, c domain.Categoria) (domain.Categoria, error) {
+	app, fechar, err := s.abrirLoja(ctx)
 	if err != nil {
 		return domain.Categoria{}, err
 	}
@@ -51,13 +41,8 @@ func (s *CategoriasService) Criar(ctx context.Context, lojaID int64, c domain.Ca
 	return app.CriarCategoria(c)
 }
 
-func (s *CategoriasService) Atualizar(ctx context.Context, lojaID int64, c domain.Categoria) error {
-	loja, err := s.lojas.Obter(ctx, lojaID)
-	if err != nil {
-		return fmt.Errorf("loja não encontrada: %w", err)
-	}
-
-	app, fechar, err := AbrirLoja(loja.CaminhoDB)
+func (s *CategoriasService) Atualizar(ctx context.Context, c domain.Categoria) error {
+	app, fechar, err := s.abrirLoja(ctx)
 	if err != nil {
 		return err
 	}
@@ -66,13 +51,8 @@ func (s *CategoriasService) Atualizar(ctx context.Context, lojaID int64, c domai
 	return app.AtualizarCategoria(c)
 }
 
-func (s *CategoriasService) DefinirAtiva(ctx context.Context, lojaID, categoriaID int64, ativo bool) error {
-	loja, err := s.lojas.Obter(ctx, lojaID)
-	if err != nil {
-		return fmt.Errorf("loja não encontrada: %w", err)
-	}
-
-	app, fechar, err := AbrirLoja(loja.CaminhoDB)
+func (s *CategoriasService) DefinirAtiva(ctx context.Context, categoriaID int64, ativo bool) error {
+	app, fechar, err := s.abrirLoja(ctx)
 	if err != nil {
 		return err
 	}
@@ -82,4 +62,15 @@ func (s *CategoriasService) DefinirAtiva(ctx context.Context, lojaID, categoriaI
 		return app.AtivarCategoria(categoriaID)
 	}
 	return app.DesativarCategoria(categoriaID)
+}
+
+func (s *CategoriasService) abrirLoja(ctx context.Context) (*api.App, func(), error) {
+	loja, existe, err := s.lojas.ObterUnica(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	if !existe {
+		return nil, nil, fmt.Errorf("nenhuma loja configurada")
+	}
+	return AbrirLoja(loja.CaminhoDB)
 }
