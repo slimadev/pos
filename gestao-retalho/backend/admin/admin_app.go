@@ -26,10 +26,11 @@ type AdminApp struct {
 	Auth       *AuthService
 	Categorias *CategoriasService
 	Produtos   *ProdutosService
+	PDV        *PDVService
 }
 
-func NewAdminApp(lojas *LojasService, dashboard *DashboardService, auth *AuthService, categorias *CategoriasService, produtos *ProdutosService) *AdminApp {
-	return &AdminApp{Lojas: lojas, Dashboard: dashboard, Auth: auth, Categorias: categorias, Produtos: produtos}
+func NewAdminApp(lojas *LojasService, dashboard *DashboardService, auth *AuthService, categorias *CategoriasService, produtos *ProdutosService, pdv *PDVService) *AdminApp {
+	return &AdminApp{Lojas: lojas, Dashboard: dashboard, Auth: auth, Categorias: categorias, Produtos: produtos, PDV: pdv}
 }
 
 func (a *AdminApp) OnStartup(ctx context.Context) {
@@ -259,4 +260,17 @@ func (a *AdminApp) AdicionarUnidadeProduto(u domain.UnidadeProduto) (domain.Unid
 		return domain.UnidadeProduto{}, err
 	}
 	return a.Produtos.AdicionarUnidade(a.ctx, u)
+}
+
+// --- PDV -----------------------------------------------------------------
+//
+// AbrirPDV lança o cmd/app como processo separado (decisão pós-Fase 10, a
+// pedido explícito: cmd/app deixou de abrir sozinho, só arranca a partir
+// daqui) — nunca renderiza nada dentro do cmd/admin, só arranca a janela.
+
+func (a *AdminApp) AbrirPDV() error {
+	if err := a.exigirSessao(); err != nil {
+		return err
+	}
+	return a.PDV.Abrir(a.ctx)
 }

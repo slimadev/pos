@@ -12,9 +12,10 @@ import {
   UserGroupIcon,
   ChartBarIcon,
   UserCircleIcon,
+  ComputerDesktopIcon,
   ArrowRightStartOnRectangleIcon,
 } from "@heroicons/react/24/outline";
-import { PrecisaConfigurarAdmin, Logout, ObterLojaAtual } from "../wailsjs/go/admin/AdminApp";
+import { PrecisaConfigurarAdmin, Logout, ObterLojaAtual, AbrirPDV } from "../wailsjs/go/admin/AdminApp";
 import Configurar from "./Configurar";
 import Login from "./Login";
 import Dashboard from "./Dashboard";
@@ -113,12 +114,24 @@ export default function App() {
  * várias lojas quando cada cmd/admin serve sempre uma só). "Dashboard",
  * "Produtos" e "Categorias" têm ecrã real; o resto da sidebar existe por
  * fidelidade visual ao mock, mas a gestão detalhada de stock/vendas/etc.
- * continua a acontecer no executável da loja (cmd/app).
+ * continua a acontecer no executável da loja (cmd/app). O botão "PDV" não
+ * troca de ecrã aqui dentro — lança o cmd/app como processo à parte,
+ * maximizado, apontado à mesma base desta loja (decisão pós-Fase 10, a
+ * pedido explícito: cmd/app deixou de abrir sozinho).
  */
 function AdminPrincipal({ loja, onSair }: { loja: LojaAtual | null; onSair: () => void }) {
   const [ecra, setEcra] = useState<Ecra>("dashboard");
   const [stubNome, setStubNome] = useState("");
   const [erro, setErro] = useState<string | null>(null);
+  const [aAbrirPDV, setAAbrirPDV] = useState(false);
+
+  function abrirPDV() {
+    if (aAbrirPDV) return;
+    setAAbrirPDV(true);
+    AbrirPDV()
+      .catch((e) => setErro(String(e)))
+      .finally(() => setAAbrirPDV(false));
+  }
 
   return (
     <div className="admin-shell">
@@ -130,6 +143,10 @@ function AdminPrincipal({ loja, onSair }: { loja: LojaAtual | null; onSair: () =
             {loja && <div className="admin-sidebar-brand-tag">{loja.TipoNegocio}</div>}
           </div>
         </div>
+        <button className="admin-sidebar-pdv" disabled={aAbrirPDV} onClick={abrirPDV}>
+          <ComputerDesktopIcon className="admin-sidebar-icon" aria-hidden="true" />
+          {aAbrirPDV ? "A abrir…" : "PDV"}
+        </button>
         <nav className="admin-sidebar-nav">
           {NAV.map((item) => (
             <button

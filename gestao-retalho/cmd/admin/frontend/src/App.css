@@ -162,6 +162,34 @@ body {
   cursor: default;
 }
 
+/* Botão de ação (lança o cmd/app como processo à parte), não um item de
+   navegação — fica destacado com a cor de acento em vez de misturado na
+   lista neutra do resto da sidebar. */
+.admin-sidebar-pdv {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 10px 0;
+  padding: 10px 12px;
+  border-radius: 7px;
+  border: none;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.admin-sidebar-pdv:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.admin-sidebar-pdv:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .admin-sidebar-sair {
   margin: auto 10px 14px;
   border-top: 1px solid #f0f1f4;
