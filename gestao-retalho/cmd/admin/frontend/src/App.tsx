@@ -19,8 +19,9 @@ import Configurar from "./Configurar";
 import Login from "./Login";
 import Dashboard from "./Dashboard";
 import CategoriasScreen from "./Categorias";
+import ProdutosScreen from "./Produtos";
 
-type Ecra = "dashboard" | "categorias" | "stub";
+type Ecra = "dashboard" | "produtos" | "categorias" | "stub";
 type IconeSvg = ComponentType<SVGProps<SVGSVGElement>>;
 
 // Ícones outline de uma biblioteca única e neutra (SDD 7.3: "Lucide/Feather"
@@ -29,7 +30,7 @@ type IconeSvg = ComponentType<SVGProps<SVGSVGElement>>;
 // dependência de ícones no projeto todo em vez de duas).
 const NAV: { chave: Ecra; nome: string; Icone: IconeSvg; stub?: boolean }[] = [
   { chave: "dashboard", nome: "Dashboard", Icone: Squares2X2Icon },
-  { chave: "stub", nome: "Produtos", Icone: CubeIcon, stub: true },
+  { chave: "produtos", nome: "Produtos", Icone: CubeIcon },
   { chave: "categorias", nome: "Categorias", Icone: TagIcon },
   { chave: "stub", nome: "Fichas técnicas", Icone: ClipboardDocumentListIcon, stub: true },
   { chave: "stub", nome: "Armazéns", Icone: BuildingOffice2Icon, stub: true },
@@ -107,14 +108,12 @@ export default function App() {
 
 /**
  * Sidebar fiel à tela `1c` dos mocks aprovados (SDD 7.3/8.5, Fase 9), com
- * "Categorias" adicionado fora do mock (Fase 10 addendum, a pedido
- * explícito) e "Lojas" removido (também a pedido explícito — deixou de
- * fazer sentido um registo de várias lojas quando cada cmd/admin serve
- * sempre uma só). "Dashboard" e "Categorias" têm ecrã real; o resto da
- * sidebar existe por fidelidade visual ao mock, mas a gestão detalhada de
- * produtos/stock/vendas/etc. continua a acontecer no executável da loja
- * (cmd/app) — o admin foca-se na visão agregada (SDD 8.5) e, agora, em
- * categorias.
+ * "Categorias" adicionado fora do mock e "Lojas" removido (Fase 10
+ * addendum, a pedido explícito — deixou de fazer sentido um registo de
+ * várias lojas quando cada cmd/admin serve sempre uma só). "Dashboard",
+ * "Produtos" e "Categorias" têm ecrã real; o resto da sidebar existe por
+ * fidelidade visual ao mock, mas a gestão detalhada de stock/vendas/etc.
+ * continua a acontecer no executável da loja (cmd/app).
  */
 function AdminPrincipal({ loja, onSair }: { loja: LojaAtual | null; onSair: () => void }) {
   const [ecra, setEcra] = useState<Ecra>("dashboard");
@@ -160,13 +159,14 @@ function AdminPrincipal({ loja, onSair }: { loja: LojaAtual | null; onSair: () =
           </div>
         )}
         {ecra === "dashboard" && <Dashboard onErro={setErro} />}
+        {ecra === "produtos" && <ProdutosScreen onErro={setErro} />}
         {ecra === "categorias" && <CategoriasScreen onErro={setErro} />}
         {ecra === "stub" && (
           <div className="admin-lojas-screen">
             <h2 style={{ margin: 0 }}>{stubNome}</h2>
             <p style={{ color: "var(--text-secondary)", maxWidth: 520 }}>
               Esta secção gere-se a partir do executável da loja — abre a app da loja para gestão detalhada de{" "}
-              {stubNome.toLowerCase()}. O admin foca-se na visão agregada (Dashboard) e, agora, em categorias.
+              {stubNome.toLowerCase()}.
             </p>
           </div>
         )}

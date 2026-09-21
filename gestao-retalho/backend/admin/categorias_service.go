@@ -2,7 +2,6 @@ package admin
 
 import (
 	"context"
-	"fmt"
 
 	"gestao-retalho/backend/api"
 	"gestao-retalho/backend/domain"
@@ -65,12 +64,5 @@ func (s *CategoriasService) DefinirAtiva(ctx context.Context, categoriaID int64,
 }
 
 func (s *CategoriasService) abrirLoja(ctx context.Context) (*api.App, func(), error) {
-	loja, existe, err := s.lojas.ObterUnica(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-	if !existe {
-		return nil, nil, fmt.Errorf("nenhuma loja configurada")
-	}
-	return AbrirLoja(loja.CaminhoDB)
+	return abrirLojaUnica(ctx, s.lojas)
 }

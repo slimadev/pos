@@ -1,6 +1,6 @@
-// Package admin é exclusivo do executável cmd/admin (SDD 8.5, Fase 9) —
-// agrega dados de várias bases de loja para o dashboard multi-loja. Nunca é
-// importado por cmd/app.
+// Package admin é exclusivo do executável cmd/admin — um administrador
+// serve sempre a mesma e única loja (decisão pós-Fase 10, a pedido
+// explícito). Nunca é importado por cmd/app.
 package admin
 
 import (
@@ -14,6 +14,7 @@ import (
 	"gestao-retalho/backend/api"
 	"gestao-retalho/backend/config"
 	"gestao-retalho/backend/di"
+	"gestao-retalho/backend/repository"
 )
 
 // AbrirLoja liga-se à base .db de uma loja e devolve o mesmo *api.App que
@@ -37,4 +38,19 @@ func AbrirLoja(caminhoDB string) (app *api.App, fechar func(), err error) {
 
 	app.OnStartup(context.Background())
 	return app, func() { _ = db.Close() }, nil
+}
+
+// abrirLojaUnica resolve e abre a ligação à única loja que este cmd/admin
+// serve — usado por todos os serviços que operam "na loja" sem precisarem
+// de conhecer o caminho do ficheiro (CategoriasService, ProdutosService,
+// LojasService.ObterAtual).
+func abrirLojaUnica(ctx context.Context, lojas *repository.LojaRepository) (app *api.App, fechar func(), err error) {
+	loja, existe, err := lojas.ObterUnica(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	if !existe {
+		return nil, nil, fmt.Errorf("nenhuma loja configurada")
+	}
+	return AbrirLoja(loja.CaminhoDB)
 }

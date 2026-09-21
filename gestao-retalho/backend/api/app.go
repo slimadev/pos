@@ -163,6 +163,10 @@ func (a *App) DuplicarProduto(produtoID int64) (CriarProdutoResponse, error) {
 	return CriarProdutoResponse{Produto: produto, Unidades: unidades}, nil
 }
 
+func (a *App) AdicionarUnidadeProduto(u domain.UnidadeProduto) (domain.UnidadeProduto, error) {
+	return a.ProdutoService.AdicionarUnidade(a.ctx, u)
+}
+
 // --- Categorias (SDD 3.2) ---------------------------------------------------
 
 func (a *App) ListarCategorias() ([]domain.Categoria, error) {

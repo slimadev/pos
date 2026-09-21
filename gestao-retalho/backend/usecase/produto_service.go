@@ -91,6 +91,20 @@ func (s *ProdutoService) Desativar(ctx context.Context, id int64) error {
 	return s.repo.DefinirAtivo(ctx, id, false)
 }
 
+// AdicionarUnidade acrescenta mais uma unidade de venda/compra a um
+// produto já existente (ex: o mesmo produto passa a vender-se também em
+// caixa, além de unidade) — Criar só aceitava unidades no momento da
+// criação, sem forma nenhuma de acrescentar depois.
+func (s *ProdutoService) AdicionarUnidade(ctx context.Context, u domain.UnidadeProduto) (domain.UnidadeProduto, error) {
+	if u.NomeUnidade == "" {
+		return domain.UnidadeProduto{}, fmt.Errorf("nome da unidade é obrigatório")
+	}
+	if u.QtdEmUnidadeBase <= 0 {
+		return domain.UnidadeProduto{}, fmt.Errorf("quantidade em unidade base deve ser positiva")
+	}
+	return s.repo.CriarUnidade(ctx, u)
+}
+
 // Duplicar cria uma cópia do produto e das suas unidades — útil para
 // variantes (SDD 4.1: "mesma cerveja, tamanhos diferentes").
 func (s *ProdutoService) Duplicar(ctx context.Context, produtoID int64) (domain.Produto, []domain.UnidadeProduto, error) {

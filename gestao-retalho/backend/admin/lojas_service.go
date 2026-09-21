@@ -92,15 +92,7 @@ type LojaAtual struct {
 }
 
 func (s *LojasService) ObterAtual(ctx context.Context) (LojaAtual, error) {
-	loja, existe, err := s.repo.ObterUnica(ctx)
-	if err != nil {
-		return LojaAtual{}, err
-	}
-	if !existe {
-		return LojaAtual{}, fmt.Errorf("nenhuma loja configurada")
-	}
-
-	app, fechar, err := AbrirLoja(loja.CaminhoDB)
+	app, fechar, err := abrirLojaUnica(ctx, s.repo)
 	if err != nil {
 		return LojaAtual{}, err
 	}

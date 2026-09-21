@@ -17,9 +17,14 @@ import {
   AtivarArmazem,
   DesativarArmazem,
   ListarProdutos,
+  ListarTodosProdutos,
+  ListarUnidadesProduto,
   CriarProduto,
+  AtualizarProduto,
   AtivarProduto,
   DesativarProduto,
+  DuplicarProduto,
+  AdicionarUnidadeProduto,
   ListarCategorias,
   CriarCategoria,
   AtualizarCategoria,
@@ -117,7 +122,7 @@ export default function Administracao({ modulosAtivos }: { modulosAtivos: string
         )}
 
         {seccao === "produtos" && (
-          <ProdutosSection produtos={produtos} categorias={categorias} onChange={recarregar} onErro={setErro} />
+          <ProdutosSection categorias={categorias} onChangeGlobal={recarregar} onErro={setErro} />
         )}
         {seccao === "categorias" && (
           <CategoriasSection categorias={categorias} onChange={recarregar} onErro={setErro} />
@@ -327,59 +332,49 @@ function CategoriaForm({
 
 // --- Produtos ----------------------------------------------------------------
 
+// ProdutosSection tem a sua própria lista de produtos (ListarTodosProdutos,
+// incluindo inativos, para poder reativá-los aqui) em vez de reaproveitar o
+// `produtos` do estado partilhado do Administracao.tsx — esse fica só com
+// ativos porque alimenta também os seletores de Stock/Inventário/Fichas
+// técnicas/Farmácia, onde um produto inativo não devia aparecer. onChangeGlobal
+// refresca esse estado partilhado sempre que um produto é criado/editado aqui.
 function ProdutosSection({
-  produtos,
   categorias,
-  onChange,
+  onChangeGlobal,
   onErro,
 }: {
-  produtos: domain.Produto[];
   categorias: domain.Categoria[];
-  onChange: () => void;
+  onChangeGlobal: () => void;
   onErro: (e: string) => void;
 }) {
-  const [nome, setNome] = useState("");
-  const [categoriaId, setCategoriaId] = useState<number | "">("");
-  const [tipoProduto, setTipoProduto] = useState<"simples" | "composto" | "semi_elaborado">("simples");
-  const [unidadeBase, setUnidadeBase] = useState("unidade");
-  const [precoCusto, setPrecoCusto] = useState("0");
-  const [precoVenda, setPrecoVenda] = useState("0");
-  const [loteControlado, setLoteControlado] = useState(false);
+  const [produtos, setProdutos] = useState<domain.Produto[]>([]);
+  const [aCarregar, setACarregar] = useState(true);
+  const [emEdicao, setEmEdicao] = useState<domain.Produto | null>(null);
+
+  function carregar() {
+    ListarTodosProdutos()
+      .then(setProdutos)
+      .catch((e) => onErro(String(e)))
+      .finally(() => setACarregar(false));
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- onErro é um setter estável vindo de Administracao
+  useEffect(carregar, []);
 
   const nomeCategoria = (id: number) => categorias.find((c) => c.ID === id)?.Nome ?? `#${id}`;
 
-  function criar() {
-    const produto = new domain.Produto();
-    produto.Nome = nome;
-    produto.CategoriaID = categoriaId === "" ? undefined : Number(categoriaId);
-    produto.TipoProduto = tipoProduto;
-    produto.UnidadeBase = unidadeBase;
-    produto.LoteControlado = loteControlado;
-
-    const unidade = new domain.UnidadeProduto();
-    unidade.NomeUnidade = unidadeBase;
-    unidade.QtdEmUnidadeBase = 1;
-    unidade.PrecoCusto = Number(precoCusto);
-    unidade.PrecoVenda = Number(precoVenda);
-    unidade.IsPadraoVenda = true;
-    unidade.IsPadraoCompra = true;
-
-    const req = new api.CriarProdutoRequest();
-    req.Produto = produto;
-    req.Unidades = [unidade];
-
-    run(
-      () => CriarProduto(req),
-      onErro,
-      () => {
-        setNome("");
-        onChange();
-      },
-    );
+  function alternarAtivo(p: domain.Produto) {
+    run(() => (p.Ativo ? DesativarProduto(p.ID) : AtivarProduto(p.ID)), onErro, () => {
+      carregar();
+      onChangeGlobal();
+    });
   }
 
-  function alternarAtivo(p: domain.Produto) {
-    run(() => (p.Ativo ? DesativarProduto(p.ID) : AtivarProduto(p.ID)), onErro, onChange);
+  function duplicar(p: domain.Produto) {
+    run(() => DuplicarProduto(p.ID), onErro, () => {
+      carregar();
+      onChangeGlobal();
+    });
   }
 
   return (
@@ -407,12 +402,164 @@ function ProdutosSection({
               <td>{p.LoteControlado ? "sim" : "não"}</td>
               <td>{p.Ativo ? "sim" : "não"}</td>
               <td>
+                <button onClick={() => setEmEdicao(p)}>Editar</button>{" "}
+                <button onClick={() => duplicar(p)}>Duplicar</button>{" "}
                 <button onClick={() => alternarAtivo(p)}>{p.Ativo ? "Desativar" : "Ativar"}</button>
               </td>
             </tr>
           ))}
+          {produtos.length === 0 && (
+            <tr>
+              <td colSpan={7}>{aCarregar ? "A carregar…" : "Sem produtos — crie um abaixo."}</td>
+            </tr>
+          )}
         </tbody>
       </table>
+
+      <ProdutoForm
+        key={emEdicao?.ID ?? "novo"}
+        produto={emEdicao}
+        categorias={categorias}
+        onGuardado={() => {
+          setEmEdicao(null);
+          carregar();
+          onChangeGlobal();
+        }}
+        onCancelar={() => setEmEdicao(null)}
+        onErro={onErro}
+      />
+    </section>
+  );
+}
+
+type UnidadeRascunho = {
+  nomeUnidade: string;
+  qtdEmUnidadeBase: string;
+  precoCusto: string;
+  precoVenda: string;
+  codigoBarras: string;
+  isPadraoVenda: boolean;
+  isPadraoCompra: boolean;
+};
+
+function unidadeVazia(padrao: boolean): UnidadeRascunho {
+  return {
+    nomeUnidade: "",
+    qtdEmUnidadeBase: "1",
+    precoCusto: "0",
+    precoVenda: "0",
+    codigoBarras: "",
+    isPadraoVenda: padrao,
+    isPadraoCompra: padrao,
+  };
+}
+
+function paraUnidadeProduto(u: UnidadeRascunho, produtoID?: number): domain.UnidadeProduto {
+  const unidade = new domain.UnidadeProduto();
+  if (produtoID != null) unidade.ProdutoID = produtoID;
+  unidade.NomeUnidade = u.nomeUnidade.trim();
+  unidade.QtdEmUnidadeBase = Number(u.qtdEmUnidadeBase);
+  unidade.PrecoCusto = Number(u.precoCusto);
+  unidade.PrecoVenda = Number(u.precoVenda);
+  unidade.CodigoBarras = u.codigoBarras.trim() || undefined;
+  unidade.IsPadraoVenda = u.isPadraoVenda;
+  unidade.IsPadraoCompra = u.isPadraoCompra;
+  return unidade;
+}
+
+// ProdutoForm serve tanto para criar (produto=null, com o bloco completo de
+// variações/grupos — SDD 4.1) como para editar (nome/categoria/stock
+// mínimo/lote controlado; tipo e unidade base ficam fixos pelo que
+// AtualizarProduto aceita, e as unidades já criadas só podem crescer aqui,
+// nunca ser removidas/editadas — sem suporte nenhum disso no backend).
+function ProdutoForm({
+  produto,
+  categorias,
+  onGuardado,
+  onCancelar,
+  onErro,
+}: {
+  produto: domain.Produto | null;
+  categorias: domain.Categoria[];
+  onGuardado: () => void;
+  onCancelar: () => void;
+  onErro: (e: string) => void;
+}) {
+  const [nome, setNome] = useState(produto?.Nome ?? "");
+  const [categoriaId, setCategoriaId] = useState<number | "">(produto?.CategoriaID ?? "");
+  const [tipoProduto, setTipoProduto] = useState<"simples" | "composto" | "semi_elaborado">(
+    (produto?.TipoProduto as "simples" | "composto" | "semi_elaborado") ?? "simples",
+  );
+  const [unidadeBase, setUnidadeBase] = useState(produto?.UnidadeBase ?? "unidade");
+  const [stockMinimo, setStockMinimo] = useState(produto?.StockMinimo?.toString() ?? "");
+  const [loteControlado, setLoteControlado] = useState(produto?.LoteControlado ?? false);
+  const [unidadesNovas, setUnidadesNovas] = useState<UnidadeRascunho[]>([unidadeVazia(true)]);
+  const [aGuardar, setAGuardar] = useState(false);
+
+  const [unidadesExistentes, setUnidadesExistentes] = useState<domain.UnidadeProduto[]>([]);
+  const [novaUnidade, setNovaUnidade] = useState<UnidadeRascunho>(unidadeVazia(false));
+  const [aAdicionarUnidade, setAAdicionarUnidade] = useState(false);
+
+  useEffect(() => {
+    if (!produto) return;
+    ListarUnidadesProduto(produto.ID)
+      .then(setUnidadesExistentes)
+      .catch((e) => onErro(String(e)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- só corre para o produto desta instância (key troca-o)
+  }, []);
+
+  function atualizarUnidadeNova(i: number, campo: keyof UnidadeRascunho, valor: string | boolean) {
+    setUnidadesNovas((prev) => prev.map((u, idx) => (idx === i ? { ...u, [campo]: valor } : u)));
+  }
+
+  function guardar() {
+    if (!nome.trim() || aGuardar) return;
+
+    const p = new domain.Produto();
+    p.ID = produto?.ID ?? 0;
+    p.Nome = nome.trim();
+    p.CategoriaID = categoriaId === "" ? undefined : Number(categoriaId);
+    p.TipoProduto = tipoProduto;
+    p.UnidadeBase = unidadeBase.trim() || "unidade";
+    p.StockMinimo = stockMinimo === "" ? undefined : Number(stockMinimo);
+    p.LoteControlado = loteControlado;
+
+    let pedido: Promise<unknown>;
+    if (produto) {
+      pedido = AtualizarProduto(p);
+    } else {
+      const validas = unidadesNovas.filter((u) => u.nomeUnidade.trim());
+      if (validas.length === 0) {
+        onErro("Produto precisa de pelo menos uma unidade (variação/grupo) de venda");
+        return;
+      }
+      const req = new api.CriarProdutoRequest();
+      req.Produto = p;
+      req.Unidades = validas.map((u) => paraUnidadeProduto(u));
+      pedido = CriarProduto(req);
+    }
+
+    setAGuardar(true);
+    pedido
+      .then(() => onGuardado())
+      .catch((e) => onErro(String(e)))
+      .finally(() => setAGuardar(false));
+  }
+
+  function adicionarUnidadeExistente() {
+    if (!produto || !novaUnidade.nomeUnidade.trim() || aAdicionarUnidade) return;
+    setAAdicionarUnidade(true);
+    AdicionarUnidadeProduto(paraUnidadeProduto(novaUnidade, produto.ID))
+      .then((criada) => {
+        setUnidadesExistentes((prev) => [...prev, criada]);
+        setNovaUnidade(unidadeVazia(false));
+      })
+      .catch((e) => onErro(String(e)))
+      .finally(() => setAAdicionarUnidade(false));
+  }
+
+  return (
+    <div className="fase1-produto-form">
       <div className="fase1-form">
         <input placeholder="Nome do produto" value={nome} onChange={(e) => setNome(e.target.value)} />
         <select value={categoriaId} onChange={(e) => setCategoriaId(e.target.value ? Number(e.target.value) : "")}>
@@ -423,7 +570,12 @@ function ProdutosSection({
             </option>
           ))}
         </select>
-        <select value={tipoProduto} onChange={(e) => setTipoProduto(e.target.value as typeof tipoProduto)}>
+        <select
+          value={tipoProduto}
+          onChange={(e) => setTipoProduto(e.target.value as typeof tipoProduto)}
+          disabled={!!produto}
+          title={produto ? "Tipo não pode ser alterado depois de criado" : undefined}
+        >
           <option value="simples">simples</option>
           <option value="composto">composto</option>
           <option value="semi_elaborado">semi_elaborado</option>
@@ -432,28 +584,154 @@ function ProdutosSection({
           placeholder="Unidade base (ex: unidade, kg)"
           value={unidadeBase}
           onChange={(e) => setUnidadeBase(e.target.value)}
+          disabled={!!produto}
+          title={produto ? "Unidade base não pode ser alterada depois de criado" : undefined}
         />
         <input
-          placeholder="Preço custo"
+          placeholder="Stock mínimo (opcional)"
           type="number"
-          value={precoCusto}
-          onChange={(e) => setPrecoCusto(e.target.value)}
-        />
-        <input
-          placeholder="Preço venda"
-          type="number"
-          value={precoVenda}
-          onChange={(e) => setPrecoVenda(e.target.value)}
+          value={stockMinimo}
+          onChange={(e) => setStockMinimo(e.target.value)}
         />
         <label>
           <input type="checkbox" checked={loteControlado} onChange={(e) => setLoteControlado(e.target.checked)} /> lote
           controlado (farmácia)
         </label>
-        <button disabled={!nome} onClick={criar}>
-          + Criar produto
-        </button>
       </div>
-    </section>
+
+      {!produto && (
+        <div className="fase1-unidades-bloco">
+          <div className="fase1-unidades-titulo">Variações / grupos (unidades de venda e compra)</div>
+          {unidadesNovas.map((u, i) => (
+            <div className="fase1-form" key={i}>
+              <input
+                placeholder="Nome (ex: unidade, caixa de 24)"
+                value={u.nomeUnidade}
+                onChange={(e) => atualizarUnidadeNova(i, "nomeUnidade", e.target.value)}
+              />
+              <input
+                placeholder="Qtd em unidade base"
+                type="number"
+                value={u.qtdEmUnidadeBase}
+                onChange={(e) => atualizarUnidadeNova(i, "qtdEmUnidadeBase", e.target.value)}
+              />
+              <input
+                placeholder="Preço custo"
+                type="number"
+                value={u.precoCusto}
+                onChange={(e) => atualizarUnidadeNova(i, "precoCusto", e.target.value)}
+              />
+              <input
+                placeholder="Preço venda"
+                type="number"
+                value={u.precoVenda}
+                onChange={(e) => atualizarUnidadeNova(i, "precoVenda", e.target.value)}
+              />
+              <input
+                placeholder="Código de barras (opcional)"
+                value={u.codigoBarras}
+                onChange={(e) => atualizarUnidadeNova(i, "codigoBarras", e.target.value)}
+              />
+              <label>
+                <input
+                  type="checkbox"
+                  checked={u.isPadraoVenda}
+                  onChange={(e) => atualizarUnidadeNova(i, "isPadraoVenda", e.target.checked)}
+                />{" "}
+                padrão venda
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={u.isPadraoCompra}
+                  onChange={(e) => atualizarUnidadeNova(i, "isPadraoCompra", e.target.checked)}
+                />{" "}
+                padrão compra
+              </label>
+              {unidadesNovas.length > 1 && (
+                <button onClick={() => setUnidadesNovas((prev) => prev.filter((_, idx) => idx !== i))}>Remover</button>
+              )}
+            </div>
+          ))}
+          <button onClick={() => setUnidadesNovas((prev) => [...prev, unidadeVazia(false)])}>
+            + Adicionar variação/grupo
+          </button>
+        </div>
+      )}
+
+      {produto && (
+        <div className="fase1-unidades-bloco">
+          <div className="fase1-unidades-titulo">Variações / grupos (unidades de venda e compra)</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Qtd</th>
+                <th>Preço custo</th>
+                <th>Preço venda</th>
+                <th>Código de barras</th>
+              </tr>
+            </thead>
+            <tbody>
+              {unidadesExistentes.map((u) => (
+                <tr key={u.ID}>
+                  <td>{u.NomeUnidade}</td>
+                  <td>{u.QtdEmUnidadeBase}</td>
+                  <td>{u.PrecoCusto}</td>
+                  <td>{u.PrecoVenda}</td>
+                  <td>{u.CodigoBarras ?? "—"}</td>
+                </tr>
+              ))}
+              {unidadesExistentes.length === 0 && (
+                <tr>
+                  <td colSpan={5}>A carregar…</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+          <div className="fase1-form">
+            <input
+              placeholder="Nome (ex: caixa de 24)"
+              value={novaUnidade.nomeUnidade}
+              onChange={(e) => setNovaUnidade({ ...novaUnidade, nomeUnidade: e.target.value })}
+            />
+            <input
+              placeholder="Qtd em unidade base"
+              type="number"
+              value={novaUnidade.qtdEmUnidadeBase}
+              onChange={(e) => setNovaUnidade({ ...novaUnidade, qtdEmUnidadeBase: e.target.value })}
+            />
+            <input
+              placeholder="Preço custo"
+              type="number"
+              value={novaUnidade.precoCusto}
+              onChange={(e) => setNovaUnidade({ ...novaUnidade, precoCusto: e.target.value })}
+            />
+            <input
+              placeholder="Preço venda"
+              type="number"
+              value={novaUnidade.precoVenda}
+              onChange={(e) => setNovaUnidade({ ...novaUnidade, precoVenda: e.target.value })}
+            />
+            <input
+              placeholder="Código de barras (opcional)"
+              value={novaUnidade.codigoBarras}
+              onChange={(e) => setNovaUnidade({ ...novaUnidade, codigoBarras: e.target.value })}
+            />
+            <button disabled={!novaUnidade.nomeUnidade.trim() || aAdicionarUnidade} onClick={adicionarUnidadeExistente}>
+              {aAdicionarUnidade ? "A adicionar…" : "+ Adicionar unidade"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="fase1-form">
+        <button disabled={!nome.trim() || aGuardar} onClick={guardar}>
+          {aGuardar ? "A guardar…" : produto ? "Guardar alterações" : "+ Criar produto"}
+        </button>
+        {produto && <button onClick={onCancelar}>Cancelar</button>}
+      </div>
+    </div>
   );
 }
 

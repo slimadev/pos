@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"gestao-retalho/backend/api"
 	"gestao-retalho/backend/domain"
 )
 
@@ -24,10 +25,11 @@ type AdminApp struct {
 	Dashboard  *DashboardService
 	Auth       *AuthService
 	Categorias *CategoriasService
+	Produtos   *ProdutosService
 }
 
-func NewAdminApp(lojas *LojasService, dashboard *DashboardService, auth *AuthService, categorias *CategoriasService) *AdminApp {
-	return &AdminApp{Lojas: lojas, Dashboard: dashboard, Auth: auth, Categorias: categorias}
+func NewAdminApp(lojas *LojasService, dashboard *DashboardService, auth *AuthService, categorias *CategoriasService, produtos *ProdutosService) *AdminApp {
+	return &AdminApp{Lojas: lojas, Dashboard: dashboard, Auth: auth, Categorias: categorias, Produtos: produtos}
 }
 
 func (a *AdminApp) OnStartup(ctx context.Context) {
@@ -194,4 +196,67 @@ func (a *AdminApp) DesativarCategoria(categoriaID int64) error {
 		return err
 	}
 	return a.Categorias.DefinirAtiva(a.ctx, categoriaID, false)
+}
+
+// --- Produtos ----------------------------------------------------------------
+//
+// Produtos (e as suas unidades de venda/compra — "variações ou grupos" do
+// mesmo produto) são dado de negócio (vivem dentro da base da loja, nunca
+// em admin.db) — estes bindings só abrem a ligação à única loja a cada
+// chamada, nunca mantêm uma ligação persistente (ver AbrirLoja).
+
+func (a *AdminApp) ListarProdutos() ([]domain.Produto, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Produtos.Listar(a.ctx)
+}
+
+func (a *AdminApp) ListarUnidadesProduto(produtoID int64) ([]domain.UnidadeProduto, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Produtos.ListarUnidades(a.ctx, produtoID)
+}
+
+func (a *AdminApp) CriarProduto(req api.CriarProdutoRequest) (api.CriarProdutoResponse, error) {
+	if err := a.exigirSessao(); err != nil {
+		return api.CriarProdutoResponse{}, err
+	}
+	return a.Produtos.Criar(a.ctx, req)
+}
+
+func (a *AdminApp) AtualizarProduto(p domain.Produto) (domain.Produto, error) {
+	if err := a.exigirSessao(); err != nil {
+		return domain.Produto{}, err
+	}
+	return a.Produtos.Atualizar(a.ctx, p)
+}
+
+func (a *AdminApp) AtivarProduto(produtoID int64) error {
+	if err := a.exigirSessao(); err != nil {
+		return err
+	}
+	return a.Produtos.DefinirAtivo(a.ctx, produtoID, true)
+}
+
+func (a *AdminApp) DesativarProduto(produtoID int64) error {
+	if err := a.exigirSessao(); err != nil {
+		return err
+	}
+	return a.Produtos.DefinirAtivo(a.ctx, produtoID, false)
+}
+
+func (a *AdminApp) DuplicarProduto(produtoID int64) (api.CriarProdutoResponse, error) {
+	if err := a.exigirSessao(); err != nil {
+		return api.CriarProdutoResponse{}, err
+	}
+	return a.Produtos.Duplicar(a.ctx, produtoID)
+}
+
+func (a *AdminApp) AdicionarUnidadeProduto(u domain.UnidadeProduto) (domain.UnidadeProduto, error) {
+	if err := a.exigirSessao(); err != nil {
+		return domain.UnidadeProduto{}, err
+	}
+	return a.Produtos.AdicionarUnidade(a.ctx, u)
 }
