@@ -11,20 +11,25 @@ import {
   AdicionarUnidadeProduto,
 } from "../wailsjs/go/admin/AdminApp";
 import { api, domain } from "../wailsjs/go/models";
+import Modal from "./Modal";
 
 type TipoProduto = "simples" | "composto" | "semi_elaborado";
+
+type ModalEstado = { aberto: false } | { aberto: true; produto: domain.Produto | null };
 
 /**
  * CRUD de produtos da única loja que este cmd/admin serve — inclui as
  * "variações ou grupos" do mesmo produto (SDD 4.1: `UnidadeProduto`, ex:
  * unidade/caixa, garrafa/dose): um produto só é vendável com pelo menos
- * uma, e pode ter várias em simultâneo, geridas aqui.
+ * uma, e pode ter várias em simultâneo, geridas aqui. Criar/editar abre
+ * num modal (pedido explícito) em vez de um formulário sempre visível
+ * por baixo da tabela.
  */
 export default function ProdutosScreen({ onErro }: { onErro: (e: string) => void }) {
   const [produtos, setProdutos] = useState<domain.Produto[]>([]);
   const [categorias, setCategorias] = useState<domain.Categoria[]>([]);
   const [aCarregar, setACarregar] = useState(true);
-  const [emEdicao, setEmEdicao] = useState<domain.Produto | null>(null);
+  const [modal, setModal] = useState<ModalEstado>({ aberto: false });
 
   function carregar() {
     Promise.all([ListarProdutos(), ListarCategorias()])
@@ -50,9 +55,18 @@ export default function ProdutosScreen({ onErro }: { onErro: (e: string) => void
     DuplicarProduto(p.ID).then(carregar).catch((e) => onErro(String(e)));
   }
 
+  function fecharModal() {
+    setModal({ aberto: false });
+  }
+
   return (
     <div className="admin-lojas-screen">
-      <h2 style={{ margin: 0 }}>Produtos</h2>
+      <div className="admin-ecra-header">
+        <h2 style={{ margin: 0 }}>Produtos</h2>
+        <button className="admin-btn" onClick={() => setModal({ aberto: true, produto: null })}>
+          + Criar produto
+        </button>
+      </div>
 
       <table className="admin-tabela">
         <thead>
@@ -74,7 +88,7 @@ export default function ProdutosScreen({ onErro }: { onErro: (e: string) => void
               <td>{p.UnidadeBase}</td>
               <td>{p.Ativo ? "sim" : "não"}</td>
               <td className="admin-form">
-                <button className="admin-btn-secundario" onClick={() => setEmEdicao(p)}>
+                <button className="admin-btn-secundario" onClick={() => setModal({ aberto: true, produto: p })}>
                   Editar
                 </button>
                 <button className="admin-btn-secundario" onClick={() => duplicar(p)}>
@@ -88,23 +102,26 @@ export default function ProdutosScreen({ onErro }: { onErro: (e: string) => void
           ))}
           {produtos.length === 0 && (
             <tr>
-              <td colSpan={6}>{aCarregar ? "A carregar…" : "Sem produtos — crie um abaixo."}</td>
+              <td colSpan={6}>{aCarregar ? "A carregar…" : 'Sem produtos — clique em "+ Criar produto".'}</td>
             </tr>
           )}
         </tbody>
       </table>
 
-      <ProdutoForm
-        key={emEdicao?.ID ?? "novo"}
-        produto={emEdicao}
-        categorias={categorias}
-        onGuardado={() => {
-          setEmEdicao(null);
-          carregar();
-        }}
-        onCancelar={() => setEmEdicao(null)}
-        onErro={onErro}
-      />
+      {modal.aberto && (
+        <Modal titulo={modal.produto ? "Editar produto" : "Criar produto"} onFechar={fecharModal}>
+          <ProdutoForm
+            produto={modal.produto}
+            categorias={categorias}
+            onGuardado={() => {
+              fecharModal();
+              carregar();
+            }}
+            onCancelar={fecharModal}
+            onErro={onErro}
+          />
+        </Modal>
+      )}
     </div>
   );
 }
@@ -413,11 +430,9 @@ function ProdutoForm({
         <button className="admin-btn" disabled={!nome.trim() || aGuardar} onClick={guardar}>
           {aGuardar ? "A guardar…" : produto ? "Guardar alterações" : "+ Criar produto"}
         </button>
-        {produto && (
-          <button className="admin-btn-secundario" onClick={onCancelar}>
-            Cancelar
-          </button>
-        )}
+        <button className="admin-btn-secundario" onClick={onCancelar}>
+          Cancelar
+        </button>
       </div>
     </div>
   );
