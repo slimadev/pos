@@ -309,6 +309,20 @@ Testado: 9 testes novos (usecase: criar com várias unidades, exige pelo menos u
 
 ---
 
+## 8.9. Addendum (pós-Fase 10) — cmd/app deixa de abrir sozinho, só a partir do botão "PDV"
+
+Pedido explícito: "quero que cmd/app não abra independente mas sim a partir do admin principal dependendo do tipo de loja... remove o botão e funcionalidades de administração em Vendas". Duas opções foram postas ao utilizador antes de avançar — (A) `cmd/admin` lança `cmd/app` como processo próprio, maximizado; (B) fundir a UI de venda para dentro do `cmd/admin`, num único processo. Escolhida a opção A: reaproveita 100% da UI de venda já existente (`VendaDireta.tsx`/`Bottlestore.tsx`, ~900 linhas) sem duplicar nada entre os dois frontends, ao custo de continuarem a ser dois processos/janelas em vez de um só. Antes de avançar, o utilizador perguntou se dava para os dois usarem sempre a mesma base — respondido e implementado (ver abaixo).
+
+- `cmd/app/main.go` ganhou a flag `-db <caminho>`: sem ela, resolve o caminho local da máquina como sempre (`make run-app` continua a funcionar sozinho em desenvolvimento); com ela, abre exatamente esse ficheiro. Sem isto, o `cmd/app` lançado pelo `cmd/admin` abriria uma base **diferente e vazia**, porque a loja criada via `ConfigurarPrimeiroArranque` (addendum 8.6) vive em `~/.config/gestao-retalho-admin/lojas/<slug>.db`, não no caminho por omissão do `cmd/app` (`~/.config/gestao-retalho/loja.db`). Janela passou também a abrir maximizada (`WindowStartState: options.Maximised`) — cobre o ecrã, como pedido.
+- `config.ResolveAppExecutavel()` localiza o binário do `cmd/app` para o lançar: `GESTAO_RETALHO_APP_BIN` (override explícito) → ao lado do próprio executável do `cmd/admin` (layout esperado de uma instalação real, os dois lado a lado) → pasta irmã `cmd/app/build/bin` dentro do repositório (só serve em desenvolvimento, onde `make build-app`/`build-admin` deixam os binários em pastas separadas).
+- `admin.PDVService.Abrir`: resolve a única loja (`LojaRepository.ObterUnica`), lança `exec.Command(appExe, "-db", loja.CaminhoDB)`; um mutex com estado `aberto` evita abrir uma segunda janela se "PDV" for clicado outra vez enquanto a primeira ainda está a correr (reposto a `false` quando o processo termina, via `cmd.Wait()` numa goroutine). `AdminApp.AbrirPDV` (binding novo) nunca renderiza nada dentro do `cmd/admin` — só arranca o processo.
+- Frontend: botão "PDV" novo na sidebar do `cmd/admin`, destacado com a cor de acento (ação, não navegação — não faz parte da máquina de estados `Ecra`). `AppPrincipal` em `cmd/app` perdeu o estado `modo`, o switch "Venda/Administração" e o import de `Administracao` — mostra sempre o ecrã de venda certo consoante os módulos ativos (ou um aviso se a loja não tiver nenhum módulo de venda ativo).
+- **Consequência assumida conscientemente:** `Administracao.tsx` e os ecrãs que só lá viviam (Armazéns, Stock, Inventário, Fichas técnicas, Farmácia, Clientes e dívidas, Relatórios) ficam no repositório mas **inacessíveis por agora** — só Produtos e Categorias já tinham sido portados para o `cmd/admin` (addendums 8.7/8.8) antes desta mudança. Os restantes continuam por portar; até lá, essa gestão não tem ecrã nenhum ligado em nenhuma das duas apps.
+
+Testado: 5 testes novos (`ResolveAppExecutavel` com override de ambiente e sem binário nenhum presente; `PDVService` rejeita sem loja configurada, propaga erro do resolvedor de executável, lança o processo com o caminho certo) — 51/51 a passar. Confirmado ponta a ponta: login no `cmd/admin` (Ferragem Cossa) → clique em "PDV" → `cmd/app` abre maximizado (3840x2123, cobre o ecrã inteiro no ambiente de teste) com os mesmos produtos da mesma base de dados, sem nenhum botão de Administração visível.
+
+---
+
 ## 10. Fase 9 — Admin universal multi-loja — tela `1c`
 
 > **Nota (addendum 8.7):** o desenho multi-loja desta fase — registo de várias lojas, dashboard agregado com cartões por loja e comparação entre negócios — foi revertido a pedido explícito do utilizador depois da Fase 10. Esta secção fica como registo histórico da implementação original; o estado atual está descrito no addendum 8.7 acima.
