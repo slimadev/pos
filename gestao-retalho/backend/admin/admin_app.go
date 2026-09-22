@@ -6,6 +6,7 @@ import (
 
 	"gestao-retalho/backend/api"
 	"gestao-retalho/backend/domain"
+	"gestao-retalho/backend/usecase"
 )
 
 // AdminApp é o struct que o Wails liga ao frontend de cmd/admin — mesmo
@@ -27,11 +28,12 @@ type AdminApp struct {
 	Categorias *CategoriasService
 	Produtos   *ProdutosService
 	Armazens   *ArmazensService
+	Stock      *StockService
 	PDV        *PDVService
 }
 
-func NewAdminApp(lojas *LojasService, dashboard *DashboardService, auth *AuthService, categorias *CategoriasService, produtos *ProdutosService, armazens *ArmazensService, pdv *PDVService) *AdminApp {
-	return &AdminApp{Lojas: lojas, Dashboard: dashboard, Auth: auth, Categorias: categorias, Produtos: produtos, Armazens: armazens, PDV: pdv}
+func NewAdminApp(lojas *LojasService, dashboard *DashboardService, auth *AuthService, categorias *CategoriasService, produtos *ProdutosService, armazens *ArmazensService, stock *StockService, pdv *PDVService) *AdminApp {
+	return &AdminApp{Lojas: lojas, Dashboard: dashboard, Auth: auth, Categorias: categorias, Produtos: produtos, Armazens: armazens, Stock: stock, PDV: pdv}
 }
 
 func (a *AdminApp) OnStartup(ctx context.Context) {
@@ -302,6 +304,54 @@ func (a *AdminApp) DesativarArmazem(armazemID int64) error {
 		return err
 	}
 	return a.Armazens.DefinirAtivo(a.ctx, armazemID, false)
+}
+
+// --- Stock ---------------------------------------------------------------
+//
+// Stock é dado de negócio (vive dentro da base da loja, nunca em admin.db)
+// — estes bindings só abrem a ligação à única loja a cada chamada, nunca
+// mantêm uma ligação persistente (ver AbrirLoja).
+
+func (a *AdminApp) ListarStockPorArmazem(armazemID int64) ([]domain.StockItem, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Stock.ListarPorArmazem(a.ctx, armazemID)
+}
+
+func (a *AdminApp) ListarMovimentosStock(produtoID int64) ([]domain.MovimentoStock, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Stock.ListarMovimentos(a.ctx, produtoID)
+}
+
+func (a *AdminApp) RegistarEntradaStock(p usecase.EntradaParams) (domain.MovimentoStock, error) {
+	if err := a.exigirSessao(); err != nil {
+		return domain.MovimentoStock{}, err
+	}
+	return a.Stock.RegistarEntrada(a.ctx, p)
+}
+
+func (a *AdminApp) TransferirStock(p usecase.TransferenciaParams) (domain.MovimentoStock, error) {
+	if err := a.exigirSessao(); err != nil {
+		return domain.MovimentoStock{}, err
+	}
+	return a.Stock.Transferir(a.ctx, p)
+}
+
+func (a *AdminApp) RegistarPerdaStock(p usecase.SaidaParams) (domain.MovimentoStock, error) {
+	if err := a.exigirSessao(); err != nil {
+		return domain.MovimentoStock{}, err
+	}
+	return a.Stock.RegistarPerda(a.ctx, p)
+}
+
+func (a *AdminApp) RegistarConsumoInternoStock(p usecase.SaidaParams) (domain.MovimentoStock, error) {
+	if err := a.exigirSessao(); err != nil {
+		return domain.MovimentoStock{}, err
+	}
+	return a.Stock.RegistarConsumoInterno(a.ctx, p)
 }
 
 // --- PDV -----------------------------------------------------------------

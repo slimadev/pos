@@ -1,0 +1,415 @@
+import { useEffect, useState } from "react";
+import type { ComponentType, SVGProps } from "react";
+import {
+  ArrowDownTrayIcon,
+  ArrowsRightLeftIcon,
+  XCircleIcon,
+  MinusCircleIcon,
+  ClockIcon,
+  ExclamationTriangleIcon,
+} from "@heroicons/react/24/outline";
+import {
+  ListarArmazens,
+  ListarProdutos,
+  ListarStockPorArmazem,
+  ListarMovimentosStock,
+  RegistarEntradaStock,
+  TransferirStock,
+  RegistarPerdaStock,
+  RegistarConsumoInternoStock,
+} from "../wailsjs/go/admin/AdminApp";
+import { domain, usecase } from "../wailsjs/go/models";
+import Modal from "./Modal";
+
+type IconeSvg = ComponentType<SVGProps<SVGSVGElement>>;
+type TipoMovimento = "entrada" | "transferencia" | "perda" | "consumo_interno";
+
+const TIPO_MOVIMENTO_INFO: Record<TipoMovimento, { rotulo: string; Icone: IconeSvg; cor: string }> = {
+  entrada: { rotulo: "Entrada", Icone: ArrowDownTrayIcon, cor: "ok" },
+  transferencia: { rotulo: "Transferência", Icone: ArrowsRightLeftIcon, cor: "accent" },
+  perda: { rotulo: "Perda", Icone: XCircleIcon, cor: "danger" },
+  consumo_interno: { rotulo: "Consumo interno", Icone: MinusCircleIcon, cor: "warn" },
+};
+
+const mt = (n: number) => `${n.toLocaleString("pt-PT", { maximumFractionDigits: 2 })}`;
+
+type ModalEstado = { aberto: false } | { aberto: true; produto: domain.Produto } | { aberto: true; historico: domain.Produto };
+
+/**
+ * Stock da única loja que este cmd/admin serve — escolhe o armazém, vê a
+ * quantidade e o custo médio ponderado de cada produto ali, e regista
+ * movimentos (entrada, transferência, perda, consumo interno) por um
+ * modal com seletor de tipo. "Abaixo do mínimo" reaproveita o mesmo
+ * StockMinimo que já alimenta o alerta do Dashboard.
+ */
+export default function StockScreen({ onErro }: { onErro: (e: string) => void }) {
+  const [armazens, setArmazens] = useState<domain.Armazem[]>([]);
+  const [armazemID, setArmazemID] = useState<number | "">("");
+  const [produtos, setProdutos] = useState<domain.Produto[]>([]);
+  const [modal, setModal] = useState<ModalEstado>({ aberto: false });
+  // Incrementado sempre que um movimento é guardado — entra na key de
+  // TabelaStock para forçar um remonte (e portanto recarregar) em vez de
+  // expor um método imperativo de refresh.
+  const [versao, setVersao] = useState(0);
+
+  useEffect(() => {
+    ListarProdutos()
+      .then(setProdutos)
+      .catch((e) => onErro(String(e)));
+    ListarArmazens()
+      .then((lista) => {
+        setArmazens(lista);
+        if (lista.length > 0) setArmazemID(lista[0].ID);
+      })
+      .catch((e) => onErro(String(e)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- onErro é um setter estável vindo de App
+  }, []);
+
+  function fecharModal() {
+    setModal({ aberto: false });
+  }
+
+  return (
+    <div className="admin-lojas-screen">
+      <nav className="admin-breadcrumb" aria-label="breadcrumb">
+        <span className="admin-breadcrumb-atual">Stock</span>
+      </nav>
+
+      <div className="admin-ecra-header">
+        <h2 style={{ margin: 0 }}>Stock</h2>
+        <label className="admin-stock-armazem-seletor">
+          Armazém:{" "}
+          <select value={armazemID} onChange={(e) => setArmazemID(e.target.value ? Number(e.target.value) : "")}>
+            {armazens.map((a) => (
+              <option key={a.ID} value={a.ID}>
+                {a.Nome}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      {armazens.length === 0 ? (
+        <p style={{ color: "var(--text-secondary)" }}>Nenhum armazém registado — crie um em "Armazéns" primeiro.</p>
+      ) : (
+        armazemID !== "" && (
+          <TabelaStock
+            key={`${armazemID}-${versao}`}
+            armazemID={armazemID}
+            produtos={produtos}
+            onAbrirMovimento={(produto) => setModal({ aberto: true, produto })}
+            onAbrirHistorico={(produto) => setModal({ aberto: true, historico: produto })}
+            onErro={onErro}
+          />
+        )
+      )}
+
+      {modal.aberto && "produto" in modal && armazemID !== "" && (
+        <Modal titulo={`Movimento — ${modal.produto.Nome}`} onFechar={fecharModal}>
+          <MovimentoForm
+            produto={modal.produto}
+            armazemAtualID={armazemID}
+            armazens={armazens}
+            onGuardado={() => {
+              fecharModal();
+              setVersao((v) => v + 1);
+            }}
+            onCancelar={fecharModal}
+            onErro={onErro}
+          />
+        </Modal>
+      )}
+
+      {modal.aberto && "historico" in modal && (
+        <Modal titulo={`Histórico — ${modal.historico.Nome}`} onFechar={fecharModal}>
+          <HistoricoMovimentos produtoID={modal.historico.ID} armazens={armazens} onErro={onErro} />
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+function TabelaStock({
+  armazemID,
+  produtos,
+  onAbrirMovimento,
+  onAbrirHistorico,
+  onErro,
+}: {
+  armazemID: number;
+  produtos: domain.Produto[];
+  onAbrirMovimento: (p: domain.Produto) => void;
+  onAbrirHistorico: (p: domain.Produto) => void;
+  onErro: (e: string) => void;
+}) {
+  const [stockItens, setStockItens] = useState<domain.StockItem[]>([]);
+  const [aCarregar, setACarregar] = useState(true);
+
+  useEffect(() => {
+    ListarStockPorArmazem(armazemID)
+      .then(setStockItens)
+      .catch((e) => onErro(String(e)))
+      .finally(() => setACarregar(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- onErro é um setter estável; armazemID está fixo por instância (key troca-o)
+  }, []);
+
+  const nomeProduto = (id: number) => produtos.find((p) => p.ID === id)?.Nome ?? `#${id}`;
+  const produtoDoId = (id: number) => produtos.find((p) => p.ID === id);
+
+  return (
+    <table className="admin-tabela">
+      <thead>
+        <tr>
+          <th>Produto</th>
+          <th>Quantidade</th>
+          <th>Custo médio</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {stockItens.map((item) => {
+          const produto = produtoDoId(item.ProdutoID);
+          const abaixoDoMinimo = produto?.StockMinimo != null && item.Quantidade < produto.StockMinimo;
+          return (
+            <tr key={item.ProdutoID}>
+              <td>
+                {nomeProduto(item.ProdutoID)}
+                {abaixoDoMinimo && (
+                  <span className="admin-stock-abaixo-minimo">
+                    <ExclamationTriangleIcon className="admin-stock-abaixo-minimo-icon" aria-hidden="true" />
+                    abaixo do mínimo
+                  </span>
+                )}
+              </td>
+              <td>
+                {mt(item.Quantidade)} {produto?.UnidadeBase}
+              </td>
+              <td>{mt(item.CustoMedioPonderado)} MT</td>
+              <td className="admin-form">
+                {produto && (
+                  <button className="admin-btn-secundario" onClick={() => onAbrirMovimento(produto)}>
+                    + Movimento
+                  </button>
+                )}
+                {produto && (
+                  <button className="admin-btn-secundario" onClick={() => onAbrirHistorico(produto)}>
+                    <ClockIcon className="admin-btn-icon-inline" aria-hidden="true" />
+                    Histórico
+                  </button>
+                )}
+              </td>
+            </tr>
+          );
+        })}
+        {stockItens.length === 0 && (
+          <tr>
+            <td colSpan={4}>{aCarregar ? "A carregar…" : "Sem produtos com stock neste armazém."}</td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  );
+}
+
+function MovimentoForm({
+  produto,
+  armazemAtualID,
+  armazens,
+  onGuardado,
+  onCancelar,
+  onErro,
+}: {
+  produto: domain.Produto;
+  armazemAtualID: number;
+  armazens: domain.Armazem[];
+  onGuardado: () => void;
+  onCancelar: () => void;
+  onErro: (e: string) => void;
+}) {
+  const [tipo, setTipo] = useState<TipoMovimento>("entrada");
+  const [quantidade, setQuantidade] = useState("1");
+  const [custoUnitario, setCustoUnitario] = useState("0");
+  const [motivo, setMotivo] = useState("");
+  const [armazemDestinoID, setArmazemDestinoID] = useState<number | "">("");
+  const [aGuardar, setAGuardar] = useState(false);
+
+  function guardar() {
+    const qtd = Number(quantidade);
+    if (qtd <= 0 || aGuardar) return;
+
+    let pedido: Promise<unknown>;
+    switch (tipo) {
+      case "entrada": {
+        const p = new usecase.EntradaParams();
+        p.ProdutoID = produto.ID;
+        p.ArmazemDestinoID = armazemAtualID;
+        p.Quantidade = qtd;
+        p.CustoUnitario = Number(custoUnitario);
+        pedido = RegistarEntradaStock(p);
+        break;
+      }
+      case "transferencia": {
+        if (armazemDestinoID === "") {
+          onErro("Escolha o armazém de destino");
+          return;
+        }
+        const p = new usecase.TransferenciaParams();
+        p.ProdutoID = produto.ID;
+        p.ArmazemOrigemID = armazemAtualID;
+        p.ArmazemDestinoID = armazemDestinoID;
+        p.Quantidade = qtd;
+        pedido = TransferirStock(p);
+        break;
+      }
+      case "perda": {
+        const p = new usecase.SaidaParams();
+        p.ProdutoID = produto.ID;
+        p.ArmazemOrigemID = armazemAtualID;
+        p.Quantidade = qtd;
+        p.Motivo = motivo;
+        pedido = RegistarPerdaStock(p);
+        break;
+      }
+      case "consumo_interno": {
+        const p = new usecase.SaidaParams();
+        p.ProdutoID = produto.ID;
+        p.ArmazemOrigemID = armazemAtualID;
+        p.Quantidade = qtd;
+        p.Motivo = motivo;
+        pedido = RegistarConsumoInternoStock(p);
+        break;
+      }
+    }
+
+    setAGuardar(true);
+    pedido
+      .then(() => onGuardado())
+      .catch((e) => onErro(String(e)))
+      .finally(() => setAGuardar(false));
+  }
+
+  return (
+    <div className="admin-armazem-form">
+      <div className="admin-stock-tipos">
+        {(Object.keys(TIPO_MOVIMENTO_INFO) as TipoMovimento[]).map((t) => {
+          const info = TIPO_MOVIMENTO_INFO[t];
+          return (
+            <div
+              key={t}
+              className={`admin-armazem-tipo-opcao cor-${info.cor}${tipo === t ? " ativo" : ""}`}
+              onClick={() => setTipo(t)}
+            >
+              <info.Icone className="admin-armazem-tipo-opcao-icone" aria-hidden="true" />
+              {info.rotulo}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="admin-form">
+        <input
+          placeholder="Quantidade"
+          type="number"
+          min="0"
+          value={quantidade}
+          onChange={(e) => setQuantidade(e.target.value)}
+        />
+
+        {tipo === "entrada" && (
+          <input
+            placeholder="Custo unitário"
+            type="number"
+            min="0"
+            value={custoUnitario}
+            onChange={(e) => setCustoUnitario(e.target.value)}
+          />
+        )}
+
+        {tipo === "transferencia" && (
+          <select
+            value={armazemDestinoID}
+            onChange={(e) => setArmazemDestinoID(e.target.value ? Number(e.target.value) : "")}
+          >
+            <option value="">Armazém destino…</option>
+            {armazens
+              .filter((a) => a.ID !== armazemAtualID)
+              .map((a) => (
+                <option key={a.ID} value={a.ID}>
+                  {a.Nome}
+                </option>
+              ))}
+          </select>
+        )}
+
+        {(tipo === "perda" || tipo === "consumo_interno") && (
+          <input placeholder="Motivo" value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+        )}
+      </div>
+
+      <div className="admin-form">
+        <button className="admin-btn" disabled={Number(quantidade) <= 0 || aGuardar} onClick={guardar}>
+          {aGuardar ? "A guardar…" : "Registar movimento"}
+        </button>
+        <button className="admin-btn-secundario" onClick={onCancelar}>
+          Cancelar
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function HistoricoMovimentos({
+  produtoID,
+  armazens,
+  onErro,
+}: {
+  produtoID: number;
+  armazens: domain.Armazem[];
+  onErro: (e: string) => void;
+}) {
+  const [movimentos, setMovimentos] = useState<domain.MovimentoStock[] | null>(null);
+
+  useEffect(() => {
+    ListarMovimentosStock(produtoID)
+      .then(setMovimentos)
+      .catch((e) => onErro(String(e)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- só corre para o produto desta instância (o modal remonta ao trocar)
+  }, []);
+
+  const nomeArmazem = (id?: number) => (id != null ? (armazens.find((a) => a.ID === id)?.Nome ?? `#${id}`) : "—");
+
+  return (
+    <table className="admin-tabela">
+      <thead>
+        <tr>
+          <th>Tipo</th>
+          <th>Quantidade</th>
+          <th>Origem</th>
+          <th>Destino</th>
+          <th>Data</th>
+        </tr>
+      </thead>
+      <tbody>
+        {(movimentos ?? []).map((m) => (
+          <tr key={m.ID}>
+            <td>{TIPO_MOVIMENTO_INFO[m.Tipo as TipoMovimento]?.rotulo ?? m.Tipo}</td>
+            <td>{mt(m.QuantidadeUnidadeBase)}</td>
+            <td>{nomeArmazem(m.ArmazemOrigemID)}</td>
+            <td>{nomeArmazem(m.ArmazemDestinoID)}</td>
+            <td>{new Date(m.CriadoEm).toLocaleString("pt-PT")}</td>
+          </tr>
+        ))}
+        {movimentos?.length === 0 && (
+          <tr>
+            <td colSpan={5}>Sem movimentos registados.</td>
+          </tr>
+        )}
+        {movimentos === null && (
+          <tr>
+            <td colSpan={5}>A carregar…</td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  );
+}
