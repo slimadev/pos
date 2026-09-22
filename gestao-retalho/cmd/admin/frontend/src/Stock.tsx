@@ -17,15 +17,18 @@ import {
   TransferirStock,
   RegistarPerdaStock,
   RegistarConsumoInternoStock,
+  RegistarEntradaComLoteStock,
+  ListarLotesStock,
 } from "../wailsjs/go/admin/AdminApp";
 import { domain, usecase } from "../wailsjs/go/models";
 import Modal from "./Modal";
 
 type IconeSvg = ComponentType<SVGProps<SVGSVGElement>>;
-type TipoMovimento = "entrada" | "transferencia" | "perda" | "consumo_interno";
+type TipoMovimento = "entrada" | "entrada_com_lote" | "transferencia" | "perda" | "consumo_interno";
 
 const TIPO_MOVIMENTO_INFO: Record<TipoMovimento, { rotulo: string; Icone: IconeSvg; cor: string }> = {
   entrada: { rotulo: "Entrada", Icone: ArrowDownTrayIcon, cor: "ok" },
+  entrada_com_lote: { rotulo: "Entrada c/ lote", Icone: ArrowDownTrayIcon, cor: "ok" },
   transferencia: { rotulo: "Transferência", Icone: ArrowsRightLeftIcon, cor: "accent" },
   perda: { rotulo: "Perda", Icone: XCircleIcon, cor: "danger" },
   consumo_interno: { rotulo: "Consumo interno", Icone: MinusCircleIcon, cor: "warn" },
@@ -237,17 +240,20 @@ function MovimentoForm({
   onCancelar: () => void;
   onErro: (e: string) => void;
 }) {
-  // Produtos com rastreio por lote (Fase 6, SDD 9.4) não podem entrar por
-  // aqui — RegistarEntradaStock rejeita-os e pede número de lote/validade,
-  // fluxo ainda não portado para o cmd/admin. Só sobram os outros tipos.
-  const tiposDisponiveis = (Object.keys(TIPO_MOVIMENTO_INFO) as TipoMovimento[]).filter(
-    (t) => !(produto.LoteControlado && t === "entrada"),
+  // Produtos com rastreio por lote (Fase 6, SDD 9.4) não usam a entrada
+  // normal — RegistarEntradaStock rejeita-os e pede número de lote e
+  // validade (FEFO na venda depende disto), daí "entrada_com_lote" em vez
+  // de "entrada" no seletor de tipos.
+  const tiposDisponiveis = (Object.keys(TIPO_MOVIMENTO_INFO) as TipoMovimento[]).filter((t) =>
+    produto.LoteControlado ? t !== "entrada" : t !== "entrada_com_lote",
   );
-  const [tipo, setTipo] = useState<TipoMovimento>(produto.LoteControlado ? "transferencia" : "entrada");
+  const [tipo, setTipo] = useState<TipoMovimento>(produto.LoteControlado ? "entrada_com_lote" : "entrada");
   const [quantidade, setQuantidade] = useState("1");
   const [custoUnitario, setCustoUnitario] = useState("0");
   const [motivo, setMotivo] = useState("");
   const [armazemDestinoID, setArmazemDestinoID] = useState<number | "">("");
+  const [numeroLote, setNumeroLote] = useState("");
+  const [validade, setValidade] = useState("");
   const [aGuardar, setAGuardar] = useState(false);
 
   function guardar() {
@@ -263,6 +269,22 @@ function MovimentoForm({
         p.Quantidade = qtd;
         p.CustoUnitario = Number(custoUnitario);
         pedido = RegistarEntradaStock(p);
+        break;
+      }
+      case "entrada_com_lote": {
+        if (!numeroLote || !validade) {
+          onErro("Indique o número de lote e a validade");
+          return;
+        }
+        const p = new usecase.EntradaComLoteParams();
+        p.ProdutoID = produto.ID;
+        p.ArmazemID = armazemAtualID;
+        p.NumeroLote = numeroLote;
+        // Go time.Time espera RFC3339 — o input type="date" já dá "AAAA-MM-DD".
+        p.DataValidade = new Date(validade + "T00:00:00Z").toISOString();
+        p.Quantidade = qtd;
+        p.CustoUnitario = Number(custoUnitario);
+        pedido = RegistarEntradaComLoteStock(p);
         break;
       }
       case "transferencia": {
@@ -322,12 +344,7 @@ function MovimentoForm({
           );
         })}
       </div>
-      {produto.LoteControlado && (
-        <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>
-          "{produto.Nome}" controla lotes — a entrada faz-se com número de lote e validade, ainda não disponível
-          aqui.
-        </p>
-      )}
+      {produto.LoteControlado && <LotesExistentes produtoID={produto.ID} armazemID={armazemAtualID} onErro={onErro} />}
 
       <div className="admin-form">
         <input
@@ -338,7 +355,7 @@ function MovimentoForm({
           onChange={(e) => setQuantidade(e.target.value)}
         />
 
-        {tipo === "entrada" && (
+        {(tipo === "entrada" || tipo === "entrada_com_lote") && (
           <input
             placeholder="Custo unitário"
             type="number"
@@ -346,6 +363,18 @@ function MovimentoForm({
             value={custoUnitario}
             onChange={(e) => setCustoUnitario(e.target.value)}
           />
+        )}
+
+        {tipo === "entrada_com_lote" && (
+          <>
+            <input placeholder="Número de lote" value={numeroLote} onChange={(e) => setNumeroLote(e.target.value)} />
+            <input
+              placeholder="Validade"
+              type="date"
+              value={validade}
+              onChange={(e) => setValidade(e.target.value)}
+            />
+          </>
         )}
 
         {tipo === "transferencia" && (
@@ -378,6 +407,51 @@ function MovimentoForm({
         </button>
       </div>
     </div>
+  );
+}
+
+function LotesExistentes({
+  produtoID,
+  armazemID,
+  onErro,
+}: {
+  produtoID: number;
+  armazemID: number;
+  onErro: (e: string) => void;
+}) {
+  const [lotes, setLotes] = useState<domain.Lote[] | null>(null);
+
+  useEffect(() => {
+    ListarLotesStock(produtoID, armazemID)
+      .then(setLotes)
+      .catch((e) => onErro(String(e)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- onErro é um setter estável; produto/armazém fixos por instância
+  }, []);
+
+  if (lotes === null) return null;
+  if (lotes.length === 0) {
+    return <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>Sem lotes ainda neste armazém.</p>;
+  }
+
+  return (
+    <table className="admin-tabela">
+      <thead>
+        <tr>
+          <th>Lote</th>
+          <th>Validade</th>
+          <th>Quantidade</th>
+        </tr>
+      </thead>
+      <tbody>
+        {lotes.map((l) => (
+          <tr key={l.ID}>
+            <td>{l.NumeroLote}</td>
+            <td>{String(l.DataValidade).slice(0, 10)}</td>
+            <td>{mt(l.Quantidade)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 

@@ -82,6 +82,29 @@ func (s *StockService) RegistarConsumoInterno(ctx context.Context, p usecase.Sai
 	return app.RegistarConsumoInternoStock(p)
 }
 
+// RegistarEntradaComLote é o único caminho de entrada para produtos
+// LoteControlado — RegistarEntrada rejeita-os (ver StockService no
+// backend/usecase, que StockService.RegistarEntrada delega para cá).
+func (s *StockService) RegistarEntradaComLote(ctx context.Context, p usecase.EntradaComLoteParams) (api.EntradaComLoteResponse, error) {
+	app, fechar, err := s.abrirLoja(ctx)
+	if err != nil {
+		return api.EntradaComLoteResponse{}, err
+	}
+	defer fechar()
+
+	return app.RegistarEntradaComLote(p)
+}
+
+func (s *StockService) ListarLotes(ctx context.Context, produtoID, armazemID int64) ([]domain.Lote, error) {
+	app, fechar, err := s.abrirLoja(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer fechar()
+
+	return app.ListarLotes(produtoID, armazemID)
+}
+
 func (s *StockService) abrirLoja(ctx context.Context) (*api.App, func(), error) {
 	return abrirLojaUnica(ctx, s.lojas)
 }

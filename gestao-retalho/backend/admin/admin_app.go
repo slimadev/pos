@@ -354,6 +354,20 @@ func (a *AdminApp) RegistarConsumoInternoStock(p usecase.SaidaParams) (domain.Mo
 	return a.Stock.RegistarConsumoInterno(a.ctx, p)
 }
 
+func (a *AdminApp) RegistarEntradaComLoteStock(p usecase.EntradaComLoteParams) (api.EntradaComLoteResponse, error) {
+	if err := a.exigirSessao(); err != nil {
+		return api.EntradaComLoteResponse{}, err
+	}
+	return a.Stock.RegistarEntradaComLote(a.ctx, p)
+}
+
+func (a *AdminApp) ListarLotesStock(produtoID, armazemID int64) ([]domain.Lote, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Stock.ListarLotes(a.ctx, produtoID, armazemID)
+}
+
 // --- PDV -----------------------------------------------------------------
 //
 // AbrirPDV lança o cmd/app como processo separado (decisão pós-Fase 10, a
