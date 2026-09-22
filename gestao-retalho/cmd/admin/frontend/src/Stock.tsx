@@ -36,7 +36,11 @@ const TIPO_MOVIMENTO_INFO: Record<TipoMovimento, { rotulo: string; Icone: IconeS
 
 const mt = (n: number) => `${n.toLocaleString("pt-PT", { maximumFractionDigits: 2 })}`;
 
-type ModalEstado = { aberto: false } | { aberto: true; produto: domain.Produto } | { aberto: true; historico: domain.Produto };
+type ModalEstado =
+  | { aberto: false }
+  | { aberto: true; produto: domain.Produto }
+  | { aberto: true; historico: domain.Produto }
+  | { aberto: true; entradaEmLote: true };
 
 /**
  * Stock da única loja que este cmd/admin serve — escolhe o armazém, vê a
@@ -90,6 +94,11 @@ export default function StockScreen({ onErro }: { onErro: (e: string) => void })
             ))}
           </select>
         </label>
+        {produtos.some((p) => p.LoteControlado) && armazemID !== "" && (
+          <button className="admin-btn-secundario" onClick={() => setModal({ aberto: true, entradaEmLote: true })}>
+            + Entrada em lote (vários produtos)
+          </button>
+        )}
       </div>
 
       {armazens.length === 0 ? (
@@ -126,6 +135,21 @@ export default function StockScreen({ onErro }: { onErro: (e: string) => void })
       {modal.aberto && "historico" in modal && (
         <Modal titulo={`Histórico — ${modal.historico.Nome}`} onFechar={fecharModal}>
           <HistoricoMovimentos produtoID={modal.historico.ID} armazens={armazens} onErro={onErro} />
+        </Modal>
+      )}
+
+      {modal.aberto && "entradaEmLote" in modal && armazemID !== "" && (
+        <Modal titulo="Entrada em lote — vários produtos" onFechar={fecharModal}>
+          <EntradaLoteEmMassa
+            armazemID={armazemID}
+            produtos={produtos}
+            onConcluido={() => {
+              fecharModal();
+              setVersao((v) => v + 1);
+            }}
+            onCancelar={fecharModal}
+            onErro={onErro}
+          />
         </Modal>
       )}
     </div>
@@ -452,6 +476,187 @@ function LotesExistentes({
         ))}
       </tbody>
     </table>
+  );
+}
+
+let proximoIdLinha = 0;
+type LinhaEntradaLote = { id: number; produtoID: number | ""; quantidade: string; custoUnitario: string };
+const novaLinhaEntradaLote = (): LinhaEntradaLote => ({
+  id: ++proximoIdLinha,
+  produtoID: "",
+  quantidade: "1",
+  custoUnitario: "0",
+});
+
+/**
+ * Entrada de um lote físico único (o número de lote e a validade do
+ * fornecedor) que cobre vários produtos ao mesmo tempo — situação comum em
+ * farmácia, onde uma remessa chega com um só número de lote para vários
+ * itens. lotes_produto guarda sempre um lote por produto (chave
+ * produto+armazém+número), por isso isto não é uma operação atómica nova
+ * no backend: é só este formulário a repetir RegistarEntradaComLoteStock
+ * uma vez por produto, com o número/validade partilhados.
+ */
+function EntradaLoteEmMassa({
+  armazemID,
+  produtos,
+  onConcluido,
+  onCancelar,
+  onErro,
+}: {
+  armazemID: number;
+  produtos: domain.Produto[];
+  onConcluido: () => void;
+  onCancelar: () => void;
+  onErro: (e: string) => void;
+}) {
+  const produtosLoteControlado = produtos.filter((p) => p.Ativo && p.LoteControlado);
+
+  const [numeroLote, setNumeroLote] = useState("");
+  const [validade, setValidade] = useState("");
+  const [linhas, setLinhas] = useState<LinhaEntradaLote[]>([novaLinhaEntradaLote()]);
+  const [resultados, setResultados] = useState<Record<number, "ok" | string>>({});
+  const [aGuardar, setAGuardar] = useState(false);
+
+  const algumSucesso = Object.values(resultados).some((r) => r === "ok");
+
+  function atualizarLinha(id: number, alteracoes: Partial<LinhaEntradaLote>) {
+    setLinhas((ls) => ls.map((l) => (l.id === id ? { ...l, ...alteracoes } : l)));
+  }
+
+  function removerLinha(id: number) {
+    setLinhas((ls) => ls.filter((l) => l.id !== id));
+  }
+
+  async function guardar() {
+    if (!numeroLote || !validade) {
+      onErro("Indique o número de lote e a validade");
+      return;
+    }
+    const pendentes = linhas.filter((l) => resultados[l.id] !== "ok");
+    for (const l of pendentes) {
+      if (l.produtoID === "" || Number(l.quantidade) <= 0) {
+        onErro("Escolha o produto e uma quantidade em todas as linhas");
+        return;
+      }
+    }
+
+    setAGuardar(true);
+    const novosResultados = { ...resultados };
+    for (const l of pendentes) {
+      const p = new usecase.EntradaComLoteParams();
+      p.ProdutoID = l.produtoID as number;
+      p.ArmazemID = armazemID;
+      p.NumeroLote = numeroLote;
+      p.DataValidade = new Date(validade + "T00:00:00Z").toISOString();
+      p.Quantidade = Number(l.quantidade);
+      p.CustoUnitario = Number(l.custoUnitario || "0");
+      try {
+        await RegistarEntradaComLoteStock(p);
+        novosResultados[l.id] = "ok";
+      } catch (e) {
+        novosResultados[l.id] = String(e);
+      }
+    }
+    setResultados(novosResultados);
+    setAGuardar(false);
+
+    if (linhas.every((l) => novosResultados[l.id] === "ok")) {
+      onConcluido();
+    }
+  }
+
+  return (
+    <div className="admin-armazem-form">
+      <div className="admin-form">
+        <input placeholder="Número de lote" value={numeroLote} onChange={(e) => setNumeroLote(e.target.value)} />
+        <input placeholder="Validade" type="date" value={validade} onChange={(e) => setValidade(e.target.value)} />
+      </div>
+
+      <table className="admin-tabela">
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th>Quantidade</th>
+            <th>Custo unitário</th>
+            <th></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {linhas.map((l) => {
+            const feito = resultados[l.id] === "ok";
+            const erro = resultados[l.id] && resultados[l.id] !== "ok" ? (resultados[l.id] as string) : null;
+            return (
+              <tr key={l.id}>
+                <td>
+                  <select
+                    disabled={feito}
+                    value={l.produtoID}
+                    onChange={(e) =>
+                      atualizarLinha(l.id, { produtoID: e.target.value ? Number(e.target.value) : "" })
+                    }
+                  >
+                    <option value="">Produto…</option>
+                    {produtosLoteControlado
+                      .filter((p) => p.ID === l.produtoID || !linhas.some((o) => o.produtoID === p.ID))
+                      .map((p) => (
+                        <option key={p.ID} value={p.ID}>
+                          {p.Nome}
+                        </option>
+                      ))}
+                  </select>
+                </td>
+                <td>
+                  <input
+                    disabled={feito}
+                    type="number"
+                    min="0"
+                    value={l.quantidade}
+                    onChange={(e) => atualizarLinha(l.id, { quantidade: e.target.value })}
+                  />
+                </td>
+                <td>
+                  <input
+                    disabled={feito}
+                    type="number"
+                    min="0"
+                    value={l.custoUnitario}
+                    onChange={(e) => atualizarLinha(l.id, { custoUnitario: e.target.value })}
+                  />
+                </td>
+                <td>
+                  {feito && "✓ registada"}
+                  {erro && <span style={{ color: "var(--danger)" }}>{erro}</span>}
+                </td>
+                <td>
+                  {!feito && linhas.length > 1 && (
+                    <button className="admin-btn-secundario" onClick={() => removerLinha(l.id)}>
+                      ×
+                    </button>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
+      <div className="admin-form">
+        <button className="admin-btn-secundario" onClick={() => setLinhas((ls) => [...ls, novaLinhaEntradaLote()])}>
+          + Adicionar produto
+        </button>
+      </div>
+
+      <div className="admin-form">
+        <button className="admin-btn" disabled={aGuardar} onClick={guardar}>
+          {aGuardar ? "A registar…" : "Registar entradas"}
+        </button>
+        <button className="admin-btn-secundario" onClick={algumSucesso ? onConcluido : onCancelar}>
+          {algumSucesso ? "Concluir" : "Cancelar"}
+        </button>
+      </div>
+    </div>
   );
 }
 
