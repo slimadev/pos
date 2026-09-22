@@ -26,11 +26,12 @@ type AdminApp struct {
 	Auth       *AuthService
 	Categorias *CategoriasService
 	Produtos   *ProdutosService
+	Armazens   *ArmazensService
 	PDV        *PDVService
 }
 
-func NewAdminApp(lojas *LojasService, dashboard *DashboardService, auth *AuthService, categorias *CategoriasService, produtos *ProdutosService, pdv *PDVService) *AdminApp {
-	return &AdminApp{Lojas: lojas, Dashboard: dashboard, Auth: auth, Categorias: categorias, Produtos: produtos, PDV: pdv}
+func NewAdminApp(lojas *LojasService, dashboard *DashboardService, auth *AuthService, categorias *CategoriasService, produtos *ProdutosService, armazens *ArmazensService, pdv *PDVService) *AdminApp {
+	return &AdminApp{Lojas: lojas, Dashboard: dashboard, Auth: auth, Categorias: categorias, Produtos: produtos, Armazens: armazens, PDV: pdv}
 }
 
 func (a *AdminApp) OnStartup(ctx context.Context) {
@@ -260,6 +261,47 @@ func (a *AdminApp) AdicionarUnidadeProduto(u domain.UnidadeProduto) (domain.Unid
 		return domain.UnidadeProduto{}, err
 	}
 	return a.Produtos.AdicionarUnidade(a.ctx, u)
+}
+
+// --- Armazéns ----------------------------------------------------------------
+//
+// Armazéns são dado de negócio (vivem dentro da base da loja, nunca em
+// admin.db) — estes bindings só abrem a ligação à única loja a cada
+// chamada, nunca mantêm uma ligação persistente (ver AbrirLoja).
+
+func (a *AdminApp) ListarArmazens() ([]domain.Armazem, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Armazens.Listar(a.ctx)
+}
+
+func (a *AdminApp) CriarArmazem(arm domain.Armazem) (domain.Armazem, error) {
+	if err := a.exigirSessao(); err != nil {
+		return domain.Armazem{}, err
+	}
+	return a.Armazens.Criar(a.ctx, arm)
+}
+
+func (a *AdminApp) AtualizarArmazem(arm domain.Armazem) error {
+	if err := a.exigirSessao(); err != nil {
+		return err
+	}
+	return a.Armazens.Atualizar(a.ctx, arm)
+}
+
+func (a *AdminApp) AtivarArmazem(armazemID int64) error {
+	if err := a.exigirSessao(); err != nil {
+		return err
+	}
+	return a.Armazens.DefinirAtivo(a.ctx, armazemID, true)
+}
+
+func (a *AdminApp) DesativarArmazem(armazemID int64) error {
+	if err := a.exigirSessao(); err != nil {
+		return err
+	}
+	return a.Armazens.DefinirAtivo(a.ctx, armazemID, false)
 }
 
 // --- PDV -----------------------------------------------------------------

@@ -18,6 +18,7 @@
   --warn: #916b1b;
   --warn-bg: #fbf3e2;
   --ok: #0e8f5f;
+  --ok-bg: #e6f5ef;
 
   --bottlestore: #d4a24e;
   --bottlestore-bg: #f7eedc;
@@ -566,6 +567,212 @@ body {
   background: var(--bg);
   border-radius: 7px;
   padding: 8px;
+}
+
+/* Armazens.tsx — breadcrumb -------------------------------------------- */
+
+.admin-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12.5px;
+}
+
+.admin-breadcrumb-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.admin-breadcrumb-link {
+  border: none;
+  background: none;
+  padding: 2px 0;
+  color: var(--text-secondary);
+  font-size: inherit;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.admin-breadcrumb-link:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+.admin-breadcrumb-atual {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.admin-breadcrumb-chevron {
+  width: 13px;
+  height: 13px;
+  color: var(--border-strong);
+}
+
+/* Armazens.tsx — grelha de cartões --------------------------------------- */
+
+.admin-armazens-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 14px;
+}
+
+.admin-armazem-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.admin-armazem-card:hover {
+  border-color: var(--border-strong);
+  box-shadow: 0 4px 14px rgba(20, 22, 28, 0.06);
+}
+
+.admin-armazem-card.inativo {
+  opacity: 0.6;
+}
+
+.admin-armazem-card-topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.admin-armazem-icone {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-armazem-icone-svg {
+  width: 21px;
+  height: 21px;
+}
+
+.admin-armazem-icone.cor-accent {
+  background: var(--accent-bg);
+  color: var(--accent-hover);
+}
+.admin-armazem-icone.cor-ok {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+.admin-armazem-icone.cor-warn {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.admin-armazem-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.admin-armazem-status-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.admin-armazem-status.ativo {
+  color: var(--ok);
+}
+.admin-armazem-status.inativo {
+  color: var(--text-secondary);
+}
+
+.admin-armazem-nome {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.admin-armazem-tag {
+  align-self: flex-start;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+.admin-armazem-tag.cor-accent {
+  background: var(--accent-bg);
+  color: var(--accent-hover);
+}
+.admin-armazem-tag.cor-ok {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+.admin-armazem-tag.cor-warn {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.admin-armazem-card-acoes {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+/* Armazens.tsx — formulário (tipo em cartões clicáveis) ------------------- */
+
+.admin-armazem-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 560px;
+}
+
+.admin-armazem-form-tipos {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.admin-armazem-tipo-opcao {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 8px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  text-align: center;
+}
+
+.admin-armazem-tipo-opcao-icone {
+  width: 22px;
+  height: 22px;
+}
+
+.admin-armazem-tipo-opcao.ativo.cor-accent {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  color: var(--accent-hover);
+}
+.admin-armazem-tipo-opcao.ativo.cor-ok {
+  border-color: var(--ok);
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+.admin-armazem-tipo-opcao.ativo.cor-warn {
+  border-color: var(--warn);
+  background: var(--warn-bg);
+  color: var(--warn);
 }
 
 .admin-form input,

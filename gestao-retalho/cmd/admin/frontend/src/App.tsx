@@ -21,8 +21,9 @@ import Login from "./Login";
 import Dashboard from "./Dashboard";
 import CategoriasScreen from "./Categorias";
 import ProdutosScreen from "./Produtos";
+import ArmazensScreen from "./Armazens";
 
-type Ecra = "dashboard" | "produtos" | "categorias" | "stub";
+type Ecra = "dashboard" | "produtos" | "categorias" | "armazens" | "stub";
 type IconeSvg = ComponentType<SVGProps<SVGSVGElement>>;
 
 // Ícones outline de uma biblioteca única e neutra (SDD 7.3: "Lucide/Feather"
@@ -34,7 +35,7 @@ const NAV: { chave: Ecra; nome: string; Icone: IconeSvg; stub?: boolean }[] = [
   { chave: "produtos", nome: "Produtos", Icone: CubeIcon },
   { chave: "categorias", nome: "Categorias", Icone: TagIcon },
   { chave: "stub", nome: "Fichas técnicas", Icone: ClipboardDocumentListIcon, stub: true },
-  { chave: "stub", nome: "Armazéns", Icone: BuildingOffice2Icon, stub: true },
+  { chave: "armazens", nome: "Armazéns", Icone: BuildingOffice2Icon },
   { chave: "stub", nome: "Stock", Icone: ArchiveBoxIcon, stub: true },
   { chave: "stub", nome: "Inventário", Icone: ClipboardDocumentCheckIcon, stub: true },
   { chave: "stub", nome: "Vendas", Icone: ShoppingCartIcon, stub: true },
@@ -112,8 +113,8 @@ export default function App() {
  * "Categorias" adicionado fora do mock e "Lojas" removido (Fase 10
  * addendum, a pedido explícito — deixou de fazer sentido um registo de
  * várias lojas quando cada cmd/admin serve sempre uma só). "Dashboard",
- * "Produtos" e "Categorias" têm ecrã real; o resto da sidebar existe por
- * fidelidade visual ao mock, mas a gestão detalhada de stock/vendas/etc.
+ * "Produtos", "Categorias" e "Armazéns" têm ecrã real; o resto da sidebar
+ * existe por fidelidade visual ao mock, mas a gestão detalhada de stock/vendas/etc.
  * continua a acontecer no executável da loja (cmd/app). O botão "PDV" não
  * troca de ecrã aqui dentro — lança o cmd/app como processo à parte,
  * maximizado, apontado à mesma base desta loja (decisão pós-Fase 10, a
@@ -178,6 +179,7 @@ function AdminPrincipal({ loja, onSair }: { loja: LojaAtual | null; onSair: () =
         {ecra === "dashboard" && <Dashboard onErro={setErro} />}
         {ecra === "produtos" && <ProdutosScreen onErro={setErro} />}
         {ecra === "categorias" && <CategoriasScreen onErro={setErro} />}
+        {ecra === "armazens" && <ArmazensScreen onErro={setErro} />}
         {ecra === "stub" && (
           <div className="admin-lojas-screen">
             <h2 style={{ margin: 0 }}>{stubNome}</h2>
