@@ -9,6 +9,14 @@ import {
 } from "../wailsjs/go/api/App";
 import { domain, usecase } from "../wailsjs/go/models";
 
+// Rótulo amigável para o valor interno de TipoProduto — ver a mesma
+// constante em Administracao.tsx.
+const ROTULO_TIPO_PRODUTO: Record<string, string> = {
+  simples: "Simples",
+  composto: "Composto",
+  semi_elaborado: "Semi Produzido",
+};
+
 /**
  * Fichas técnicas / produtos compostos e semi-elaborados (SDD 3.3, Fase 5)
  * — mesma família de scaffolding funcional do resto de FaseUm.tsx, sem
@@ -131,7 +139,7 @@ export default function FichasTecnicasSection({
           <option value="">Produto composto/semi-elaborado…</option>
           {compostosEnSemiElaborados.map((p) => (
             <option key={p.ID} value={p.ID}>
-              {p.Nome} ({p.TipoProduto})
+              {p.Nome} ({ROTULO_TIPO_PRODUTO[p.TipoProduto] ?? p.TipoProduto})
             </option>
           ))}
         </select>

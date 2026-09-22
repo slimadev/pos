@@ -58,6 +58,15 @@ type Seccao =
 
 type IconeSvg = ComponentType<SVGProps<SVGSVGElement>>;
 
+// Rótulos amigáveis para o valor interno de TipoProduto (nunca muda — é o
+// que fica gravado na base e usado nas validações do backend, só a etiqueta
+// mostrada ao utilizador é que é mais legível que o enum em bruto).
+const ROTULO_TIPO_PRODUTO: Record<"simples" | "composto" | "semi_elaborado", string> = {
+  simples: "Simples",
+  composto: "Composto",
+  semi_elaborado: "Semi Produzido",
+};
+
 /**
  * Ponto único de administração da loja (SDD 9.5): produtos, categorias,
  * armazéns, stock e inventário aparecem sempre; fichas técnicas e farmácia
@@ -397,7 +406,7 @@ function ProdutosSection({
             <tr key={p.ID}>
               <td>{p.Nome}</td>
               <td>{p.CategoriaID != null ? nomeCategoria(p.CategoriaID) : "—"}</td>
-              <td>{p.TipoProduto}</td>
+              <td>{ROTULO_TIPO_PRODUTO[p.TipoProduto as keyof typeof ROTULO_TIPO_PRODUTO] ?? p.TipoProduto}</td>
               <td>{p.UnidadeBase}</td>
               <td>{p.LoteControlado ? "sim" : "não"}</td>
               <td>{p.Ativo ? "sim" : "não"}</td>
@@ -576,9 +585,9 @@ function ProdutoForm({
           disabled={!!produto}
           title={produto ? "Tipo não pode ser alterado depois de criado" : undefined}
         >
-          <option value="simples">simples</option>
-          <option value="composto">composto</option>
-          <option value="semi_elaborado">semi_elaborado</option>
+          <option value="simples">{ROTULO_TIPO_PRODUTO.simples}</option>
+          <option value="composto">{ROTULO_TIPO_PRODUTO.composto}</option>
+          <option value="semi_elaborado">{ROTULO_TIPO_PRODUTO.semi_elaborado}</option>
         </select>
         <input
           placeholder="Unidade base (ex: unidade, kg)"
