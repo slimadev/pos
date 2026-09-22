@@ -142,19 +142,28 @@ function TabelaStock({
   onAbrirHistorico: (p: domain.Produto) => void;
   onErro: (e: string) => void;
 }) {
-  const [stockItens, setStockItens] = useState<domain.StockItem[]>([]);
-  const [aCarregar, setACarregar] = useState(true);
+  // stock_atual é uma view calculada a partir de movimentos_stock (SDD
+  // 3.2) — só tem linha para um produto+armazém depois do primeiro
+  // movimento. Por isso a tabela lista sempre TODOS os produtos com
+  // controlo de stock (não só os que já vieram de ListarStockPorArmazem),
+  // com quantidade 0 para os que ainda não tiveram nenhuma entrada; senão
+  // um produto recém-criado nunca teria "+ Movimento" em lado nenhum.
+  const [stockItens, setStockItens] = useState<domain.StockItem[] | null>(null);
 
   useEffect(() => {
     ListarStockPorArmazem(armazemID)
       .then(setStockItens)
-      .catch((e) => onErro(String(e)))
-      .finally(() => setACarregar(false));
+      .catch((e) => onErro(String(e)));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- onErro é um setter estável; armazemID está fixo por instância (key troca-o)
   }, []);
 
-  const nomeProduto = (id: number) => produtos.find((p) => p.ID === id)?.Nome ?? `#${id}`;
-  const produtoDoId = (id: number) => produtos.find((p) => p.ID === id);
+  const stockDoProduto = (id: number) => stockItens?.find((i) => i.ProdutoID === id);
+
+  // Produtos "composto" nunca guardam stock próprio (é inferido via ficha
+  // técnica, ainda não portada) — não fazem sentido aqui.
+  const produtosDoArmazem = [...produtos]
+    .filter((p) => p.Ativo && p.ControlaStock)
+    .sort((a, b) => a.Nome.localeCompare(b.Nome, "pt"));
 
   return (
     <table className="admin-tabela">
@@ -167,44 +176,46 @@ function TabelaStock({
         </tr>
       </thead>
       <tbody>
-        {stockItens.map((item) => {
-          const produto = produtoDoId(item.ProdutoID);
-          const abaixoDoMinimo = produto?.StockMinimo != null && item.Quantidade < produto.StockMinimo;
-          return (
-            <tr key={item.ProdutoID}>
-              <td>
-                {nomeProduto(item.ProdutoID)}
-                {abaixoDoMinimo && (
-                  <span className="admin-stock-abaixo-minimo">
-                    <ExclamationTriangleIcon className="admin-stock-abaixo-minimo-icon" aria-hidden="true" />
-                    abaixo do mínimo
-                  </span>
-                )}
-              </td>
-              <td>
-                {mt(item.Quantidade)} {produto?.UnidadeBase}
-              </td>
-              <td>{mt(item.CustoMedioPonderado)} MT</td>
-              <td className="admin-form">
-                {produto && (
+        {stockItens === null ? (
+          <tr>
+            <td colSpan={4}>A carregar…</td>
+          </tr>
+        ) : produtosDoArmazem.length === 0 ? (
+          <tr>
+            <td colSpan={4}>Sem produtos com controlo de stock — crie um em "Produtos" primeiro.</td>
+          </tr>
+        ) : (
+          produtosDoArmazem.map((produto) => {
+            const item = stockDoProduto(produto.ID);
+            const quantidade = item?.Quantidade ?? 0;
+            const abaixoDoMinimo = produto.StockMinimo != null && quantidade < produto.StockMinimo;
+            return (
+              <tr key={produto.ID}>
+                <td>
+                  {produto.Nome}
+                  {abaixoDoMinimo && (
+                    <span className="admin-stock-abaixo-minimo">
+                      <ExclamationTriangleIcon className="admin-stock-abaixo-minimo-icon" aria-hidden="true" />
+                      abaixo do mínimo
+                    </span>
+                  )}
+                </td>
+                <td>
+                  {mt(quantidade)} {produto.UnidadeBase}
+                </td>
+                <td>{mt(item?.CustoMedioPonderado ?? 0)} MT</td>
+                <td className="admin-form">
                   <button className="admin-btn-secundario" onClick={() => onAbrirMovimento(produto)}>
                     + Movimento
                   </button>
-                )}
-                {produto && (
                   <button className="admin-btn-secundario" onClick={() => onAbrirHistorico(produto)}>
                     <ClockIcon className="admin-btn-icon-inline" aria-hidden="true" />
                     Histórico
                   </button>
-                )}
-              </td>
-            </tr>
-          );
-        })}
-        {stockItens.length === 0 && (
-          <tr>
-            <td colSpan={4}>{aCarregar ? "A carregar…" : "Sem produtos com stock neste armazém."}</td>
-          </tr>
+                </td>
+              </tr>
+            );
+          })
         )}
       </tbody>
     </table>
@@ -226,7 +237,13 @@ function MovimentoForm({
   onCancelar: () => void;
   onErro: (e: string) => void;
 }) {
-  const [tipo, setTipo] = useState<TipoMovimento>("entrada");
+  // Produtos com rastreio por lote (Fase 6, SDD 9.4) não podem entrar por
+  // aqui — RegistarEntradaStock rejeita-os e pede número de lote/validade,
+  // fluxo ainda não portado para o cmd/admin. Só sobram os outros tipos.
+  const tiposDisponiveis = (Object.keys(TIPO_MOVIMENTO_INFO) as TipoMovimento[]).filter(
+    (t) => !(produto.LoteControlado && t === "entrada"),
+  );
+  const [tipo, setTipo] = useState<TipoMovimento>(produto.LoteControlado ? "transferencia" : "entrada");
   const [quantidade, setQuantidade] = useState("1");
   const [custoUnitario, setCustoUnitario] = useState("0");
   const [motivo, setMotivo] = useState("");
@@ -291,7 +308,7 @@ function MovimentoForm({
   return (
     <div className="admin-armazem-form">
       <div className="admin-stock-tipos">
-        {(Object.keys(TIPO_MOVIMENTO_INFO) as TipoMovimento[]).map((t) => {
+        {tiposDisponiveis.map((t) => {
           const info = TIPO_MOVIMENTO_INFO[t];
           return (
             <div
@@ -305,6 +322,12 @@ function MovimentoForm({
           );
         })}
       </div>
+      {produto.LoteControlado && (
+        <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>
+          "{produto.Nome}" controla lotes — a entrada faz-se com número de lote e validade, ainda não disponível
+          aqui.
+        </p>
+      )}
 
       <div className="admin-form">
         <input
