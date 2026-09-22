@@ -25,6 +25,11 @@ func NewAdminSQLiteConn(path config.AdminDBPath) (*sql.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open admin sqlite at %s: %w", path, err)
 	}
+	// Mesmo motivo que NewSQLiteConn: sem isto, uma ligação concorrente
+	// devolve "database is locked" de imediato em vez de esperar um pouco.
+	if _, err := db.Exec("PRAGMA busy_timeout=5000;"); err != nil {
+		return nil, fmt.Errorf("definir busy_timeout: %w", err)
+	}
 	if _, err := db.Exec("PRAGMA journal_mode=WAL;"); err != nil {
 		return nil, fmt.Errorf("enable WAL mode: %w", err)
 	}

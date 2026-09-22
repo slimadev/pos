@@ -18,6 +18,16 @@ func NewSQLiteConn(path config.DBPath) (*sql.DB, error) {
 		return nil, fmt.Errorf("open sqlite at %s: %w", path, err)
 	}
 
+	// Sem isto, qualquer contenção momentânea devolve "database is locked"
+	// de imediato (SQLITE_BUSY, timeout por omissão é zero) em vez de
+	// esperar um pouco — e agora há sempre pelo menos duas ligações à
+	// mesma loja.db ao mesmo tempo (o cmd/app/PDV, de longa duração, e
+	// cada ligação avulsa que o cmd/admin abre por pedido via AbrirLoja),
+	// por isso a contenção deixou de ser rara.
+	if _, err := db.Exec("PRAGMA busy_timeout=5000;"); err != nil {
+		return nil, fmt.Errorf("definir busy_timeout: %w", err)
+	}
+
 	// SQLite only allows one writer at a time; WAL mode lets readers keep
 	// going while a write is in flight, which matters for a POS screen
 	// that reads stock while another screen writes a venda.
