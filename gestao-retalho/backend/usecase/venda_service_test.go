@@ -25,7 +25,7 @@ func newTestVendaServices(t *testing.T) (*usecase.ProdutoService, *usecase.Armaz
 	produtoSvc := usecase.NewProdutoService(produtoRepo)
 	armazemSvc := usecase.NewArmazemService(armazemRepo)
 	stockSvc := usecase.NewStockService(stockRepo, produtoRepo, armazemRepo, invRepo, loteRepo)
-	vendaSvc := usecase.NewVendaService(vendaRepo, produtoRepo, armazemRepo, fichaRepo)
+	vendaSvc := usecase.NewVendaService(vendaRepo, produtoRepo, armazemRepo, fichaRepo, repository.NewClienteRepository(db))
 
 	return produtoSvc, armazemSvc, stockSvc, vendaSvc
 }

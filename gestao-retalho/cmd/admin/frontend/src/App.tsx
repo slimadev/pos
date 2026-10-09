@@ -14,6 +14,7 @@ import {
   UserCircleIcon,
   ComputerDesktopIcon,
   BeakerIcon,
+  BanknotesIcon,
   ArrowRightStartOnRectangleIcon,
 } from "@heroicons/react/24/outline";
 import { PrecisaConfigurarAdmin, Logout, ObterLojaAtual, AbrirPDV } from "../wailsjs/go/admin/AdminApp";
@@ -29,8 +30,9 @@ import InventarioScreen from "./Inventario";
 import VendasScreen from "./Vendas";
 import RelatoriosScreen from "./Relatorios";
 import ClientesScreen from "./Clientes";
+import VendaCreditoScreen from "./VendaCredito";
 
-type Ecra = "dashboard" | "produtos" | "categorias" | "armazens" | "stock" | "inventario" | "vendas" | "relatorios" | "clientes" | "farmacia" | "stub";
+type Ecra = "dashboard" | "produtos" | "categorias" | "armazens" | "stock" | "inventario" | "vendas" | "relatorios" | "clientes" | "credito" | "farmacia" | "stub";
 type IconeSvg = ComponentType<SVGProps<SVGSVGElement>>;
 
 // Ícones outline de uma biblioteca única e neutra (SDD 7.3: "Lucide/Feather"
@@ -47,6 +49,7 @@ const NAV: { chave: Ecra; nome: string; Icone: IconeSvg; stub?: boolean; soFarma
   { chave: "farmacia", nome: "Farmácia", Icone: BeakerIcon, soFarmacia: true },
   { chave: "inventario", nome: "Inventário", Icone: ClipboardDocumentCheckIcon },
   { chave: "vendas", nome: "Vendas", Icone: ShoppingCartIcon },
+  { chave: "credito", nome: "Venda a crédito", Icone: BanknotesIcon },
   { chave: "clientes", nome: "Clientes e dívidas", Icone: UserGroupIcon },
   { chave: "relatorios", nome: "Relatórios", Icone: ChartBarIcon },
   { chave: "stub", nome: "Utilizadores", Icone: UserCircleIcon, stub: true },
@@ -121,7 +124,8 @@ export default function App() {
  * "Categorias" adicionado fora do mock e "Lojas" removido (Fase 10
  * addendum, a pedido explícito — deixou de fazer sentido um registo de
  * várias lojas quando cada cmd/admin serve sempre uma só). "Dashboard",
- * "Produtos", "Categorias", "Armazéns", "Stock", "Inventário", "Vendas", "Clientes e dívidas", "Relatórios" e
+ * "Produtos", "Categorias", "Armazéns", "Stock", "Inventário", "Vendas", "Venda a crédito" (só aqui, nunca no PDV), "Clientes e
+ * dívidas", "Relatórios" e
  * "Farmácia" (só em
  * lojas do tipo farmácia) têm ecrã real; o resto da
  * sidebar existe por fidelidade visual ao mock, mas a gestão de vendas/etc.
@@ -194,6 +198,7 @@ function AdminPrincipal({ loja, onSair }: { loja: LojaAtual | null; onSair: () =
         {ecra === "inventario" && <InventarioScreen onErro={setErro} />}
         {ecra === "vendas" && <VendasScreen onErro={setErro} />}
         {ecra === "clientes" && <ClientesScreen onErro={setErro} />}
+        {ecra === "credito" && <VendaCreditoScreen onErro={setErro} />}
         {ecra === "relatorios" && <RelatoriosScreen tipoNegocio={loja?.TipoNegocio} onErro={setErro} />}
         {ecra === "farmacia" && <FarmaciaScreen onErro={setErro} />}
         {ecra === "stub" && (

@@ -279,7 +279,7 @@ function ClienteForm({
           onChange={(e) => setLimite(e.target.value)}
         />
         <small style={{ color: "var(--text-secondary)" }}>
-          Só avisa ao fechar uma conta em dívida acima do limite — nunca a bloqueia.
+          Só avisa quando uma venda a crédito ou uma conta em dívida passa do limite — nunca a bloqueia.
         </small>
       </label>
       <div className="admin-form">

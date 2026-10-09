@@ -18,10 +18,11 @@ import (
 // só a origem das linhas muda (parâmetros frescos vs. itens_conta já
 // persistidos ao longo da noite).
 type VendaService struct {
-	vendas  *repository.VendaRepository
-	produto *repository.ProdutoRepository
-	armazem *repository.ArmazemRepository
-	fichas  *repository.FichaTecnicaRepository
+	vendas   *repository.VendaRepository
+	produto  *repository.ProdutoRepository
+	armazem  *repository.ArmazemRepository
+	fichas   *repository.FichaTecnicaRepository
+	clientes *repository.ClienteRepository
 }
 
 func NewVendaService(
@@ -29,8 +30,9 @@ func NewVendaService(
 	produto *repository.ProdutoRepository,
 	armazem *repository.ArmazemRepository,
 	fichas *repository.FichaTecnicaRepository,
+	clientes *repository.ClienteRepository,
 ) *VendaService {
-	return &VendaService{vendas: vendas, produto: produto, armazem: armazem, fichas: fichas}
+	return &VendaService{vendas: vendas, produto: produto, armazem: armazem, fichas: fichas, clientes: clientes}
 }
 
 type ItemVendaDiretaParams struct {
@@ -66,11 +68,35 @@ type VendaCompleta struct {
 const toleranciaPagamento = 0.01
 
 func (s *VendaService) RegistarVendaDireta(ctx context.Context, p VendaDiretaParams) (VendaCompleta, error) {
-	if len(p.Itens) == 0 {
-		return VendaCompleta{}, fmt.Errorf("venda sem itens")
-	}
 	if len(p.Pagamentos) == 0 {
 		return VendaCompleta{}, fmt.Errorf("venda sem forma de pagamento")
+	}
+	return s.registarVenda(ctx, p, false)
+}
+
+// RegistarVendaACredito é a venda direta em que o cliente leva os produtos
+// e paga depois, no todo ou em parte: o que falta fica como dívida do
+// cliente (mesmas regras do fecho de uma conta em dívida). Só o cmd/admin
+// a expõe — o PDV continua a exigir o pagamento total.
+func (s *VendaService) RegistarVendaACredito(ctx context.Context, p VendaDiretaParams) (VendaCompleta, error) {
+	if p.ClienteID == nil || *p.ClienteID == domain.ClienteAnonimoID {
+		return VendaCompleta{}, domain.ErrClienteAnonimoNaoPodeDivida
+	}
+	cliente, err := s.clientes.Obter(ctx, *p.ClienteID)
+	if err != nil {
+		return VendaCompleta{}, fmt.Errorf("obter cliente: %w", err)
+	}
+	if !cliente.Ativo {
+		return VendaCompleta{}, fmt.Errorf("%q está inativo — ative o cliente antes de lhe vender a crédito", cliente.Nome)
+	}
+	return s.registarVenda(ctx, p, true)
+}
+
+// registarVenda é o fluxo comum da venda direta: `credito` permite que os
+// pagamentos fiquem abaixo do total, deixando a diferença em dívida.
+func (s *VendaService) registarVenda(ctx context.Context, p VendaDiretaParams, credito bool) (VendaCompleta, error) {
+	if len(p.Itens) == 0 {
+		return VendaCompleta{}, fmt.Errorf("venda sem itens")
 	}
 
 	armazem, err := s.armazem.Obter(ctx, p.ArmazemID)
@@ -104,14 +130,30 @@ func (s *VendaService) RegistarVendaDireta(ctx context.Context, p VendaDiretaPar
 		}
 		somaPagamentos += pag.Valor
 	}
-	if diff := somaPagamentos - total; diff < -toleranciaPagamento || diff > toleranciaPagamento {
-		return VendaCompleta{}, fmt.Errorf("pagamentos (%.2f) não cobrem o total da venda (%.2f)", somaPagamentos, total)
+	if somaPagamentos > total+toleranciaPagamento {
+		return VendaCompleta{}, fmt.Errorf("pagamentos (%s) excedem o total da venda (%s)", qtd(somaPagamentos), qtd(total))
+	}
+	faltaPagar := total - somaPagamentos
+	temDivida := faltaPagar > toleranciaPagamento
+	if temDivida && !credito {
+		return VendaCompleta{}, fmt.Errorf("pagamentos (%s) não cobrem o total da venda (%s)", qtd(somaPagamentos), qtd(total))
+	}
+	status := domain.StatusVendaPaga
+	if temDivida {
+		status = domain.StatusVendaDivida
+		if somaPagamentos > toleranciaPagamento {
+			status = domain.StatusVendaParcial
+		}
+	}
+	identificadorConta := "Venda direta"
+	if credito {
+		identificadorConta = "Venda a crédito"
 	}
 
 	var resultado VendaCompleta
 
 	err = s.vendas.WithTx(ctx, func(tx *repository.VendaRepository) error {
-		conta, err := tx.CriarConta(ctx, domain.NegocioID, clienteID, "Venda direta", p.UtilizadorID)
+		conta, err := tx.CriarConta(ctx, domain.NegocioID, clienteID, identificadorConta, p.UtilizadorID)
 		if err != nil {
 			return fmt.Errorf("abrir conta: %w", err)
 		}
@@ -144,7 +186,7 @@ func (s *VendaService) RegistarVendaDireta(ctx context.Context, p VendaDiretaPar
 			Subtotal:      subtotal,
 			DescontoTotal: descontoTotal,
 			Total:         total,
-			Status:        domain.StatusVendaPaga,
+			Status:        status,
 			UtilizadorID:  p.UtilizadorID,
 		})
 		if err != nil {
@@ -168,6 +210,23 @@ func (s *VendaService) RegistarVendaDireta(ctx context.Context, p VendaDiretaPar
 				return fmt.Errorf("gravar pagamento: %w", err)
 			}
 			resultado.Pagamentos = append(resultado.Pagamentos, pagamentoGravado)
+		}
+
+		if temDivida {
+			dividaStatus := domain.StatusDividaAberta
+			if somaPagamentos > toleranciaPagamento {
+				dividaStatus = domain.StatusDividaParcial
+			}
+			if _, err := tx.CriarDivida(ctx, domain.Divida{
+				ClienteID:     clienteID,
+				VendaID:       venda.ID,
+				ValorOriginal: total,
+				ValorPago:     somaPagamentos,
+				ValorEmAberto: faltaPagar,
+				Status:        dividaStatus,
+			}); err != nil {
+				return fmt.Errorf("registar dívida: %w", err)
+			}
 		}
 
 		return nil

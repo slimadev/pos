@@ -452,6 +452,25 @@ func (a *AdminApp) ObterDetalheVenda(vendaID int64) (VendaDetalhe, error) {
 	return a.Vendas.ObterDetalhe(a.ctx, vendaID)
 }
 
+// --- Venda a crédito ---------------------------------------------------------
+//
+// Só o administrador vende a crédito: o PDV (cmd/app) não tem binding para
+// isto e continua a exigir o pagamento total.
+
+func (a *AdminApp) CatalogoVenda(armazemID int64) ([]ItemCatalogo, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Vendas.CatalogoVenda(a.ctx, armazemID)
+}
+
+func (a *AdminApp) RegistarVendaACredito(p usecase.VendaDiretaParams) (ResultadoVendaCredito, error) {
+	if err := a.exigirSessao(); err != nil {
+		return ResultadoVendaCredito{}, err
+	}
+	return a.Vendas.RegistarVendaACredito(a.ctx, p)
+}
+
 // AbrirRecibo grava o PDF e abre-o no visualizador do sistema.
 func (a *AdminApp) AbrirRecibo(vendaID int64) (string, error) {
 	if err := a.exigirSessao(); err != nil {

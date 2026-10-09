@@ -1354,3 +1354,110 @@ body {
   flex-wrap: nowrap;
   justify-content: flex-end;
 }
+
+/* VendaCredito.tsx */
+.admin-credito {
+  display: grid;
+  grid-template-columns: minmax(260px, 2fr) 3fr;
+  gap: 20px;
+  align-items: start;
+}
+.admin-credito-catalogo,
+.admin-credito-venda {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  min-width: 0;
+}
+.admin-credito-catalogo > input {
+  padding: 8px 11px;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  font: inherit;
+  font-size: 13px;
+}
+.admin-credito-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.admin-credito-produto {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 10px;
+  text-align: left;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font: inherit;
+  cursor: pointer;
+}
+.admin-credito-produto:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+.admin-credito-produto:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.admin-credito-produto .nome {
+  font-weight: 600;
+  color: var(--text);
+}
+.admin-credito-produto .preco {
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.admin-credito-produto .stock {
+  grid-column: 1 / -1;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+.admin-credito-produto .stock.esgotado {
+  color: var(--danger);
+}
+.admin-credito-cliente {
+  display: flex;
+  gap: 20px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+.admin-credito-cliente strong {
+  color: var(--text);
+}
+.admin-credito-qtd {
+  width: 70px;
+  text-align: right;
+  padding: 6px 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  font: inherit;
+}
+.admin-credito-remover {
+  padding: 6px 8px;
+}
+.admin-credito-registar {
+  align-self: flex-end;
+}
+.admin-credito-concluida {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  max-width: 520px;
+}
+.admin-credito-concluida-icone {
+  width: 36px;
+  height: 36px;
+  color: var(--ok);
+}
