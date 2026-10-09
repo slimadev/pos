@@ -1179,3 +1179,64 @@ body {
   background: var(--accent-bg);
   color: var(--accent);
 }
+
+/* Vendas.tsx */
+.admin-venda-estado {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.admin-venda-estado.paga {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+.admin-venda-estado.divida {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+.admin-venda-estado.parcial {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+.admin-venda-estado.cancelada {
+  background: var(--bg);
+  color: var(--text-secondary);
+  text-decoration: line-through;
+}
+.admin-venda-cabecalho {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+.admin-venda-totais {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-left: auto;
+  min-width: 280px;
+  font-variant-numeric: tabular-nums;
+}
+.admin-venda-totais > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+}
+.admin-venda-totais .total {
+  font-weight: 700;
+  font-size: 1.05rem;
+  border-top: 1px solid var(--border);
+  padding-top: 4px;
+}
+.admin-venda-totais .secundario {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+.admin-venda-totais .falta {
+  color: var(--danger);
+  font-weight: 600;
+}

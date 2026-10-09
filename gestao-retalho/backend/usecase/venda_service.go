@@ -507,6 +507,17 @@ func (s *VendaService) ObterVendaCompleta(ctx context.Context, vendaID int64) (V
 // ListarVendasDoDia cobre o "Histórico de vendas do dia" da tela de
 // ferragem (SDD 5.3) — usa o relógio local do computador da loja, que é
 // o que faz sentido para um "dia de operação" de um balcão físico.
+// ListarVendasEntreDatas devolve as vendas de `desde` a `ate`, ambos
+// inclusive, em dias do relógio local da loja (o mesmo que ListarVendasDoDia).
+func (s *VendaService) ListarVendasEntreDatas(ctx context.Context, negocioID int64, desde, ate time.Time) ([]domain.Venda, error) {
+	inicio := time.Date(desde.Year(), desde.Month(), desde.Day(), 0, 0, 0, 0, time.Local)
+	fim := time.Date(ate.Year(), ate.Month(), ate.Day(), 0, 0, 0, 0, time.Local).AddDate(0, 0, 1)
+	if !fim.After(inicio) {
+		return nil, fmt.Errorf("a data final não pode ser anterior à inicial")
+	}
+	return s.vendas.ListarPorPeriodo(ctx, negocioID, inicio, fim)
+}
+
 func (s *VendaService) ListarVendasDoDia(ctx context.Context, negocioID int64) ([]domain.Venda, error) {
 	agora := time.Now()
 	inicio := time.Date(agora.Year(), agora.Month(), agora.Day(), 0, 0, 0, 0, agora.Location())

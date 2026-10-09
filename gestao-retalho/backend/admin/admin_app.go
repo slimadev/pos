@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/wailsapp/wails/v2/pkg/runtime"
+
 	"gestao-retalho/backend/api"
 	"gestao-retalho/backend/domain"
 	"gestao-retalho/backend/usecase"
@@ -31,11 +33,12 @@ type AdminApp struct {
 	Stock      *StockService
 	Farmacia   *FarmaciaService
 	Inventario *InventarioService
+	Vendas     *VendasService
 	PDV        *PDVService
 }
 
-func NewAdminApp(lojas *LojasService, dashboard *DashboardService, auth *AuthService, categorias *CategoriasService, produtos *ProdutosService, armazens *ArmazensService, stock *StockService, farmacia *FarmaciaService, inventario *InventarioService, pdv *PDVService) *AdminApp {
-	return &AdminApp{Lojas: lojas, Dashboard: dashboard, Auth: auth, Categorias: categorias, Produtos: produtos, Armazens: armazens, Stock: stock, Farmacia: farmacia, Inventario: inventario, PDV: pdv}
+func NewAdminApp(lojas *LojasService, dashboard *DashboardService, auth *AuthService, categorias *CategoriasService, produtos *ProdutosService, armazens *ArmazensService, stock *StockService, farmacia *FarmaciaService, inventario *InventarioService, vendas *VendasService, pdv *PDVService) *AdminApp {
+	return &AdminApp{Lojas: lojas, Dashboard: dashboard, Auth: auth, Categorias: categorias, Produtos: produtos, Armazens: armazens, Stock: stock, Farmacia: farmacia, Inventario: inventario, Vendas: vendas, PDV: pdv}
 }
 
 func (a *AdminApp) OnStartup(ctx context.Context) {
@@ -426,6 +429,36 @@ func (a *AdminApp) FecharInventario(inventarioID int64) ([]domain.MovimentoStock
 		return nil, err
 	}
 	return a.Inventario.Fechar(a.ctx, inventarioID)
+}
+
+// --- Vendas ------------------------------------------------------------------
+
+// ListarVendas recebe datas "AAAA-MM-DD", ambas inclusive.
+func (a *AdminApp) ListarVendas(desde, ate string) ([]VendaResumo, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Vendas.Listar(a.ctx, desde, ate)
+}
+
+func (a *AdminApp) ObterDetalheVenda(vendaID int64) (VendaDetalhe, error) {
+	if err := a.exigirSessao(); err != nil {
+		return VendaDetalhe{}, err
+	}
+	return a.Vendas.ObterDetalhe(a.ctx, vendaID)
+}
+
+// AbrirRecibo grava o PDF e abre-o no visualizador do sistema.
+func (a *AdminApp) AbrirRecibo(vendaID int64) (string, error) {
+	if err := a.exigirSessao(); err != nil {
+		return "", err
+	}
+	caminho, err := a.Vendas.GerarRecibo(a.ctx, vendaID)
+	if err != nil {
+		return "", err
+	}
+	runtime.BrowserOpenURL(a.ctx, "file://"+caminho)
+	return caminho, nil
 }
 
 // --- Farmácia ----------------------------------------------------------------

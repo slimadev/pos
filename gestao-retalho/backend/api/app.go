@@ -345,6 +345,20 @@ func (a *App) ListarVendasDoDia() ([]domain.Venda, error) {
 	return a.VendaService.ListarVendasDoDia(a.ctx, domain.NegocioID)
 }
 
+// ListarVendasEntreDatas recebe datas "AAAA-MM-DD" (como as de um
+// <input type="date">), ambas inclusive.
+func (a *App) ListarVendasEntreDatas(desde, ate string) ([]domain.Venda, error) {
+	d, err := time.ParseInLocation("2006-01-02", desde, time.Local)
+	if err != nil {
+		return nil, fmt.Errorf("data inicial inválida: %q", desde)
+	}
+	t, err := time.ParseInLocation("2006-01-02", ate, time.Local)
+	if err != nil {
+		return nil, fmt.Errorf("data final inválida: %q", ate)
+	}
+	return a.VendaService.ListarVendasEntreDatas(a.ctx, domain.NegocioID, d, t)
+}
+
 // GerarRecibo grava o PDF em disco e abre-o no visualizador por omissão do
 // sistema — mais simples do que construir um diálogo "guardar como" só
 // para este passo (SDD 4.10, "imprimir/gerar recibo").
