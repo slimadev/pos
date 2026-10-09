@@ -3,6 +3,7 @@ package usecase_test
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"testing"
 	"time"
 
@@ -148,9 +149,18 @@ func TestFecharConta_SemAlertaDentroDoLimite(t *testing.T) {
 	}
 }
 
+func statusDaVenda(t *testing.T, db *sql.DB, vendaID int64) string {
+	t.Helper()
+	var status string
+	if err := db.QueryRow("SELECT status FROM vendas WHERE id = ?", vendaID).Scan(&status); err != nil {
+		t.Fatalf("ler estado da venda: %v", err)
+	}
+	return status
+}
+
 func TestRegistarPagamentoDivida_ParcialDepoisTotal(t *testing.T) {
 	ctx := context.Background()
-	produtoSvc, armazemSvc, stockSvc, clienteSvc, contaSvc, dividaSvc, _ := newTestDividaServices(t)
+	produtoSvc, armazemSvc, stockSvc, clienteSvc, contaSvc, dividaSvc, db := newTestDividaServices(t)
 
 	cliente, err := clienteSvc.Criar(ctx, domain.Cliente{Nome: "José Macuácua"})
 	if err != nil {
@@ -186,6 +196,9 @@ func TestRegistarPagamentoDivida_ParcialDepoisTotal(t *testing.T) {
 	if pag1.Valor != 400 {
 		t.Errorf("valor do pagamento registado = %v, want 400", pag1.Valor)
 	}
+	if st := statusDaVenda(t, db, divida.VendaID); st != string(domain.StatusVendaParcial) {
+		t.Errorf("estado da venda após pagamento parcial = %q, want parcial", st)
+	}
 
 	// completa o pagamento — status muda para "paga", saldo chega a 0.
 	dividaPaga, _, err := dividaSvc.RegistarPagamento(ctx, usecase.RegistarPagamentoDividaParams{
@@ -199,6 +212,9 @@ func TestRegistarPagamentoDivida_ParcialDepoisTotal(t *testing.T) {
 	}
 	if dividaPaga.ValorEmAberto != 0 {
 		t.Errorf("valor em aberto final = %v, want 0", dividaPaga.ValorEmAberto)
+	}
+	if st := statusDaVenda(t, db, divida.VendaID); st != string(domain.StatusVendaPaga) {
+		t.Errorf("estado da venda depois de saldada = %q, want paga", st)
 	}
 
 	pagamentos, err := dividaSvc.ListarPagamentos(ctx, divida.ID)
@@ -275,5 +291,17 @@ func TestListarDividasAntigas_RespeitaJanelaDeDias(t *testing.T) {
 	}
 	if len(antigas) != 1 || antigas[0].ClienteID != clienteAntigo.ID {
 		t.Fatalf("esperava só a dívida do cliente antigo (>30 dias), obteve %+v", antigas)
+	}
+}
+
+func TestCliente_AnonimoNaoPodeSerAlteradoNemDesativado(t *testing.T) {
+	ctx := context.Background()
+	_, _, _, clienteSvc, _, _, _ := newTestDividaServices(t)
+
+	if err := clienteSvc.Atualizar(ctx, domain.Cliente{ID: domain.ClienteAnonimoID, Nome: "Outro nome"}); !errors.Is(err, domain.ErrClienteAnonimoFixo) {
+		t.Errorf("atualizar anónimo: esperava ErrClienteAnonimoFixo, obteve %v", err)
+	}
+	if err := clienteSvc.Desativar(ctx, domain.ClienteAnonimoID); !errors.Is(err, domain.ErrClienteAnonimoFixo) {
+		t.Errorf("desativar anónimo: esperava ErrClienteAnonimoFixo, obteve %v", err)
 	}
 }

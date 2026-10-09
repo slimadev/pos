@@ -17,6 +17,7 @@ type Querier interface {
 	AtualizarNegocio(ctx context.Context, arg AtualizarNegocioParams) (Negocios, error)
 	AtualizarProduto(ctx context.Context, arg AtualizarProdutoParams) (Produtos, error)
 	AtualizarQuantidadeLote(ctx context.Context, arg AtualizarQuantidadeLoteParams) error
+	AtualizarStatusVenda(ctx context.Context, arg AtualizarStatusVendaParams) error
 	AtualizarUnidadeProduto(ctx context.Context, arg AtualizarUnidadeProdutoParams) error
 	AtualizarUtilizadorAdmin(ctx context.Context, arg AtualizarUtilizadorAdminParams) error
 	CancelarConta(ctx context.Context, arg CancelarContaParams) (Contas, error)

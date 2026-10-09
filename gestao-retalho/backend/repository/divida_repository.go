@@ -74,6 +74,12 @@ func (r *DividaRepository) Atualizar(ctx context.Context, id int64, valorPago, v
 	return dividaFromRow(row), nil
 }
 
+// AtualizarStatusVenda acompanha o pagamento da dívida na venda que a
+// originou (parcial enquanto falta pagar, paga quando fica saldada).
+func (r *DividaRepository) AtualizarStatusVenda(ctx context.Context, vendaID int64, status domain.StatusVenda) error {
+	return r.q.AtualizarStatusVenda(ctx, sqlcgen.AtualizarStatusVendaParams{Status: string(status), ID: vendaID})
+}
+
 func (r *DividaRepository) CriarPagamento(ctx context.Context, p domain.PagamentoDivida) (domain.PagamentoDivida, error) {
 	row, err := r.q.CriarPagamentoDivida(ctx, sqlcgen.CriarPagamentoDividaParams{
 		DividaID:     p.DividaID,

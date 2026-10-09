@@ -44,6 +44,20 @@ func (q *Queries) AtualizarDivida(ctx context.Context, arg AtualizarDividaParams
 	return i, err
 }
 
+const atualizarStatusVenda = `-- name: AtualizarStatusVenda :exec
+UPDATE vendas SET status = ? WHERE id = ?
+`
+
+type AtualizarStatusVendaParams struct {
+	Status string `json:"status"`
+	ID     int64  `json:"id"`
+}
+
+func (q *Queries) AtualizarStatusVenda(ctx context.Context, arg AtualizarStatusVendaParams) error {
+	_, err := q.db.ExecContext(ctx, atualizarStatusVenda, arg.Status, arg.ID)
+	return err
+}
+
 const criarDivida = `-- name: CriarDivida :one
 INSERT INTO dividas (cliente_id, venda_id, valor_original, valor_pago, valor_em_aberto, status)
 VALUES (?, ?, ?, ?, ?, ?)

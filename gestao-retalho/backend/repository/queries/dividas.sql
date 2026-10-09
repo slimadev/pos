@@ -37,3 +37,6 @@ SELECT id, divida_id, valor, metodo, criado_em, utilizador_id
 FROM pagamentos_divida
 WHERE divida_id = ?
 ORDER BY id;
+
+-- name: AtualizarStatusVenda :exec
+UPDATE vendas SET status = ? WHERE id = ?;

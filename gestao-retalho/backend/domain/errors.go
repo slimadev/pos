@@ -22,4 +22,5 @@ var (
 	// cliente identificado, não anónimo)".
 	ErrClienteAnonimoNaoPodeDivida = errors.New("cliente anónimo não pode ficar com saldo em dívida")
 	ErrContaNaoAberta              = errors.New("conta não está aberta")
+	ErrClienteAnonimoFixo          = errors.New("o cliente anónimo é fixo e não pode ser alterado nem desativado")
 )

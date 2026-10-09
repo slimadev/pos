@@ -70,32 +70,43 @@ func (s *DividaService) RegistarPagamento(ctx context.Context, p RegistarPagamen
 		return domain.Divida{}, domain.PagamentoDivida{}, fmt.Errorf("valor do pagamento deve ser positivo")
 	}
 
-	divida, err := s.dividas.Obter(ctx, p.DividaID)
-	if err != nil {
-		return domain.Divida{}, domain.PagamentoDivida{}, err
-	}
-	if divida.Status == domain.StatusDividaPaga {
-		return domain.Divida{}, domain.PagamentoDivida{}, fmt.Errorf("dívida já está paga")
-	}
-	if p.Valor > divida.ValorEmAberto+toleranciaDivida {
-		return domain.Divida{}, domain.PagamentoDivida{}, fmt.Errorf("pagamento (%.2f) excede o saldo em aberto (%.2f)", p.Valor, divida.ValorEmAberto)
-	}
-
-	novoValorPago := divida.ValorPago + p.Valor
-	novoValorEmAberto := divida.ValorOriginal - novoValorPago
-	status := domain.StatusDividaParcial
-	if novoValorEmAberto <= toleranciaDivida {
-		novoValorEmAberto = 0
-		status = domain.StatusDividaPaga
-	}
-
+	// A leitura do saldo fica dentro da transação: com o PDV e o admin
+	// abertos ao mesmo tempo, dois pagamentos lidos fora dela podiam ver o
+	// mesmo saldo e pagar a dívida duas vezes.
 	var dividaAtualizada domain.Divida
 	var pagamento domain.PagamentoDivida
-	err = s.dividas.WithTx(ctx, func(tx *repository.DividaRepository) error {
-		var err error
+	err := s.dividas.WithTx(ctx, func(tx *repository.DividaRepository) error {
+		divida, err := tx.Obter(ctx, p.DividaID)
+		if err != nil {
+			return err
+		}
+		if divida.Status == domain.StatusDividaPaga {
+			return fmt.Errorf("dívida já está paga")
+		}
+		if p.Valor > divida.ValorEmAberto+toleranciaDivida {
+			return fmt.Errorf("pagamento (%s) excede o saldo em aberto (%s)", qtd(p.Valor), qtd(divida.ValorEmAberto))
+		}
+
+		novoValorPago := divida.ValorPago + p.Valor
+		novoValorEmAberto := divida.ValorOriginal - novoValorPago
+		status := domain.StatusDividaParcial
+		if novoValorEmAberto <= toleranciaDivida {
+			novoValorEmAberto = 0
+			status = domain.StatusDividaPaga
+		}
+
 		dividaAtualizada, err = tx.Atualizar(ctx, p.DividaID, novoValorPago, novoValorEmAberto, status)
 		if err != nil {
 			return fmt.Errorf("atualizar dívida: %w", err)
+		}
+		// A venda que originou a dívida deixa de aparecer como "dívida" no
+		// histórico de vendas quando esta é paga, em parte ou no todo.
+		statusVenda := domain.StatusVendaParcial
+		if status == domain.StatusDividaPaga {
+			statusVenda = domain.StatusVendaPaga
+		}
+		if err := tx.AtualizarStatusVenda(ctx, divida.VendaID, statusVenda); err != nil {
+			return fmt.Errorf("atualizar estado da venda: %w", err)
 		}
 		pagamento, err = tx.CriarPagamento(ctx, domain.PagamentoDivida{
 			DividaID:     p.DividaID,
