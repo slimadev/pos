@@ -8,6 +8,8 @@ import (
 
 	"gestao-retalho/backend/api"
 	"gestao-retalho/backend/domain"
+	"gestao-retalho/backend/export"
+	"gestao-retalho/backend/repository"
 	"gestao-retalho/backend/usecase"
 )
 
@@ -34,11 +36,12 @@ type AdminApp struct {
 	Farmacia   *FarmaciaService
 	Inventario *InventarioService
 	Vendas     *VendasService
+	Relatorios *RelatoriosService
 	PDV        *PDVService
 }
 
-func NewAdminApp(lojas *LojasService, dashboard *DashboardService, auth *AuthService, categorias *CategoriasService, produtos *ProdutosService, armazens *ArmazensService, stock *StockService, farmacia *FarmaciaService, inventario *InventarioService, vendas *VendasService, pdv *PDVService) *AdminApp {
-	return &AdminApp{Lojas: lojas, Dashboard: dashboard, Auth: auth, Categorias: categorias, Produtos: produtos, Armazens: armazens, Stock: stock, Farmacia: farmacia, Inventario: inventario, Vendas: vendas, PDV: pdv}
+func NewAdminApp(lojas *LojasService, dashboard *DashboardService, auth *AuthService, categorias *CategoriasService, produtos *ProdutosService, armazens *ArmazensService, stock *StockService, farmacia *FarmaciaService, inventario *InventarioService, vendas *VendasService, relatorios *RelatoriosService, pdv *PDVService) *AdminApp {
+	return &AdminApp{Lojas: lojas, Dashboard: dashboard, Auth: auth, Categorias: categorias, Produtos: produtos, Armazens: armazens, Stock: stock, Farmacia: farmacia, Inventario: inventario, Vendas: vendas, Relatorios: relatorios, PDV: pdv}
 }
 
 func (a *AdminApp) OnStartup(ctx context.Context) {
@@ -454,6 +457,101 @@ func (a *AdminApp) AbrirRecibo(vendaID int64) (string, error) {
 		return "", err
 	}
 	caminho, err := a.Vendas.GerarRecibo(a.ctx, vendaID)
+	if err != nil {
+		return "", err
+	}
+	runtime.BrowserOpenURL(a.ctx, "file://"+caminho)
+	return caminho, nil
+}
+
+// --- Relatórios --------------------------------------------------------------
+
+func (a *AdminApp) RelatorioVendasPorPeriodo(f api.FiltroRelatorioRequest) (api.RelatorioVendasResponse, error) {
+	if err := a.exigirSessao(); err != nil {
+		return api.RelatorioVendasResponse{}, err
+	}
+	return a.Relatorios.VendasPorPeriodo(a.ctx, f)
+}
+
+func (a *AdminApp) RelatorioLucroPorPeriodo(f api.FiltroRelatorioRequest) (usecase.RelatorioLucro, error) {
+	if err := a.exigirSessao(); err != nil {
+		return usecase.RelatorioLucro{}, err
+	}
+	return a.Relatorios.LucroPorPeriodo(a.ctx, f)
+}
+
+func (a *AdminApp) RelatorioVendasPorProduto(f api.FiltroRelatorioRequest) ([]repository.LinhaVendasPorProduto, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Relatorios.VendasPorProduto(a.ctx, f)
+}
+
+func (a *AdminApp) RelatorioConsumoTeoricoVsReal(f api.FiltroRelatorioRequest) ([]usecase.LinhaConsumoIngrediente, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Relatorios.ConsumoTeoricoVsReal(a.ctx, f)
+}
+
+func (a *AdminApp) RelatorioVendasPorMetodoPagamento(f api.FiltroRelatorioRequest) ([]repository.LinhaVendasPorMetodo, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Relatorios.VendasPorMetodoPagamento(a.ctx, f)
+}
+
+func (a *AdminApp) RelatorioStockAtual(armazemID *int64) (api.RelatorioStockAtualResponse, error) {
+	if err := a.exigirSessao(); err != nil {
+		return api.RelatorioStockAtualResponse{}, err
+	}
+	return a.Relatorios.StockAtual(a.ctx, armazemID)
+}
+
+func (a *AdminApp) RelatorioMovimentosPorPeriodo(f api.FiltroRelatorioRequest) ([]repository.LinhaMovimento, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Relatorios.MovimentosPorPeriodo(a.ctx, f)
+}
+
+func (a *AdminApp) RelatorioPerdasConsumoInterno(f api.FiltroRelatorioRequest) (api.RelatorioPerdasConsumoInternoResponse, error) {
+	if err := a.exigirSessao(); err != nil {
+		return api.RelatorioPerdasConsumoInternoResponse{}, err
+	}
+	return a.Relatorios.PerdasConsumoInterno(a.ctx, f)
+}
+
+// RelatorioContasPorPeriodo recebe datas "AAAA-MM-DD", ambas inclusive.
+func (a *AdminApp) RelatorioContasPorPeriodo(desde, ate string) (api.RelatorioContasResponse, error) {
+	if err := a.exigirSessao(); err != nil {
+		return api.RelatorioContasResponse{}, err
+	}
+	return a.Relatorios.ContasPorPeriodo(a.ctx, desde, ate)
+}
+
+func (a *AdminApp) RelatorioDividasEmAberto() ([]usecase.LinhaDividaRelatorio, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Relatorios.DividasEmAberto(a.ctx)
+}
+
+// RelatorioFechoCaixaDiario recebe o dia como "AAAA-MM-DD".
+func (a *AdminApp) RelatorioFechoCaixaDiario(dia string) (usecase.FechoCaixa, error) {
+	if err := a.exigirSessao(); err != nil {
+		return usecase.FechoCaixa{}, err
+	}
+	return a.Relatorios.FechoCaixaDiario(a.ctx, dia)
+}
+
+// ExportarRelatorio grava a tabela ("xlsx" ou "pdf") e abre-a no programa
+// por omissão do sistema.
+func (a *AdminApp) ExportarRelatorio(titulo string, colunas []string, linhas [][]string, totais []string, formato string) (string, error) {
+	if err := a.exigirSessao(); err != nil {
+		return "", err
+	}
+	caminho, err := a.Relatorios.Exportar(export.Tabela{Titulo: titulo, Colunas: colunas, Linhas: linhas, Totais: totais}, formato)
 	if err != nil {
 		return "", err
 	}

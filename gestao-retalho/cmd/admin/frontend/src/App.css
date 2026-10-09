@@ -1240,3 +1240,66 @@ body {
   color: var(--danger);
   font-weight: 600;
 }
+
+/* Relatorios.tsx */
+.admin-relatorios {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+.admin-relatorios-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+}
+.admin-relatorios-grupo {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  padding: 0 8px 4px;
+}
+.admin-relatorios-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 8px;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--text);
+  cursor: pointer;
+}
+.admin-relatorios-item:hover {
+  background: var(--bg);
+}
+.admin-relatorios-item.ativo {
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-weight: 600;
+}
+.admin-relatorios-conteudo {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.admin-relatorios-totais td {
+  font-weight: 700;
+  border-top: 1px solid var(--border-strong);
+}
+.admin-relatorios-alerta {
+  width: 14px;
+  height: 14px;
+  color: var(--danger);
+  vertical-align: -2px;
+  margin-right: 4px;
+}

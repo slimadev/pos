@@ -10,8 +10,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strings"
 	"time"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -651,41 +649,18 @@ func (a *App) RelatorioFechoCaixaDiario(dia time.Time) (usecase.FechoCaixa, erro
 // (não uma por relatório) — reutiliza exatamente essas linhas.
 
 func (a *App) ExportarTabelaExcel(titulo string, colunas []string, linhas [][]string, totais []string) (string, error) {
-	return a.exportarTabela(titulo, colunas, linhas, totais, "xlsx", export.GerarTabelaExcel)
+	return a.exportarTabela(export.Tabela{Titulo: titulo, Colunas: colunas, Linhas: linhas, Totais: totais}, "xlsx")
 }
 
 func (a *App) ExportarTabelaPDF(titulo string, colunas []string, linhas [][]string, totais []string) (string, error) {
-	return a.exportarTabela(titulo, colunas, linhas, totais, "pdf", export.GerarTabelaPDF)
+	return a.exportarTabela(export.Tabela{Titulo: titulo, Colunas: colunas, Linhas: linhas, Totais: totais}, "pdf")
 }
 
-var caracteresInvalidosFicheiro = regexp.MustCompile(`[^a-zA-Z0-9-]+`)
-
-func (a *App) exportarTabela(
-	titulo string,
-	colunas []string,
-	linhas [][]string,
-	totais []string,
-	extensao string,
-	gerar func(export.Tabela) ([]byte, error),
-) (string, error) {
-	conteudo, err := gerar(export.Tabela{Titulo: titulo, Colunas: colunas, Linhas: linhas, Totais: totais})
+func (a *App) exportarTabela(t export.Tabela, formato string) (string, error) {
+	path, err := export.GravarTabela(t, formato)
 	if err != nil {
 		return "", err
 	}
-
-	dir, err := config.ResolveRelatoriosDir()
-	if err != nil {
-		return "", err
-	}
-	nome := strings.Trim(caracteresInvalidosFicheiro.ReplaceAllString(titulo, "-"), "-")
-	if nome == "" {
-		nome = "relatorio"
-	}
-	path := filepath.Join(dir, fmt.Sprintf("%s-%d.%s", nome, time.Now().Unix(), extensao))
-	if err := os.WriteFile(path, conteudo, 0o644); err != nil {
-		return "", fmt.Errorf("gravar relatório: %w", err)
-	}
-
 	runtime.BrowserOpenURL(a.ctx, "file://"+path)
 	return path, nil
 }
