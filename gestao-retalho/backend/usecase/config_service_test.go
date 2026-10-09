@@ -13,6 +13,9 @@ import (
 
 func newTestConfigService(t *testing.T) (*usecase.ConfigService, *usecase.ProdutoService, *repository.UtilizadorRepository) {
 	t.Helper()
+	// FinalizarWizard escreve config.json no diretório de configuração do
+	// utilizador — sem isto, correr os testes apagava o da loja real.
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 	db := newTestDB(t)
 
 	produtoRepo := repository.NewProdutoRepository(db)

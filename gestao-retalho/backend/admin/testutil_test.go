@@ -30,6 +30,9 @@ type lojaTeste struct {
 
 func novaLojaTeste(t *testing.T, nomeFicheiro, nomeNegocio string, tipo domain.TipoNegocio) lojaTeste {
 	t.Helper()
+	// O wizard da loja escreve config.json no diretório de configuração do
+	// utilizador — sem isto, correr os testes apagava o da loja real.
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 	caminho := filepath.Join(t.TempDir(), nomeFicheiro)
 
 	db, err := repository.NewSQLiteConn(config.DBPath(caminho))
