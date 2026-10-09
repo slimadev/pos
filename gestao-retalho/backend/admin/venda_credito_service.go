@@ -64,7 +64,7 @@ func (s *VendasService) CatalogoVenda(ctx context.Context, armazemID int64) ([]I
 // de crédito — que nunca bloqueia, como no fecho de uma conta em dívida.
 func (s *VendasService) RegistarVendaACredito(ctx context.Context, p usecase.VendaDiretaParams) (ResultadoVendaCredito, error) {
 	return comLoja(ctx, s.lojas, func(a *api.App) (ResultadoVendaCredito, error) {
-		p.UtilizadorID = api.UtilizadorAtualID
+		p.UtilizadorID = api.UtilizadorAdminID
 		venda, err := a.VendaService.RegistarVendaACredito(ctx, p)
 		if err != nil {
 			return ResultadoVendaCredito{}, err

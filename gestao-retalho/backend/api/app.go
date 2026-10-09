@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"time"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -21,7 +22,7 @@ import (
 	"gestao-retalho/backend/usecase"
 )
 
-// UtilizadorAtualID fica fixo no utilizador semente (domain.UtilizadorAdminSeedID)
+// a.utilizadorAtual() fica fixo no utilizador semente (domain.UtilizadorAdminSeedID)
 // — cmd/app não pede login (decisão pós-Fase 10: autenticação passou a
 // existir só no cmd/admin, um único administrador para todas as lojas; o
 // tipo de negócio escolhido no wizard de uma loja só decide tema/cor e
@@ -29,11 +30,15 @@ import (
 // preencher os dados reais deste utilizador semente no passo 4, só para
 // atribuição em `utilizador_id` (auditoria de vendas/movimentos), nunca
 // para autenticação.
-const UtilizadorAtualID = domain.UtilizadorAdminSeedID
+const UtilizadorAdminID = domain.UtilizadorAdminSeedID
 
 type App struct {
 	ctx context.Context
 	db  *sql.DB
+
+	// operadorID é o operador do turno no PDV (0 = ninguém identificado);
+	// só o cmd/app o define, via IniciarTurno. Ver utilizadorAtual.
+	operadorID atomic.Int64
 
 	ProdutoService      *usecase.ProdutoService
 	CategoriaService    *usecase.CategoriaService
@@ -48,6 +53,7 @@ type App struct {
 	FarmaciaService     *usecase.FarmaciaService
 	DividaService       *usecase.DividaService
 	RelatorioService    *usecase.RelatorioService
+	OperadorService     *usecase.OperadorService
 }
 
 func NewApp(
@@ -65,6 +71,7 @@ func NewApp(
 	farmacia *usecase.FarmaciaService,
 	dividas *usecase.DividaService,
 	relatorios *usecase.RelatorioService,
+	operadores *usecase.OperadorService,
 ) *App {
 	return &App{
 		db:                  db,
@@ -81,7 +88,76 @@ func NewApp(
 		FarmaciaService:     farmacia,
 		DividaService:       dividas,
 		RelatorioService:    relatorios,
+		OperadorService:     operadores,
 	}
+}
+
+// utilizadorAtual é a quem fica atribuída cada venda/movimento: o operador
+// do turno no PDV, ou o administrador quando não há ninguém identificado
+// (lojas sem operadores, e tudo o que o cmd/admin faz através de AbrirLoja).
+func (a *App) utilizadorAtual() int64 {
+	if id := a.operadorID.Load(); id != 0 {
+		return id
+	}
+	return UtilizadorAdminID
+}
+
+// exigirTurno protege as operações que só o PDV faz (venda direta e
+// contas): numa loja com operadores, alguém tem de se ter identificado.
+func (a *App) exigirTurno() error {
+	if a.operadorID.Load() != 0 {
+		return nil
+	}
+	ativos, err := a.OperadorService.ListarAtivos(a.ctx)
+	if err != nil {
+		return err
+	}
+	if len(ativos) > 0 {
+		return fmt.Errorf("escolha o operador antes de vender")
+	}
+	return nil
+}
+
+// --- Turno do operador no PDV -------------------------------------------------
+
+func (a *App) ListarOperadoresAtivos() ([]usecase.Operador, error) {
+	return a.OperadorService.ListarAtivos(a.ctx)
+}
+
+// IniciarTurno identifica quem está a vender (operador + PIN); tudo o que o
+// PDV registar a seguir fica com este operador.
+func (a *App) IniciarTurno(operadorID int64, pin string) (usecase.Operador, error) {
+	op, err := a.OperadorService.Autenticar(a.ctx, operadorID, pin)
+	if err != nil {
+		return usecase.Operador{}, err
+	}
+	a.operadorID.Store(op.ID)
+	return op, nil
+}
+
+func (a *App) TerminarTurno() {
+	a.operadorID.Store(0)
+}
+
+// ObterOperadorAtual devolve o operador do turno, ou ID 0 se ninguém se
+// identificou.
+func (a *App) ObterOperadorAtual() (usecase.Operador, error) {
+	id := a.operadorID.Load()
+	if id == 0 {
+		return usecase.Operador{}, nil
+	}
+	ativos, err := a.OperadorService.ListarAtivos(a.ctx)
+	if err != nil {
+		return usecase.Operador{}, err
+	}
+	for _, op := range ativos {
+		if op.ID == id {
+			return op, nil
+		}
+	}
+	// Desativado no admin a meio do turno: o turno acaba.
+	a.operadorID.Store(0)
+	return usecase.Operador{}, nil
 }
 
 // OnStartup is called by Wails once the frontend is ready to receive
@@ -224,22 +300,22 @@ func (a *App) ListarMovimentosStock(produtoID int64) ([]domain.MovimentoStock, e
 }
 
 func (a *App) RegistarEntradaStock(p usecase.EntradaParams) (domain.MovimentoStock, error) {
-	p.UtilizadorID = UtilizadorAtualID
+	p.UtilizadorID = a.utilizadorAtual()
 	return a.StockService.RegistarEntrada(a.ctx, p)
 }
 
 func (a *App) TransferirStock(p usecase.TransferenciaParams) (domain.MovimentoStock, error) {
-	p.UtilizadorID = UtilizadorAtualID
+	p.UtilizadorID = a.utilizadorAtual()
 	return a.StockService.TransferirStock(a.ctx, p)
 }
 
 func (a *App) RegistarPerdaStock(p usecase.SaidaParams) (domain.MovimentoStock, error) {
-	p.UtilizadorID = UtilizadorAtualID
+	p.UtilizadorID = a.utilizadorAtual()
 	return a.StockService.RegistarPerda(a.ctx, p)
 }
 
 func (a *App) RegistarConsumoInternoStock(p usecase.SaidaParams) (domain.MovimentoStock, error) {
-	p.UtilizadorID = UtilizadorAtualID
+	p.UtilizadorID = a.utilizadorAtual()
 	return a.StockService.RegistarConsumoInterno(a.ctx, p)
 }
 
@@ -251,7 +327,7 @@ type IniciarInventarioResponse struct {
 }
 
 func (a *App) IniciarInventario(armazemID int64) (IniciarInventarioResponse, error) {
-	inv, itens, err := a.StockService.IniciarInventario(a.ctx, domain.NegocioID, armazemID, UtilizadorAtualID)
+	inv, itens, err := a.StockService.IniciarInventario(a.ctx, domain.NegocioID, armazemID, a.utilizadorAtual())
 	if err != nil {
 		return IniciarInventarioResponse{}, err
 	}
@@ -271,7 +347,7 @@ func (a *App) RegistarContagemInventario(itemID int64, quantidadeContada float64
 }
 
 func (a *App) FecharInventario(inventarioID int64) ([]domain.MovimentoStock, error) {
-	return a.StockService.FecharInventario(a.ctx, inventarioID, UtilizadorAtualID)
+	return a.StockService.FecharInventario(a.ctx, inventarioID, a.utilizadorAtual())
 }
 
 // --- Configuração / wizard de 1º arranque (SDD secção 9) -------------------
@@ -329,7 +405,10 @@ func (a *App) DesativarCliente(id int64) error {
 // --- Vendas / PDV direto (SDD 4.10) -----------------------------------------
 
 func (a *App) RegistarVendaDireta(p usecase.VendaDiretaParams) (usecase.VendaCompleta, error) {
-	p.UtilizadorID = UtilizadorAtualID
+	if err := a.exigirTurno(); err != nil {
+		return usecase.VendaCompleta{}, err
+	}
+	p.UtilizadorID = a.utilizadorAtual()
 	return a.VendaService.RegistarVendaDireta(a.ctx, p)
 }
 
@@ -399,11 +478,17 @@ type AbrirContaRequest struct {
 }
 
 func (a *App) AbrirConta(req AbrirContaRequest) (domain.Conta, error) {
-	return a.ContaService.AbrirConta(a.ctx, req.Identificador, req.ClienteID, UtilizadorAtualID)
+	if err := a.exigirTurno(); err != nil {
+		return domain.Conta{}, err
+	}
+	return a.ContaService.AbrirConta(a.ctx, req.Identificador, req.ClienteID, a.utilizadorAtual())
 }
 
 func (a *App) AdicionarItemConta(p usecase.AdicionarItemContaParams) (domain.ItemConta, error) {
-	p.UtilizadorID = UtilizadorAtualID
+	if err := a.exigirTurno(); err != nil {
+		return domain.ItemConta{}, err
+	}
+	p.UtilizadorID = a.utilizadorAtual()
 	return a.ContaService.AdicionarItem(a.ctx, p)
 }
 
@@ -412,7 +497,10 @@ func (a *App) TransferirItemConta(itemID, novaContaID int64) error {
 }
 
 func (a *App) CancelarConta(contaID int64, motivo string) (domain.Conta, error) {
-	return a.ContaService.CancelarConta(a.ctx, contaID, UtilizadorAtualID, motivo)
+	if err := a.exigirTurno(); err != nil {
+		return domain.Conta{}, err
+	}
+	return a.ContaService.CancelarConta(a.ctx, contaID, a.utilizadorAtual(), motivo)
 }
 
 type FecharContaResponse struct {
@@ -421,7 +509,10 @@ type FecharContaResponse struct {
 }
 
 func (a *App) FecharContaAberta(contaID int64, p usecase.FecharContaParams) (FecharContaResponse, error) {
-	p.UtilizadorID = UtilizadorAtualID
+	if err := a.exigirTurno(); err != nil {
+		return FecharContaResponse{}, err
+	}
+	p.UtilizadorID = a.utilizadorAtual()
 	venda, alerta, err := a.ContaService.FecharConta(a.ctx, contaID, p)
 	if err != nil {
 		return FecharContaResponse{}, err
@@ -452,7 +543,7 @@ func (a *App) SimularDisponibilidade(produtoCompostoID, armazemID int64) (float6
 }
 
 func (a *App) RegistarProducao(p usecase.ProducaoParams) (domain.MovimentoStock, error) {
-	p.UtilizadorID = UtilizadorAtualID
+	p.UtilizadorID = a.utilizadorAtual()
 	return a.FichaTecnicaService.RegistarProducao(a.ctx, p)
 }
 
@@ -464,7 +555,7 @@ type EntradaComLoteResponse struct {
 }
 
 func (a *App) RegistarEntradaComLote(p usecase.EntradaComLoteParams) (EntradaComLoteResponse, error) {
-	p.UtilizadorID = UtilizadorAtualID
+	p.UtilizadorID = a.utilizadorAtual()
 	lote, movimento, err := a.FarmaciaService.RegistarEntradaComLote(a.ctx, p)
 	if err != nil {
 		return EntradaComLoteResponse{}, err
@@ -477,17 +568,17 @@ func (a *App) ListarLotes(produtoID, armazemID int64) ([]domain.Lote, error) {
 }
 
 func (a *App) RegistarPerdaDeLote(p usecase.SaidaLoteParams) (domain.MovimentoStock, error) {
-	p.UtilizadorID = UtilizadorAtualID
+	p.UtilizadorID = a.utilizadorAtual()
 	return a.FarmaciaService.RegistarPerdaDeLote(a.ctx, p)
 }
 
 func (a *App) RegistarConsumoInternoDeLote(p usecase.SaidaLoteParams) (domain.MovimentoStock, error) {
-	p.UtilizadorID = UtilizadorAtualID
+	p.UtilizadorID = a.utilizadorAtual()
 	return a.FarmaciaService.RegistarConsumoInternoDeLote(a.ctx, p)
 }
 
 func (a *App) TransferirLote(p usecase.TransferenciaLoteParams) (domain.MovimentoStock, error) {
-	p.UtilizadorID = UtilizadorAtualID
+	p.UtilizadorID = a.utilizadorAtual()
 	return a.FarmaciaService.TransferirLote(a.ctx, p)
 }
 
@@ -496,7 +587,7 @@ func (a *App) ListarLotesAVencer(dentroDeDias int) ([]domain.Lote, error) {
 }
 
 func (a *App) RegistarReceitaMedica(p usecase.ReceitaMedicaInput) (domain.ReceitaMedica, error) {
-	p.ValidadoPor = UtilizadorAtualID
+	p.ValidadoPor = a.utilizadorAtual()
 	return a.FarmaciaService.RegistarReceitaMedica(a.ctx, p)
 }
 
@@ -536,7 +627,7 @@ type RegistarPagamentoDividaResponse struct {
 
 // RegistarPagamentoDivida é o fluxo independente de nova venda do SDD 4.11.
 func (a *App) RegistarPagamentoDivida(p usecase.RegistarPagamentoDividaParams) (RegistarPagamentoDividaResponse, error) {
-	p.UtilizadorID = UtilizadorAtualID
+	p.UtilizadorID = a.utilizadorAtual()
 	divida, pagamento, err := a.DividaService.RegistarPagamento(a.ctx, p)
 	if err != nil {
 		return RegistarPagamentoDividaResponse{}, err

@@ -53,6 +53,7 @@ var CoreModule = fx.Options(
 	fx.Provide(usecase.NewFichaTecnicaService),
 	fx.Provide(usecase.NewFarmaciaService),
 	fx.Provide(usecase.NewRelatorioService),
+	fx.Provide(usecase.NewOperadorService),
 
 	fx.Provide(api.NewApp),
 )

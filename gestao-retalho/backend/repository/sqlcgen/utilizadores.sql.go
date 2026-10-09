@@ -7,7 +7,36 @@ package sqlcgen
 
 import (
 	"context"
+	"database/sql"
 )
+
+const atualizarNomeUtilizador = `-- name: AtualizarNomeUtilizador :exec
+UPDATE utilizadores SET nome = ? WHERE id = ?
+`
+
+type AtualizarNomeUtilizadorParams struct {
+	Nome string `json:"nome"`
+	ID   int64  `json:"id"`
+}
+
+func (q *Queries) AtualizarNomeUtilizador(ctx context.Context, arg AtualizarNomeUtilizadorParams) error {
+	_, err := q.db.ExecContext(ctx, atualizarNomeUtilizador, arg.Nome, arg.ID)
+	return err
+}
+
+const atualizarPasswordUtilizador = `-- name: AtualizarPasswordUtilizador :exec
+UPDATE utilizadores SET password_hash = ? WHERE id = ?
+`
+
+type AtualizarPasswordUtilizadorParams struct {
+	PasswordHash string `json:"password_hash"`
+	ID           int64  `json:"id"`
+}
+
+func (q *Queries) AtualizarPasswordUtilizador(ctx context.Context, arg AtualizarPasswordUtilizadorParams) error {
+	_, err := q.db.ExecContext(ctx, atualizarPasswordUtilizador, arg.PasswordHash, arg.ID)
+	return err
+}
 
 const atualizarUtilizadorAdmin = `-- name: AtualizarUtilizadorAdmin :exec
 UPDATE utilizadores
@@ -30,6 +59,113 @@ func (q *Queries) AtualizarUtilizadorAdmin(ctx context.Context, arg AtualizarUti
 		arg.ID,
 	)
 	return err
+}
+
+const criarUtilizador = `-- name: CriarUtilizador :one
+INSERT INTO utilizadores (negocio_id, nome, username, password_hash, role, ativo)
+VALUES (?, ?, ?, ?, ?, 1)
+RETURNING id, negocio_id, nome, username, password_hash, role, ativo
+`
+
+type CriarUtilizadorParams struct {
+	NegocioID    sql.NullInt64 `json:"negocio_id"`
+	Nome         string        `json:"nome"`
+	Username     string        `json:"username"`
+	PasswordHash string        `json:"password_hash"`
+	Role         string        `json:"role"`
+}
+
+func (q *Queries) CriarUtilizador(ctx context.Context, arg CriarUtilizadorParams) (Utilizadores, error) {
+	row := q.db.QueryRowContext(ctx, criarUtilizador,
+		arg.NegocioID,
+		arg.Nome,
+		arg.Username,
+		arg.PasswordHash,
+		arg.Role,
+	)
+	var i Utilizadores
+	err := row.Scan(
+		&i.ID,
+		&i.NegocioID,
+		&i.Nome,
+		&i.Username,
+		&i.PasswordHash,
+		&i.Role,
+		&i.Ativo,
+	)
+	return i, err
+}
+
+const definirUtilizadorAtivo = `-- name: DefinirUtilizadorAtivo :exec
+UPDATE utilizadores SET ativo = ? WHERE id = ?
+`
+
+type DefinirUtilizadorAtivoParams struct {
+	Ativo int64 `json:"ativo"`
+	ID    int64 `json:"id"`
+}
+
+func (q *Queries) DefinirUtilizadorAtivo(ctx context.Context, arg DefinirUtilizadorAtivoParams) error {
+	_, err := q.db.ExecContext(ctx, definirUtilizadorAtivo, arg.Ativo, arg.ID)
+	return err
+}
+
+const listarUtilizadores = `-- name: ListarUtilizadores :many
+SELECT id, negocio_id, nome, username, password_hash, role, ativo
+FROM utilizadores
+ORDER BY nome
+`
+
+func (q *Queries) ListarUtilizadores(ctx context.Context) ([]Utilizadores, error) {
+	rows, err := q.db.QueryContext(ctx, listarUtilizadores)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Utilizadores
+	for rows.Next() {
+		var i Utilizadores
+		if err := rows.Scan(
+			&i.ID,
+			&i.NegocioID,
+			&i.Nome,
+			&i.Username,
+			&i.PasswordHash,
+			&i.Role,
+			&i.Ativo,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const obterUtilizador = `-- name: ObterUtilizador :one
+SELECT id, negocio_id, nome, username, password_hash, role, ativo
+FROM utilizadores
+WHERE id = ?
+`
+
+func (q *Queries) ObterUtilizador(ctx context.Context, id int64) (Utilizadores, error) {
+	row := q.db.QueryRowContext(ctx, obterUtilizador, id)
+	var i Utilizadores
+	err := row.Scan(
+		&i.ID,
+		&i.NegocioID,
+		&i.Nome,
+		&i.Username,
+		&i.PasswordHash,
+		&i.Role,
+		&i.Ativo,
+	)
+	return i, err
 }
 
 const obterUtilizadorPorUsername = `-- name: ObterUtilizadorPorUsername :one
