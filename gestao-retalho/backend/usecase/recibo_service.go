@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"gestao-retalho/backend/domain"
 	"gestao-retalho/backend/export"
 	"gestao-retalho/backend/repository"
 )
@@ -64,7 +65,7 @@ func (s *ReciboService) GerarPDF(ctx context.Context, vendaID int64) ([]byte, er
 
 	pagamentos := make([]export.PagamentoRecibo, 0, len(completa.Pagamentos))
 	for _, p := range completa.Pagamentos {
-		pagamentos = append(pagamentos, export.PagamentoRecibo{Metodo: string(p.Metodo), Valor: p.Valor})
+		pagamentos = append(pagamentos, export.PagamentoRecibo{Metodo: rotuloMetodo(p.Metodo), Valor: p.Valor})
 	}
 
 	return export.GerarReciboPDF(export.DadosRecibo{
@@ -78,4 +79,20 @@ func (s *ReciboService) GerarPDF(ctx context.Context, vendaID int64) ([]byte, er
 		Total:         completa.Venda.Total,
 		Pagamentos:    pagamentos,
 	})
+}
+
+func rotuloMetodo(m domain.MetodoPagamento) string {
+	switch m {
+	case domain.MetodoDinheiro:
+		return "Dinheiro"
+	case domain.MetodoMpesa:
+		return "M-Pesa"
+	case domain.MetodoEmola:
+		return "e-Mola"
+	case domain.MetodoCartao:
+		return "Cartão"
+	case domain.MetodoTransferencia:
+		return "Transferência"
+	}
+	return string(m)
 }

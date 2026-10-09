@@ -102,10 +102,12 @@ func GerarTabelaPDF(t Tabela) ([]byte, error) {
 	pdf := fpdf.New("L", "mm", "A4", "")
 	pdf.AddPage()
 	pdf.SetMargins(10, 10, 10)
+	// Helvetica só conhece Windows-1252 — sem isto os acentos saem corrompidos.
+	tr := pdf.UnicodeTranslatorFromDescriptor("")
 
 	if t.Titulo != "" {
 		pdf.SetFont("Helvetica", "B", 14)
-		pdf.CellFormat(0, 10, t.Titulo, "", 1, "L", false, 0, "")
+		pdf.CellFormat(0, 10, tr(t.Titulo), "", 1, "L", false, 0, "")
 		pdf.Ln(2)
 	}
 
@@ -119,7 +121,7 @@ func GerarTabelaPDF(t Tabela) ([]byte, error) {
 	pdf.SetFont("Helvetica", "B", 9)
 	pdf.SetFillColor(230, 230, 230)
 	for _, nome := range t.Colunas {
-		pdf.CellFormat(largura, 7, nome, "1", 0, "L", true, 0, "")
+		pdf.CellFormat(largura, 7, tr(nome), "1", 0, "L", true, 0, "")
 	}
 	pdf.Ln(-1)
 
@@ -130,7 +132,7 @@ func GerarTabelaPDF(t Tabela) ([]byte, error) {
 			if col < len(valores) {
 				valor = valores[col]
 			}
-			pdf.CellFormat(largura, 6, valor, "1", 0, "L", false, 0, "")
+			pdf.CellFormat(largura, 6, tr(valor), "1", 0, "L", false, 0, "")
 		}
 		pdf.Ln(-1)
 		if pdf.GetY() > 190 {
@@ -145,7 +147,7 @@ func GerarTabelaPDF(t Tabela) ([]byte, error) {
 			if col < len(t.Totais) {
 				valor = t.Totais[col]
 			}
-			pdf.CellFormat(largura, 6, valor, "1", 0, "L", false, 0, "")
+			pdf.CellFormat(largura, 6, tr(valor), "1", 0, "L", false, 0, "")
 		}
 		pdf.Ln(-1)
 	}
