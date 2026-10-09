@@ -14,3 +14,10 @@ type Lote struct {
 	Quantidade    float64
 	CustoUnitario float64
 }
+
+// VencidoEm diz se o lote já passou da validade no dia de `agora` — a
+// validade conta até ao fim do próprio dia (é guardada como a data, sem
+// hora, em UTC).
+func (l Lote) VencidoEm(agora time.Time) bool {
+	return l.DataValidade.UTC().Format("2006-01-02") < agora.Format("2006-01-02")
+}

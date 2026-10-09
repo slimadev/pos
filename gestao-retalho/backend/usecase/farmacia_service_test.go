@@ -27,7 +27,7 @@ func newTestFarmaciaServices(t *testing.T) (*usecase.ProdutoService, *usecase.Ar
 
 	produtoSvc := usecase.NewProdutoService(produtoRepo)
 	armazemSvc := usecase.NewArmazemService(armazemRepo)
-	stockSvc := usecase.NewStockService(stockRepo, produtoRepo, armazemRepo, invRepo)
+	stockSvc := usecase.NewStockService(stockRepo, produtoRepo, armazemRepo, invRepo, loteRepo)
 	vendaSvc := usecase.NewVendaService(vendaRepo, produtoRepo, armazemRepo, fichaRepo)
 	farmaciaSvc := usecase.NewFarmaciaService(loteRepo, produtoRepo, armazemRepo, receitaRepo)
 
@@ -410,5 +410,140 @@ func TestTransferirLote_MantemNumeroEValidadeNoDestino(t *testing.T) {
 		LoteID: lote.ID, ArmazemDestinoID: principal.ID, Quantidade: 1, UtilizadorID: 1,
 	}); !errors.Is(err, domain.ErrArmazemIgual) {
 		t.Errorf("esperava ErrArmazemIgual, obteve %v", err)
+	}
+}
+
+func venderLote(ctx context.Context, svc *usecase.VendaService, armazemID int64, unidade domain.UnidadeProduto, qtd float64) error {
+	_, err := svc.RegistarVendaDireta(ctx, usecase.VendaDiretaParams{
+		ArmazemID:    armazemID,
+		Itens:        []usecase.ItemVendaDiretaParams{{ProdutoID: unidade.ProdutoID, UnidadeProdutoID: unidade.ID, Quantidade: qtd}},
+		Pagamentos:   []usecase.PagamentoVendaParams{{Metodo: domain.MetodoDinheiro, Valor: qtd * unidade.PrecoVenda}},
+		UtilizadorID: 1,
+	})
+	return err
+}
+
+func quantidadeDoLote(t *testing.T, ctx context.Context, svc *usecase.FarmaciaService, produtoID, armazemID int64, numero string) float64 {
+	t.Helper()
+	lotes, err := svc.ListarLotes(ctx, produtoID, armazemID)
+	if err != nil {
+		t.Fatalf("listar lotes: %v", err)
+	}
+	for _, l := range lotes {
+		if l.NumeroLote == numero {
+			return l.Quantidade
+		}
+	}
+	return 0
+}
+
+func TestVendaLoteControlado_SaltaLotesVencidos(t *testing.T) {
+	ctx := context.Background()
+	produtoSvc, armazemSvc, _, vendaSvc, farmaciaSvc := newTestFarmaciaServices(t)
+	armazem := criarArmazem(t, ctx, armazemSvc, "Farmácia")
+	p, unidade := criarProdutoLoteControlado(t, ctx, produtoSvc, "Xarope", 150)
+	entradaLote(t, ctx, farmaciaSvc, p.ID, armazem.ID, "VENCIDO", time.Now().AddDate(0, 0, -1), 5)
+	entradaLote(t, ctx, farmaciaSvc, p.ID, armazem.ID, "VALIDO", time.Now().AddDate(1, 0, 0), 5)
+
+	if err := venderLote(ctx, vendaSvc, armazem.ID, unidade, 3); err != nil {
+		t.Fatalf("vender: %v", err)
+	}
+	if q := quantidadeDoLote(t, ctx, farmaciaSvc, p.ID, armazem.ID, "VENCIDO"); q != 5 {
+		t.Errorf("lote VENCIDO = %v, want 5 (nunca pode sair numa venda)", q)
+	}
+	if q := quantidadeDoLote(t, ctx, farmaciaSvc, p.ID, armazem.ID, "VALIDO"); q != 2 {
+		t.Errorf("lote VALIDO = %v, want 2", q)
+	}
+
+	// Restam 2 válidos e 5 vencidos: pedir 4 tem de falhar e explicar porquê.
+	err := venderLote(ctx, vendaSvc, armazem.ID, unidade, 4)
+	if !errors.Is(err, domain.ErrStockInsuficiente) || !strings.Contains(err.Error(), "vencidos") {
+		t.Fatalf("esperava stock insuficiente a mencionar lotes vencidos, obteve %v", err)
+	}
+}
+
+func TestVendaLoteControlado_ValidadeDeHojeAindaVende(t *testing.T) {
+	ctx := context.Background()
+	produtoSvc, armazemSvc, _, vendaSvc, farmaciaSvc := newTestFarmaciaServices(t)
+	armazem := criarArmazem(t, ctx, armazemSvc, "Farmácia")
+	p, unidade := criarProdutoLoteControlado(t, ctx, produtoSvc, "Soro", 40)
+	hoje := time.Now()
+	entradaLote(t, ctx, farmaciaSvc, p.ID, armazem.ID, "HOJE", time.Date(hoje.Year(), hoje.Month(), hoje.Day(), 0, 0, 0, 0, time.UTC), 2)
+
+	if err := venderLote(ctx, vendaSvc, armazem.ID, unidade, 1); err != nil {
+		t.Fatalf("lote que vence hoje ainda devia poder ser vendido: %v", err)
+	}
+}
+
+func TestFecharInventario_FaltaEmProdutoComLotesBaixaPorFEFO(t *testing.T) {
+	ctx := context.Background()
+	produtoSvc, armazemSvc, stockSvc, _, farmaciaSvc := newTestFarmaciaServices(t)
+	armazem := criarArmazem(t, ctx, armazemSvc, "Farmácia")
+	p, _ := criarProdutoLoteControlado(t, ctx, produtoSvc, "Vitamina C", 60)
+	entradaLote(t, ctx, farmaciaSvc, p.ID, armazem.ID, "CEDO", time.Now().AddDate(0, 0, -3), 3)
+	entradaLote(t, ctx, farmaciaSvc, p.ID, armazem.ID, "TARDE", time.Now().AddDate(1, 0, 0), 5)
+
+	inv, itens, err := stockSvc.IniciarInventario(ctx, domain.NegocioID, armazem.ID, 1)
+	if err != nil {
+		t.Fatalf("iniciar inventário: %v", err)
+	}
+	for _, item := range itens {
+		if item.ProdutoID == p.ID {
+			if _, err := stockSvc.RegistarContagem(ctx, item.ID, 6); err != nil {
+				t.Fatalf("contagem: %v", err)
+			}
+		}
+	}
+	if _, err := stockSvc.FecharInventario(ctx, inv.ID, 1); err != nil {
+		t.Fatalf("fechar inventário: %v", err)
+	}
+
+	if q := quantidadeDoLote(t, ctx, farmaciaSvc, p.ID, armazem.ID, "CEDO"); q != 1 {
+		t.Errorf("lote CEDO = %v, want 1 (a falta de 2 sai primeiro do que vence primeiro, mesmo vencido)", q)
+	}
+	if q := quantidadeDoLote(t, ctx, farmaciaSvc, p.ID, armazem.ID, "TARDE"); q != 5 {
+		t.Errorf("lote TARDE = %v, want 5", q)
+	}
+	stock, _ := stockSvc.ObterStock(ctx, p.ID, armazem.ID)
+	if stock.Quantidade != 6 {
+		t.Errorf("stock_atual = %v, want 6 (igual à contagem e à soma dos lotes)", stock.Quantidade)
+	}
+}
+
+func TestFecharInventario_SobraEmProdutoComLotesBloqueiaSemAjustarNada(t *testing.T) {
+	ctx := context.Background()
+	produtoSvc, armazemSvc, stockSvc, _, farmaciaSvc := newTestFarmaciaServices(t)
+	armazem := criarArmazem(t, ctx, armazemSvc, "Farmácia")
+	comLotes, _ := criarProdutoLoteControlado(t, ctx, produtoSvc, "Aspirina", 30)
+	entradaLote(t, ctx, farmaciaSvc, comLotes.ID, armazem.ID, "A1", time.Now().AddDate(1, 0, 0), 5)
+	semLotes := criarProdutoSimples(t, ctx, produtoSvc, "Algodão")
+	if _, err := stockSvc.RegistarEntrada(ctx, usecase.EntradaParams{ProdutoID: semLotes.ID, ArmazemDestinoID: armazem.ID, Quantidade: 10, CustoUnitario: 5, UtilizadorID: 1}); err != nil {
+		t.Fatalf("entrada sem lotes: %v", err)
+	}
+
+	inv, itens, err := stockSvc.IniciarInventario(ctx, domain.NegocioID, armazem.ID, 1)
+	if err != nil {
+		t.Fatalf("iniciar inventário: %v", err)
+	}
+	for _, item := range itens {
+		contado := 7.0 // sobra de 2 em Aspirina
+		if item.ProdutoID == semLotes.ID {
+			contado = 8 // falta de 2 em Algodão — não pode ser aplicada se o fecho falhar
+		}
+		if _, err := stockSvc.RegistarContagem(ctx, item.ID, contado); err != nil {
+			t.Fatalf("contagem: %v", err)
+		}
+	}
+
+	_, err = stockSvc.FecharInventario(ctx, inv.ID, 1)
+	if err == nil || !strings.Contains(err.Error(), "Entrada c/ lote") {
+		t.Fatalf("esperava bloqueio a pedir Entrada c/ lote, obteve %v", err)
+	}
+	algodao, _ := stockSvc.ObterStock(ctx, semLotes.ID, armazem.ID)
+	if algodao.Quantidade != 10 {
+		t.Errorf("Algodão = %v, want 10 (nenhum ajuste pode ter sido aplicado)", algodao.Quantidade)
+	}
+	if q := quantidadeDoLote(t, ctx, farmaciaSvc, comLotes.ID, armazem.ID, "A1"); q != 5 {
+		t.Errorf("lote A1 = %v, want 5", q)
 	}
 }

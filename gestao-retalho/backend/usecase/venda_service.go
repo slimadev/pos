@@ -281,7 +281,7 @@ func criarItensVendaEMovimentos(
 			}
 			custoPorUnidadeVendida = custo
 		} else if l.LoteControlado {
-			custoTotal, err := consumirLoteFEFO(ctx, tx, l.ProdutoID, l.ProdutoNome, armazemID, l.QtdBase, utilizadorID, domain.TipoMovimentoVenda, referenciaID)
+			custoTotal, _, err := consumirLoteFEFO(ctx, tx.Lotes, l.ProdutoID, l.ProdutoNome, armazemID, l.QtdBase, utilizadorID, domain.TipoMovimentoVenda, &referenciaID, false)
 			if err != nil {
 				return nil, err
 			}
@@ -408,26 +408,37 @@ func consumirFichaTecnica(
 // as últimas 3 unidades de um lote a vencer e completa com o lote
 // seguinte); gera um movimento de stock por lote tocado, cada um ao custo
 // desse lote específico — mais preciso que um custo médio global.
+//
+// incluirVencidos=false (venda) salta os lotes já fora de validade: um
+// medicamento vencido nunca pode sair numa venda. O ajuste de inventário
+// passa true — uma falta física começa precisamente pelos vencidos.
 func consumirLoteFEFO(
 	ctx context.Context,
-	tx *repository.VendaRepository,
+	lotesTx *repository.LoteRepository,
 	produtoID int64,
 	produtoNome string,
 	armazemID int64,
 	quantidadeBase float64,
 	utilizadorID int64,
 	tipo domain.TipoMovimento,
-	referenciaID string,
-) (custoTotal float64, err error) {
-	lotes, err := tx.Lotes.ListarFEFO(ctx, produtoID, armazemID)
+	referenciaID *string,
+	incluirVencidos bool,
+) (custoTotal float64, movimentos []domain.MovimentoStock, err error) {
+	lotes, err := lotesTx.ListarFEFO(ctx, produtoID, armazemID)
 	if err != nil {
-		return 0, err
+		return 0, nil, err
 	}
 
+	agora := time.Now()
 	restante := quantidadeBase
+	var qtdVencida float64
 	for _, lote := range lotes {
 		if restante <= 0 {
 			break
+		}
+		if !incluirVencidos && lote.VencidoEm(agora) {
+			qtdVencida += lote.Quantidade
+			continue
 		}
 		consumoDoLote := restante
 		if lote.Quantidade < consumoDoLote {
@@ -437,34 +448,38 @@ func consumirLoteFEFO(
 			continue
 		}
 
-		if err := tx.Lotes.AtualizarQuantidade(ctx, lote.ID, lote.Quantidade-consumoDoLote); err != nil {
-			return 0, fmt.Errorf("atualizar lote %s: %w", lote.NumeroLote, err)
+		if err := lotesTx.AtualizarQuantidade(ctx, lote.ID, lote.Quantidade-consumoDoLote); err != nil {
+			return 0, nil, fmt.Errorf("atualizar lote %s: %w", lote.NumeroLote, err)
 		}
 		custoTotal += consumoDoLote * lote.CustoUnitario
 
 		armazemIDCopy := armazemID
 		custoCopy := lote.CustoUnitario
-		refCopy := referenciaID
-		if _, err := tx.Stock.CriarMovimento(ctx, repository.NovoMovimento{
+		movimento, err := lotesTx.Stock.CriarMovimento(ctx, repository.NovoMovimento{
 			ProdutoID:       produtoID,
 			ArmazemOrigemID: &armazemIDCopy,
 			Tipo:            tipo,
 			Quantidade:      consumoDoLote,
 			CustoUnitario:   &custoCopy,
-			ReferenciaID:    &refCopy,
+			ReferenciaID:    referenciaID,
 			UtilizadorID:    utilizadorID,
-		}); err != nil {
-			return 0, fmt.Errorf("baixar stock do lote %s: %w", lote.NumeroLote, err)
+		})
+		if err != nil {
+			return 0, nil, fmt.Errorf("baixar stock do lote %s: %w", lote.NumeroLote, err)
 		}
+		movimentos = append(movimentos, movimento)
 
 		restante -= consumoDoLote
 	}
 
 	if restante > 0.0001 {
-		return 0, fmt.Errorf("%w: %s — falta %.3f (lotes disponíveis esgotados)", domain.ErrStockInsuficiente, produtoNome, restante)
+		if qtdVencida > 0 {
+			return 0, nil, fmt.Errorf("%w: %s — falta %.3f (%.3f em lotes vencidos, que não podem ser vendidos)", domain.ErrStockInsuficiente, produtoNome, restante, qtdVencida)
+		}
+		return 0, nil, fmt.Errorf("%w: %s — falta %.3f (lotes disponíveis esgotados)", domain.ErrStockInsuficiente, produtoNome, restante)
 	}
 
-	return custoTotal, nil
+	return custoTotal, movimentos, nil
 }
 
 // ListarVendasPorCliente cobre o "histórico de compras" por cliente (SDD 4.9).

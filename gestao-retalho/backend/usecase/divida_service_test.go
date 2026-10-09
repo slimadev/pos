@@ -27,7 +27,7 @@ func newTestDividaServices(t *testing.T) (*usecase.ProdutoService, *usecase.Arma
 
 	produtoSvc := usecase.NewProdutoService(produtoRepo)
 	armazemSvc := usecase.NewArmazemService(armazemRepo)
-	stockSvc := usecase.NewStockService(stockRepo, produtoRepo, armazemRepo, invRepo)
+	stockSvc := usecase.NewStockService(stockRepo, produtoRepo, armazemRepo, invRepo, loteRepo)
 	clienteSvc := usecase.NewClienteService(clienteRepo)
 	dividaSvc := usecase.NewDividaService(dividaRepo, clienteRepo)
 	contaSvc := usecase.NewContaService(vendaRepo, produtoRepo, armazemRepo, fichaRepo, dividaSvc)

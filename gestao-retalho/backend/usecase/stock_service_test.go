@@ -23,7 +23,7 @@ func newTestServices(t *testing.T) (*usecase.ProdutoService, *usecase.ArmazemSer
 
 	return usecase.NewProdutoService(produtoRepo),
 		usecase.NewArmazemService(armazemRepo),
-		usecase.NewStockService(stockRepo, produtoRepo, armazemRepo, invRepo)
+		usecase.NewStockService(stockRepo, produtoRepo, armazemRepo, invRepo, repository.NewLoteRepository(db, stockRepo))
 }
 
 func criarProdutoSimples(t *testing.T, ctx context.Context, svc *usecase.ProdutoService, nome string) domain.Produto {

@@ -54,7 +54,7 @@ func novaLojaTeste(t *testing.T, nomeFicheiro, nomeNegocio string, tipo domain.T
 
 	produtoSvc := usecase.NewProdutoService(produtoRepo)
 	armazemSvc := usecase.NewArmazemService(armazemRepo)
-	stockSvc := usecase.NewStockService(stockRepo, produtoRepo, armazemRepo, invRepo)
+	stockSvc := usecase.NewStockService(stockRepo, produtoRepo, armazemRepo, invRepo, loteRepo)
 	configSvc := usecase.NewConfigService(negocioRepo, configRepo, utilizadorRepo, categoriaRepo, armazemSvc, produtoSvc)
 	vendaSvc := usecase.NewVendaService(vendaRepo, produtoRepo, armazemRepo, fichaRepo)
 	clienteSvc := usecase.NewClienteService(clienteRepo)

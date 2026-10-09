@@ -16,6 +16,7 @@ type StockService struct {
 	produto *repository.ProdutoRepository
 	armazem *repository.ArmazemRepository
 	inv     *repository.InventarioRepository
+	lotes   *repository.LoteRepository
 }
 
 func NewStockService(
@@ -23,8 +24,9 @@ func NewStockService(
 	produto *repository.ProdutoRepository,
 	armazem *repository.ArmazemRepository,
 	inv *repository.InventarioRepository,
+	lotes *repository.LoteRepository,
 ) *StockService {
-	return &StockService{stock: stock, produto: produto, armazem: armazem, inv: inv}
+	return &StockService{stock: stock, produto: produto, armazem: armazem, inv: inv, lotes: lotes}
 }
 
 func (s *StockService) ObterStock(ctx context.Context, produtoID, armazemID int64) (domain.StockItem, error) {
@@ -283,6 +285,11 @@ func (s *StockService) RegistarContagem(ctx context.Context, itemID int64, quant
 // diferença não nula e fecha o inventário. Itens nunca contados (ainda sem
 // quantidade_contada) são ignorados — fica registado no histórico do
 // inventário para o operador perceber que ficaram por contar.
+//
+// Produtos LoteControlado não podem ajustar só stock_atual (lotes_produto
+// ficaria a mostrar unidades que não existem): uma falta sai dos lotes por
+// FEFO, vencidos primeiro; uma sobra não tem número de lote nem validade,
+// por isso bloqueia o fecho até o operador a registar com "Entrada c/ lote".
 func (s *StockService) FecharInventario(ctx context.Context, inventarioID, utilizadorID int64) ([]domain.MovimentoStock, error) {
 	inv, err := s.inv.Obter(ctx, inventarioID)
 	if err != nil {
@@ -297,49 +304,93 @@ func (s *StockService) FecharInventario(ctx context.Context, inventarioID, utili
 		return nil, err
 	}
 
+	// Valida tudo antes de escrever o primeiro ajuste, para uma sobra num
+	// produto com lotes não deixar o inventário meio ajustado.
+	produtos := make(map[int64]domain.Produto)
+	for _, item := range itens {
+		if item.Diferenca == nil || *item.Diferenca == 0 {
+			continue
+		}
+		p, err := s.produto.Obter(ctx, item.ProdutoID)
+		if err != nil {
+			return nil, err
+		}
+		produtos[item.ProdutoID] = p
+		if p.LoteControlado && *item.Diferenca > 0 {
+			return nil, fmt.Errorf(
+				"%q tem %.3f a mais do que o sistema e controla lotes — registe essas unidades com \"Entrada c/ lote\" (número e validade) e corrija a contagem para %.3f antes de fechar",
+				p.Nome, *item.Diferenca, item.QuantidadeSistema)
+		}
+	}
+
 	var movimentos []domain.MovimentoStock
 	for _, item := range itens {
 		if item.Diferenca == nil || *item.Diferenca == 0 {
 			continue
 		}
 		diferenca := *item.Diferenca
+		produto := produtos[item.ProdutoID]
 
-		armazemID := inv.ArmazemID
-		var origemID, destinoID *int64
-		quantidade := diferenca
-		if diferenca > 0 {
-			destinoID = &armazemID
+		var novos []domain.MovimentoStock
+		if produto.LoteControlado {
+			novos, err = s.ajustarFaltaPorLotes(ctx, produto, inv, -diferenca, utilizadorID)
 		} else {
-			origemID = &armazemID
-			quantidade = -diferenca
+			novos, err = s.ajustarSemLotes(ctx, item.ProdutoID, inv.ArmazemID, diferenca, utilizadorID)
 		}
-
-		var movimento domain.MovimentoStock
-		err := s.stock.WithTx(ctx, func(tx *repository.StockRepository) error {
-			var err error
-			movimento, err = tx.CriarMovimento(ctx, repository.NovoMovimento{
-				ProdutoID:        item.ProdutoID,
-				ArmazemOrigemID:  origemID,
-				ArmazemDestinoID: destinoID,
-				Tipo:             domain.TipoMovimentoAjusteInventario,
-				Quantidade:       quantidade,
-				UtilizadorID:     utilizadorID,
-			})
-			return err
-		})
 		if err != nil {
 			return movimentos, err
 		}
 		if err := s.inv.MarcarAjustado(ctx, item.ID); err != nil {
 			return movimentos, err
 		}
-		movimentos = append(movimentos, movimento)
+		movimentos = append(movimentos, novos...)
 	}
 
 	if err := s.inv.Fechar(ctx, inventarioID); err != nil {
 		return movimentos, err
 	}
 	return movimentos, nil
+}
+
+func (s *StockService) ajustarSemLotes(ctx context.Context, produtoID, armazemID int64, diferenca float64, utilizadorID int64) ([]domain.MovimentoStock, error) {
+	var origemID, destinoID *int64
+	quantidade := diferenca
+	if diferenca > 0 {
+		destinoID = &armazemID
+	} else {
+		origemID = &armazemID
+		quantidade = -diferenca
+	}
+
+	var movimento domain.MovimentoStock
+	err := s.stock.WithTx(ctx, func(tx *repository.StockRepository) error {
+		var err error
+		movimento, err = tx.CriarMovimento(ctx, repository.NovoMovimento{
+			ProdutoID:        produtoID,
+			ArmazemOrigemID:  origemID,
+			ArmazemDestinoID: destinoID,
+			Tipo:             domain.TipoMovimentoAjusteInventario,
+			Quantidade:       quantidade,
+			UtilizadorID:     utilizadorID,
+		})
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return []domain.MovimentoStock{movimento}, nil
+}
+
+func (s *StockService) ajustarFaltaPorLotes(ctx context.Context, produto domain.Produto, inv domain.Inventario, falta float64, utilizadorID int64) ([]domain.MovimentoStock, error) {
+	referencia := fmt.Sprintf("inventario:%d", inv.ID)
+	var movimentos []domain.MovimentoStock
+	err := s.lotes.WithTx(ctx, func(tx *repository.LoteRepository) error {
+		var err error
+		_, movimentos, err = consumirLoteFEFO(ctx, tx, produto.ID, produto.Nome, inv.ArmazemID, falta, utilizadorID,
+			domain.TipoMovimentoAjusteInventario, &referencia, true)
+		return err
+	})
+	return movimentos, err
 }
 
 // --- validações partilhadas ---------------------------------------------

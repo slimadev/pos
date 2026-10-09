@@ -24,7 +24,7 @@ func newTestFichaTecnicaServices(t *testing.T) (*usecase.ProdutoService, *usecas
 
 	produtoSvc := usecase.NewProdutoService(produtoRepo)
 	armazemSvc := usecase.NewArmazemService(armazemRepo)
-	stockSvc := usecase.NewStockService(stockRepo, produtoRepo, armazemRepo, invRepo)
+	stockSvc := usecase.NewStockService(stockRepo, produtoRepo, armazemRepo, invRepo, loteRepo)
 	vendaSvc := usecase.NewVendaService(vendaRepo, produtoRepo, armazemRepo, fichaRepo)
 	fichaSvc := usecase.NewFichaTecnicaService(fichaRepo, produtoRepo, stockRepo)
 
