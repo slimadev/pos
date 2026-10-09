@@ -99,6 +99,43 @@ func (q *Queries) ListarInventarioItens(ctx context.Context, inventarioID int64)
 	return items, nil
 }
 
+const listarInventarios = `-- name: ListarInventarios :many
+SELECT id, negocio_id, armazem_id, data, status, utilizador_id
+FROM inventarios
+WHERE negocio_id = ?
+ORDER BY data DESC, id DESC
+`
+
+func (q *Queries) ListarInventarios(ctx context.Context, negocioID int64) ([]Inventarios, error) {
+	rows, err := q.db.QueryContext(ctx, listarInventarios, negocioID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Inventarios
+	for rows.Next() {
+		var i Inventarios
+		if err := rows.Scan(
+			&i.ID,
+			&i.NegocioID,
+			&i.ArmazemID,
+			&i.Data,
+			&i.Status,
+			&i.UtilizadorID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const marcarInventarioItemAjustado = `-- name: MarcarInventarioItemAjustado :exec
 UPDATE inventario_itens SET ajustado = 1 WHERE id = ?
 `
@@ -116,6 +153,28 @@ WHERE id = ?
 
 func (q *Queries) ObterInventario(ctx context.Context, id int64) (Inventarios, error) {
 	row := q.db.QueryRowContext(ctx, obterInventario, id)
+	var i Inventarios
+	err := row.Scan(
+		&i.ID,
+		&i.NegocioID,
+		&i.ArmazemID,
+		&i.Data,
+		&i.Status,
+		&i.UtilizadorID,
+	)
+	return i, err
+}
+
+const obterInventarioAbertoPorArmazem = `-- name: ObterInventarioAbertoPorArmazem :one
+SELECT id, negocio_id, armazem_id, data, status, utilizador_id
+FROM inventarios
+WHERE armazem_id = ? AND status = 'aberto'
+ORDER BY id DESC
+LIMIT 1
+`
+
+func (q *Queries) ObterInventarioAbertoPorArmazem(ctx context.Context, armazemID int64) (Inventarios, error) {
+	row := q.db.QueryRowContext(ctx, obterInventarioAbertoPorArmazem, armazemID)
 	var i Inventarios
 	err := row.Scan(
 		&i.ID,

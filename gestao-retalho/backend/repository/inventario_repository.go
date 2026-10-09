@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	"gestao-retalho/backend/domain"
 	"gestao-retalho/backend/repository/sqlcgen"
@@ -50,6 +51,31 @@ func (r *InventarioRepository) Obter(ctx context.Context, id int64) (domain.Inve
 		return domain.Inventario{}, err
 	}
 	return inventarioFromRow(row), nil
+}
+
+func (r *InventarioRepository) Listar(ctx context.Context, negocioID int64) ([]domain.Inventario, error) {
+	rows, err := r.q.ListarInventarios(ctx, negocioID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.Inventario, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, inventarioFromRow(row))
+	}
+	return out, nil
+}
+
+// ObterAbertoPorArmazem devolve ok=false quando o armazém não tem nenhum
+// inventário em curso.
+func (r *InventarioRepository) ObterAbertoPorArmazem(ctx context.Context, armazemID int64) (domain.Inventario, bool, error) {
+	row, err := r.q.ObterInventarioAbertoPorArmazem(ctx, armazemID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return domain.Inventario{}, false, nil
+	}
+	if err != nil {
+		return domain.Inventario{}, false, err
+	}
+	return inventarioFromRow(row), true, nil
 }
 
 func (r *InventarioRepository) Fechar(ctx context.Context, id int64) error {

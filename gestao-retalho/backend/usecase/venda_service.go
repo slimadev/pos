@@ -296,7 +296,7 @@ func criarItensVendaEMovimentos(
 				return nil, err
 			}
 			if stockAtual.Quantidade < l.QtdBase {
-				return nil, fmt.Errorf("%w: %s — disponível %.3f, pedido %.3f", domain.ErrStockInsuficiente, l.ProdutoNome, stockAtual.Quantidade, l.QtdBase)
+				return nil, fmt.Errorf("%w: %s — disponível %s, pedido %s", domain.ErrStockInsuficiente, l.ProdutoNome, qtd(stockAtual.Quantidade), qtd(l.QtdBase))
 			}
 			// Custo por unidade vendida (não por unidade base) — ver nota
 			// em domain.ItemVenda.
@@ -379,7 +379,7 @@ func consumirFichaTecnica(
 			if errNome != nil {
 				nome = fmt.Sprintf("#%d", ing.ProdutoIngredienteID)
 			}
-			return 0, fmt.Errorf("%w: %s (ingrediente de %s) — disponível %.3f, pedido %.3f", domain.ErrStockInsuficiente, nome, produtoCompostoNome, stockAtual.Quantidade, consumoTotal)
+			return 0, fmt.Errorf("%w: %s (ingrediente de %s) — disponível %s, pedido %s", domain.ErrStockInsuficiente, nome, produtoCompostoNome, qtd(stockAtual.Quantidade), qtd(consumoTotal))
 		}
 		custoTotal += consumoTotal * stockAtual.CustoMedioPonderado
 
@@ -474,9 +474,9 @@ func consumirLoteFEFO(
 
 	if restante > 0.0001 {
 		if qtdVencida > 0 {
-			return 0, nil, fmt.Errorf("%w: %s — falta %.3f (%.3f em lotes vencidos, que não podem ser vendidos)", domain.ErrStockInsuficiente, produtoNome, restante, qtdVencida)
+			return 0, nil, fmt.Errorf("%w: %s — falta %s (%s em lotes vencidos, que não podem ser vendidos)", domain.ErrStockInsuficiente, produtoNome, qtd(restante), qtd(qtdVencida))
 		}
-		return 0, nil, fmt.Errorf("%w: %s — falta %.3f (lotes disponíveis esgotados)", domain.ErrStockInsuficiente, produtoNome, restante)
+		return 0, nil, fmt.Errorf("%w: %s — falta %s (lotes disponíveis esgotados)", domain.ErrStockInsuficiente, produtoNome, qtd(restante))
 	}
 
 	return custoTotal, movimentos, nil

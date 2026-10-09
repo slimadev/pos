@@ -139,7 +139,7 @@ func (s *StockService) TransferirStock(ctx context.Context, p TransferenciaParam
 			return err
 		}
 		if origemAtual.Quantidade < p.Quantidade {
-			return fmt.Errorf("%w: disponível %.3f, pedido %.3f", domain.ErrStockInsuficiente, origemAtual.Quantidade, p.Quantidade)
+			return fmt.Errorf("%w: disponível %s, pedido %s", domain.ErrStockInsuficiente, qtd(origemAtual.Quantidade), qtd(p.Quantidade))
 		}
 
 		destinoAtual, err := tx.ObterStock(ctx, p.ProdutoID, p.ArmazemDestinoID)
@@ -208,7 +208,7 @@ func (s *StockService) registarSaida(ctx context.Context, tipo domain.TipoMovime
 			return err
 		}
 		if atual.Quantidade < p.Quantidade {
-			return fmt.Errorf("%w: disponível %.3f, pedido %.3f", domain.ErrStockInsuficiente, atual.Quantidade, p.Quantidade)
+			return fmt.Errorf("%w: disponível %s, pedido %s", domain.ErrStockInsuficiente, qtd(atual.Quantidade), qtd(p.Quantidade))
 		}
 
 		origemID := p.ArmazemOrigemID
@@ -235,6 +235,13 @@ func (s *StockService) IniciarInventario(ctx context.Context, negocioID, armazem
 	if _, err := s.validarArmazemAtivo(ctx, armazemID); err != nil {
 		return domain.Inventario{}, nil, err
 	}
+	// Dois inventários abertos no mesmo armazém teriam fotografias de
+	// stock diferentes e ajustariam a mesma diferença duas vezes.
+	if _, aberto, err := s.inv.ObterAbertoPorArmazem(ctx, armazemID); err != nil {
+		return domain.Inventario{}, nil, err
+	} else if aberto {
+		return domain.Inventario{}, nil, domain.ErrInventarioJaAberto
+	}
 
 	snapshot, err := s.stock.ListarParaInventario(ctx, negocioID, armazemID)
 	if err != nil {
@@ -260,6 +267,10 @@ func (s *StockService) IniciarInventario(ctx context.Context, negocioID, armazem
 	return inv, itens, err
 }
 
+func (s *StockService) ListarInventarios(ctx context.Context, negocioID int64) ([]domain.Inventario, error) {
+	return s.inv.Listar(ctx, negocioID)
+}
+
 func (s *StockService) ListarInventarioItens(ctx context.Context, inventarioID int64) ([]domain.InventarioItem, error) {
 	return s.inv.ListarItens(ctx, inventarioID)
 }
@@ -273,6 +284,13 @@ func (s *StockService) RegistarContagem(ctx context.Context, itemID int64, quant
 	item, err := s.inv.ObterItem(ctx, itemID)
 	if err != nil {
 		return domain.InventarioItem{}, err
+	}
+	inv, err := s.inv.Obter(ctx, item.InventarioID)
+	if err != nil {
+		return domain.InventarioItem{}, err
+	}
+	if inv.Status == domain.StatusInventarioFechado {
+		return domain.InventarioItem{}, domain.ErrInventarioFechado
 	}
 	diferenca := quantidadeContada - item.QuantidadeSistema
 	if err := s.inv.RegistarContagem(ctx, itemID, quantidadeContada, diferenca); err != nil {
@@ -318,8 +336,8 @@ func (s *StockService) FecharInventario(ctx context.Context, inventarioID, utili
 		produtos[item.ProdutoID] = p
 		if p.LoteControlado && *item.Diferenca > 0 {
 			return nil, fmt.Errorf(
-				"%q tem %.3f a mais do que o sistema e controla lotes — registe essas unidades com \"Entrada c/ lote\" (número e validade) e corrija a contagem para %.3f antes de fechar",
-				p.Nome, *item.Diferenca, item.QuantidadeSistema)
+				"%q tem %s a mais do que o sistema e controla lotes — registe essas unidades com \"Entrada c/ lote\" (número e validade) e corrija a contagem para %s antes de fechar",
+				p.Nome, qtd(*item.Diferenca), qtd(item.QuantidadeSistema))
 		}
 	}
 

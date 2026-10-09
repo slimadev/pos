@@ -260,6 +260,10 @@ func (a *App) IniciarInventario(armazemID int64) (IniciarInventarioResponse, err
 	return IniciarInventarioResponse{Inventario: inv, Itens: itens}, nil
 }
 
+func (a *App) ListarInventarios() ([]domain.Inventario, error) {
+	return a.StockService.ListarInventarios(a.ctx, domain.NegocioID)
+}
+
 func (a *App) ListarInventarioItens(inventarioID int64) ([]domain.InventarioItem, error) {
 	return a.StockService.ListarInventarioItens(a.ctx, inventarioID)
 }

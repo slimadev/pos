@@ -33,3 +33,16 @@ SELECT id, inventario_id, produto_id, quantidade_sistema, quantidade_contada, di
 FROM inventario_itens
 WHERE inventario_id = ?
 ORDER BY id;
+
+-- name: ListarInventarios :many
+SELECT id, negocio_id, armazem_id, data, status, utilizador_id
+FROM inventarios
+WHERE negocio_id = ?
+ORDER BY data DESC, id DESC;
+
+-- name: ObterInventarioAbertoPorArmazem :one
+SELECT id, negocio_id, armazem_id, data, status, utilizador_id
+FROM inventarios
+WHERE armazem_id = ? AND status = 'aberto'
+ORDER BY id DESC
+LIMIT 1;

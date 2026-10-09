@@ -1115,3 +1115,67 @@ body {
   padding: 7px 10px;
   cursor: pointer;
 }
+
+/* Inventario.tsx */
+.admin-inventario-estado {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.admin-inventario-estado.aberto {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+.admin-inventario-estado.fechado {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+.admin-inventario-resumo {
+  display: flex;
+  gap: 24px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+.admin-inventario-resumo strong {
+  color: var(--text);
+}
+.admin-inventario-aviso {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+.admin-inventario-aviso.ok {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+.admin-inventario-aviso.warn {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+.admin-inventario-contagem {
+  width: 110px;
+  text-align: right;
+}
+.admin-inventario-dif {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.admin-inventario-dif.falta {
+  color: var(--danger);
+}
+.admin-inventario-dif.sobra {
+  color: var(--ok);
+}
+.admin-inventario-dif.zero {
+  color: var(--text-secondary);
+}
+.admin-inventario-tag {
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  background: var(--accent-bg);
+  color: var(--accent);
+}

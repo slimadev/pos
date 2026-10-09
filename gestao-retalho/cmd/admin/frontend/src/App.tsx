@@ -25,8 +25,9 @@ import ProdutosScreen from "./Produtos";
 import ArmazensScreen from "./Armazens";
 import StockScreen from "./Stock";
 import FarmaciaScreen from "./Farmacia";
+import InventarioScreen from "./Inventario";
 
-type Ecra = "dashboard" | "produtos" | "categorias" | "armazens" | "stock" | "farmacia" | "stub";
+type Ecra = "dashboard" | "produtos" | "categorias" | "armazens" | "stock" | "inventario" | "farmacia" | "stub";
 type IconeSvg = ComponentType<SVGProps<SVGSVGElement>>;
 
 // Ícones outline de uma biblioteca única e neutra (SDD 7.3: "Lucide/Feather"
@@ -41,7 +42,7 @@ const NAV: { chave: Ecra; nome: string; Icone: IconeSvg; stub?: boolean; soFarma
   { chave: "armazens", nome: "Armazéns", Icone: BuildingOffice2Icon },
   { chave: "stock", nome: "Stock", Icone: ArchiveBoxIcon },
   { chave: "farmacia", nome: "Farmácia", Icone: BeakerIcon, soFarmacia: true },
-  { chave: "stub", nome: "Inventário", Icone: ClipboardDocumentCheckIcon, stub: true },
+  { chave: "inventario", nome: "Inventário", Icone: ClipboardDocumentCheckIcon },
   { chave: "stub", nome: "Vendas", Icone: ShoppingCartIcon, stub: true },
   { chave: "stub", nome: "Clientes e dívidas", Icone: UserGroupIcon, stub: true },
   { chave: "stub", nome: "Relatórios", Icone: ChartBarIcon, stub: true },
@@ -117,7 +118,7 @@ export default function App() {
  * "Categorias" adicionado fora do mock e "Lojas" removido (Fase 10
  * addendum, a pedido explícito — deixou de fazer sentido um registo de
  * várias lojas quando cada cmd/admin serve sempre uma só). "Dashboard",
- * "Produtos", "Categorias", "Armazéns", "Stock" e "Farmácia" (só em
+ * "Produtos", "Categorias", "Armazéns", "Stock", "Inventário" e "Farmácia" (só em
  * lojas do tipo farmácia) têm ecrã real; o resto da
  * sidebar existe por fidelidade visual ao mock, mas a gestão de vendas/etc.
  * continua a acontecer no executável da loja (cmd/app). O botão "PDV" não
@@ -186,6 +187,7 @@ function AdminPrincipal({ loja, onSair }: { loja: LojaAtual | null; onSair: () =
         {ecra === "categorias" && <CategoriasScreen onErro={setErro} />}
         {ecra === "armazens" && <ArmazensScreen onErro={setErro} />}
         {ecra === "stock" && <StockScreen onErro={setErro} />}
+        {ecra === "inventario" && <InventarioScreen onErro={setErro} />}
         {ecra === "farmacia" && <FarmaciaScreen onErro={setErro} />}
         {ecra === "stub" && (
           <div className="admin-lojas-screen">

@@ -24,6 +24,7 @@ var Module = fx.Options(
 	fx.Provide(NewArmazensService),
 	fx.Provide(NewStockService),
 	fx.Provide(NewFarmaciaService),
+	fx.Provide(NewInventarioService),
 	fx.Provide(NewPDVService),
 
 	fx.Provide(NewAdminApp),

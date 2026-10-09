@@ -272,3 +272,45 @@ func TestRegistarEntrada_BloqueiaProdutoComposto(t *testing.T) {
 		t.Fatalf("esperava ErrProdutoComposto, obteve %v", err)
 	}
 }
+
+func TestInventario_UmAbertoPorArmazemEContagemBloqueadaDepoisDeFechar(t *testing.T) {
+	ctx := context.Background()
+	produtoSvc, armazemSvc, stockSvc := newTestServices(t)
+	p := criarProdutoSimples(t, ctx, produtoSvc, "Pregos 2\"")
+	a := criarArmazem(t, ctx, armazemSvc, "Loja")
+	b := criarArmazem(t, ctx, armazemSvc, "Depósito")
+	if _, err := stockSvc.RegistarEntrada(ctx, usecase.EntradaParams{
+		ProdutoID: p.ID, ArmazemDestinoID: a.ID, Quantidade: 4, CustoUnitario: 10, UtilizadorID: 1,
+	}); err != nil {
+		t.Fatalf("entrada: %v", err)
+	}
+
+	inv, itens, err := stockSvc.IniciarInventario(ctx, domain.NegocioID, a.ID, 1)
+	if err != nil {
+		t.Fatalf("iniciar inventário: %v", err)
+	}
+	if _, _, err := stockSvc.IniciarInventario(ctx, domain.NegocioID, a.ID, 1); !errors.Is(err, domain.ErrInventarioJaAberto) {
+		t.Fatalf("segundo inventário no mesmo armazém: esperava ErrInventarioJaAberto, obteve %v", err)
+	}
+	if _, _, err := stockSvc.IniciarInventario(ctx, domain.NegocioID, b.ID, 1); err != nil {
+		t.Fatalf("outro armazém devia poder ter o seu inventário: %v", err)
+	}
+
+	lista, err := stockSvc.ListarInventarios(ctx, domain.NegocioID)
+	if err != nil || len(lista) != 2 {
+		t.Fatalf("listar inventários = %d itens, err %v; want 2", len(lista), err)
+	}
+
+	if _, err := stockSvc.RegistarContagem(ctx, itens[0].ID, 3); err != nil {
+		t.Fatalf("contagem: %v", err)
+	}
+	if _, err := stockSvc.FecharInventario(ctx, inv.ID, 1); err != nil {
+		t.Fatalf("fechar: %v", err)
+	}
+	if _, err := stockSvc.RegistarContagem(ctx, itens[0].ID, 9); !errors.Is(err, domain.ErrInventarioFechado) {
+		t.Fatalf("contagem depois de fechar: esperava ErrInventarioFechado, obteve %v", err)
+	}
+	if _, _, err := stockSvc.IniciarInventario(ctx, domain.NegocioID, a.ID, 1); err != nil {
+		t.Fatalf("depois de fechar, o armazém devia aceitar um novo inventário: %v", err)
+	}
+}

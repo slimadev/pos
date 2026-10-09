@@ -289,7 +289,7 @@ func (s *FarmaciaService) loteParaSaida(ctx context.Context, tx *repository.Lote
 		return domain.Lote{}, domain.ErrArmazemInativo
 	}
 	if lote.Quantidade < quantidade {
-		return domain.Lote{}, fmt.Errorf("%w: lote %s tem %.3f, pedido %.3f", domain.ErrStockInsuficiente, lote.NumeroLote, lote.Quantidade, quantidade)
+		return domain.Lote{}, fmt.Errorf("%w: lote %s tem %s, pedido %s", domain.ErrStockInsuficiente, lote.NumeroLote, qtd(lote.Quantidade), qtd(quantidade))
 	}
 	return lote, nil
 }

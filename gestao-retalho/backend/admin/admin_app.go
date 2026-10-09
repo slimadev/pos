@@ -30,11 +30,12 @@ type AdminApp struct {
 	Armazens   *ArmazensService
 	Stock      *StockService
 	Farmacia   *FarmaciaService
+	Inventario *InventarioService
 	PDV        *PDVService
 }
 
-func NewAdminApp(lojas *LojasService, dashboard *DashboardService, auth *AuthService, categorias *CategoriasService, produtos *ProdutosService, armazens *ArmazensService, stock *StockService, farmacia *FarmaciaService, pdv *PDVService) *AdminApp {
-	return &AdminApp{Lojas: lojas, Dashboard: dashboard, Auth: auth, Categorias: categorias, Produtos: produtos, Armazens: armazens, Stock: stock, Farmacia: farmacia, PDV: pdv}
+func NewAdminApp(lojas *LojasService, dashboard *DashboardService, auth *AuthService, categorias *CategoriasService, produtos *ProdutosService, armazens *ArmazensService, stock *StockService, farmacia *FarmaciaService, inventario *InventarioService, pdv *PDVService) *AdminApp {
+	return &AdminApp{Lojas: lojas, Dashboard: dashboard, Auth: auth, Categorias: categorias, Produtos: produtos, Armazens: armazens, Stock: stock, Farmacia: farmacia, Inventario: inventario, PDV: pdv}
 }
 
 func (a *AdminApp) OnStartup(ctx context.Context) {
@@ -388,6 +389,43 @@ func (a *AdminApp) TransferirLoteStock(p usecase.TransferenciaLoteParams) (domai
 		return domain.MovimentoStock{}, err
 	}
 	return a.Stock.TransferirLote(a.ctx, p)
+}
+
+// --- Inventário --------------------------------------------------------------
+
+func (a *AdminApp) ListarInventarios() ([]domain.Inventario, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Inventario.Listar(a.ctx)
+}
+
+func (a *AdminApp) IniciarInventario(armazemID int64) (api.IniciarInventarioResponse, error) {
+	if err := a.exigirSessao(); err != nil {
+		return api.IniciarInventarioResponse{}, err
+	}
+	return a.Inventario.Iniciar(a.ctx, armazemID)
+}
+
+func (a *AdminApp) ListarInventarioItens(inventarioID int64) ([]domain.InventarioItem, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Inventario.ListarItens(a.ctx, inventarioID)
+}
+
+func (a *AdminApp) RegistarContagemInventario(itemID int64, quantidadeContada float64) (domain.InventarioItem, error) {
+	if err := a.exigirSessao(); err != nil {
+		return domain.InventarioItem{}, err
+	}
+	return a.Inventario.RegistarContagem(a.ctx, itemID, quantidadeContada)
+}
+
+func (a *AdminApp) FecharInventario(inventarioID int64) ([]domain.MovimentoStock, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Inventario.Fechar(a.ctx, inventarioID)
 }
 
 // --- Farmácia ----------------------------------------------------------------

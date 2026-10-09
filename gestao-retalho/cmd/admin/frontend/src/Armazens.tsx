@@ -4,12 +4,12 @@ import {
   BuildingStorefrontIcon,
   ShoppingBagIcon,
   ArchiveBoxIcon,
-  ChevronRightIcon,
   CheckCircleIcon,
   PauseCircleIcon,
 } from "@heroicons/react/24/outline";
 import { ListarArmazens, CriarArmazem, AtualizarArmazem, AtivarArmazem, DesativarArmazem } from "../wailsjs/go/admin/AdminApp";
 import { domain } from "../wailsjs/go/models";
+import Breadcrumb from "./Breadcrumb";
 
 type IconeSvg = ComponentType<SVGProps<SVGSVGElement>>;
 type TipoArmazem = "principal" | "ponto_venda" | "deposito";
@@ -126,25 +126,6 @@ export default function ArmazensScreen({ onErro }: { onErro: (e: string) => void
         />
       )}
     </div>
-  );
-}
-
-function Breadcrumb({ itens }: { itens: { rotulo: string; onClick?: () => void }[] }) {
-  return (
-    <nav className="admin-breadcrumb" aria-label="breadcrumb">
-      {itens.map((item, i) => (
-        <span key={i} className="admin-breadcrumb-item">
-          {item.onClick ? (
-            <button className="admin-breadcrumb-link" onClick={item.onClick}>
-              {item.rotulo}
-            </button>
-          ) : (
-            <span className="admin-breadcrumb-atual">{item.rotulo}</span>
-          )}
-          {i < itens.length - 1 && <ChevronRightIcon className="admin-breadcrumb-chevron" aria-hidden="true" />}
-        </span>
-      ))}
-    </nav>
   );
 }
 

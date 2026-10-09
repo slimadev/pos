@@ -211,7 +211,7 @@ func (s *FichaTecnicaService) RegistarProducao(ctx context.Context, p ProducaoPa
 				if errNome != nil {
 					nome = fmt.Sprintf("#%d", ing.ProdutoIngredienteID)
 				}
-				return fmt.Errorf("%w: %s — disponível %.3f, pedido %.3f", domain.ErrStockInsuficiente, nome, stockAtual.Quantidade, consumoTotal)
+				return fmt.Errorf("%w: %s — disponível %s, pedido %s", domain.ErrStockInsuficiente, nome, qtd(stockAtual.Quantidade), qtd(consumoTotal))
 			}
 			custoTotalIngredientes += consumoTotal * stockAtual.CustoMedioPonderado
 

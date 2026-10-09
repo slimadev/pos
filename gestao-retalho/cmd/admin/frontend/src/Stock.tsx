@@ -37,6 +37,13 @@ const TIPO_MOVIMENTO_INFO: Record<TipoMovimento, { rotulo: string; Icone: IconeS
   consumo_interno: { rotulo: "Consumo interno", Icone: MinusCircleIcon, cor: "warn" },
 };
 
+// Movimentos que não se registam por este ecrã mas aparecem no histórico.
+const ROTULO_OUTROS_MOVIMENTOS: Record<string, string> = {
+  venda: "Venda",
+  ajuste_inventario: "Ajuste de inventário",
+  producao: "Produção",
+};
+
 const mt = (n: number) => `${n.toLocaleString("pt-PT", { maximumFractionDigits: 2 })}`;
 
 type ModalEstado =
@@ -734,7 +741,7 @@ function HistoricoMovimentos({
       <tbody>
         {(movimentos ?? []).map((m) => (
           <tr key={m.ID}>
-            <td>{TIPO_MOVIMENTO_INFO[m.Tipo as TipoMovimento]?.rotulo ?? m.Tipo}</td>
+            <td>{TIPO_MOVIMENTO_INFO[m.Tipo as TipoMovimento]?.rotulo ?? ROTULO_OUTROS_MOVIMENTOS[m.Tipo] ?? m.Tipo}</td>
             <td>{mt(m.QuantidadeUnidadeBase)}</td>
             <td>{nomeArmazem(m.ArmazemOrigemID)}</td>
             <td>{nomeArmazem(m.ArmazemDestinoID)}</td>

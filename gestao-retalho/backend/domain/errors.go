@@ -13,6 +13,7 @@ var (
 	ErrArmazemIgual       = errors.New("armazém de origem e destino não podem ser o mesmo")
 	ErrInventarioFechado  = errors.New("inventário já está fechado")
 	ErrItemNaoPertenceInv = errors.New("item não pertence a este inventário")
+	ErrInventarioJaAberto = errors.New("este armazém já tem um inventário em curso")
 
 	ErrLoteNaoEncontrado = errors.New("lote não encontrado")
 	ErrLoteObrigatorio   = errors.New("produto controla lotes — escolha o lote")
