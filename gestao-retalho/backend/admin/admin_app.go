@@ -29,11 +29,12 @@ type AdminApp struct {
 	Produtos   *ProdutosService
 	Armazens   *ArmazensService
 	Stock      *StockService
+	Farmacia   *FarmaciaService
 	PDV        *PDVService
 }
 
-func NewAdminApp(lojas *LojasService, dashboard *DashboardService, auth *AuthService, categorias *CategoriasService, produtos *ProdutosService, armazens *ArmazensService, stock *StockService, pdv *PDVService) *AdminApp {
-	return &AdminApp{Lojas: lojas, Dashboard: dashboard, Auth: auth, Categorias: categorias, Produtos: produtos, Armazens: armazens, Stock: stock, PDV: pdv}
+func NewAdminApp(lojas *LojasService, dashboard *DashboardService, auth *AuthService, categorias *CategoriasService, produtos *ProdutosService, armazens *ArmazensService, stock *StockService, farmacia *FarmaciaService, pdv *PDVService) *AdminApp {
+	return &AdminApp{Lojas: lojas, Dashboard: dashboard, Auth: auth, Categorias: categorias, Produtos: produtos, Armazens: armazens, Stock: stock, Farmacia: farmacia, PDV: pdv}
 }
 
 func (a *AdminApp) OnStartup(ctx context.Context) {
@@ -366,6 +367,60 @@ func (a *AdminApp) ListarLotesStock(produtoID, armazemID int64) ([]domain.Lote, 
 		return nil, err
 	}
 	return a.Stock.ListarLotes(a.ctx, produtoID, armazemID)
+}
+
+func (a *AdminApp) RegistarPerdaDeLoteStock(p usecase.SaidaLoteParams) (domain.MovimentoStock, error) {
+	if err := a.exigirSessao(); err != nil {
+		return domain.MovimentoStock{}, err
+	}
+	return a.Stock.RegistarPerdaDeLote(a.ctx, p)
+}
+
+func (a *AdminApp) RegistarConsumoInternoDeLoteStock(p usecase.SaidaLoteParams) (domain.MovimentoStock, error) {
+	if err := a.exigirSessao(); err != nil {
+		return domain.MovimentoStock{}, err
+	}
+	return a.Stock.RegistarConsumoInternoDeLote(a.ctx, p)
+}
+
+func (a *AdminApp) TransferirLoteStock(p usecase.TransferenciaLoteParams) (domain.MovimentoStock, error) {
+	if err := a.exigirSessao(); err != nil {
+		return domain.MovimentoStock{}, err
+	}
+	return a.Stock.TransferirLote(a.ctx, p)
+}
+
+// --- Farmácia ----------------------------------------------------------------
+//
+// Receitas médicas são opcionais: nunca bloqueiam a venda, registam-se
+// depois, associadas a uma venda do dia.
+
+func (a *AdminApp) ListarLotesAVencer(dentroDeDias int) ([]domain.Lote, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Farmacia.ListarLotesAVencer(a.ctx, dentroDeDias)
+}
+
+func (a *AdminApp) ListarVendasDoDia() ([]domain.Venda, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Farmacia.ListarVendasDoDia(a.ctx)
+}
+
+func (a *AdminApp) RegistarReceitaMedica(p usecase.ReceitaMedicaInput) (domain.ReceitaMedica, error) {
+	if err := a.exigirSessao(); err != nil {
+		return domain.ReceitaMedica{}, err
+	}
+	return a.Farmacia.RegistarReceitaMedica(a.ctx, p)
+}
+
+func (a *AdminApp) ListarReceitasPorVenda(vendaID int64) ([]domain.ReceitaMedica, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Farmacia.ListarReceitasPorVenda(a.ctx, vendaID)
 }
 
 // --- PDV -----------------------------------------------------------------

@@ -81,6 +81,8 @@ type Querier interface {
 	ObterInventario(ctx context.Context, id int64) (Inventarios, error)
 	ObterInventarioItem(ctx context.Context, id int64) (InventarioItens, error)
 	ObterItemConta(ctx context.Context, id int64) (ItensConta, error)
+	ObterLote(ctx context.Context, id int64) (LotesProduto, error)
+	ObterLotePorNumero(ctx context.Context, arg ObterLotePorNumeroParams) (LotesProduto, error)
 	ObterNegocio(ctx context.Context, id int64) (Negocios, error)
 	ObterProduto(ctx context.Context, id int64) (Produtos, error)
 	ObterStockProdutoArmazem(ctx context.Context, arg ObterStockProdutoArmazemParams) (StockAtual, error)

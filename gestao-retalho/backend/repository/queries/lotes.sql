@@ -18,3 +18,13 @@ FROM lotes_produto lp
 JOIN produtos p ON p.id = lp.produto_id
 WHERE p.negocio_id = ? AND lp.quantidade > 0 AND lp.data_validade <= ?
 ORDER BY lp.data_validade ASC;
+
+-- name: ObterLote :one
+SELECT id, produto_id, armazem_id, numero_lote, data_validade, quantidade, custo_unitario
+FROM lotes_produto
+WHERE id = ?;
+
+-- name: ObterLotePorNumero :one
+SELECT id, produto_id, armazem_id, numero_lote, data_validade, quantidade, custo_unitario
+FROM lotes_produto
+WHERE produto_id = ? AND armazem_id = ? AND numero_lote = ?;

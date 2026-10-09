@@ -14,6 +14,9 @@ var (
 	ErrInventarioFechado  = errors.New("inventário já está fechado")
 	ErrItemNaoPertenceInv = errors.New("item não pertence a este inventário")
 
+	ErrLoteNaoEncontrado = errors.New("lote não encontrado")
+	ErrLoteObrigatorio   = errors.New("produto controla lotes — escolha o lote")
+
 	// ErrClienteAnonimoNaoPodeDivida: SDD 4.10 — "Registar Dívida (exige
 	// cliente identificado, não anónimo)".
 	ErrClienteAnonimoNaoPodeDivida = errors.New("cliente anónimo não pode ficar com saldo em dívida")

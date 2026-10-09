@@ -120,7 +120,7 @@ func (s *StockService) TransferirStock(ctx context.Context, p TransferenciaParam
 	if p.ArmazemOrigemID == p.ArmazemDestinoID {
 		return domain.MovimentoStock{}, domain.ErrArmazemIgual
 	}
-	if _, err := s.validarProdutoParaStock(ctx, p.ProdutoID); err != nil {
+	if _, err := s.validarProdutoSemLotes(ctx, p.ProdutoID); err != nil {
 		return domain.MovimentoStock{}, err
 	}
 	if _, err := s.validarArmazemAtivo(ctx, p.ArmazemOrigemID); err != nil {
@@ -192,7 +192,7 @@ func (s *StockService) registarSaida(ctx context.Context, tipo domain.TipoMovime
 	if p.Motivo == "" {
 		return domain.MovimentoStock{}, domain.ErrMotivoObrigatorio
 	}
-	if _, err := s.validarProdutoParaStock(ctx, p.ProdutoID); err != nil {
+	if _, err := s.validarProdutoSemLotes(ctx, p.ProdutoID); err != nil {
 		return domain.MovimentoStock{}, err
 	}
 	if _, err := s.validarArmazemAtivo(ctx, p.ArmazemOrigemID); err != nil {
@@ -354,6 +354,22 @@ func (s *StockService) validarProdutoParaStock(ctx context.Context, produtoID in
 	}
 	if !p.ControlaStock {
 		return domain.Produto{}, domain.ErrProdutoComposto
+	}
+	return p, nil
+}
+
+// validarProdutoSemLotes protege as saídas/transferências genéricas: um
+// produto LoteControlado que saísse por aqui baixaria stock_atual sem
+// baixar lotes_produto, e o FEFO da venda passaria a ver unidades que já
+// não existem. Esses produtos passam pelo FarmaciaService, com o lote
+// escolhido explicitamente.
+func (s *StockService) validarProdutoSemLotes(ctx context.Context, produtoID int64) (domain.Produto, error) {
+	p, err := s.validarProdutoParaStock(ctx, produtoID)
+	if err != nil {
+		return domain.Produto{}, err
+	}
+	if p.LoteControlado {
+		return domain.Produto{}, fmt.Errorf("%q: %w", p.Nome, domain.ErrLoteObrigatorio)
 	}
 	return p, nil
 }

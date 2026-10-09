@@ -13,6 +13,7 @@ import {
   ChartBarIcon,
   UserCircleIcon,
   ComputerDesktopIcon,
+  BeakerIcon,
   ArrowRightStartOnRectangleIcon,
 } from "@heroicons/react/24/outline";
 import { PrecisaConfigurarAdmin, Logout, ObterLojaAtual, AbrirPDV } from "../wailsjs/go/admin/AdminApp";
@@ -23,21 +24,23 @@ import CategoriasScreen from "./Categorias";
 import ProdutosScreen from "./Produtos";
 import ArmazensScreen from "./Armazens";
 import StockScreen from "./Stock";
+import FarmaciaScreen from "./Farmacia";
 
-type Ecra = "dashboard" | "produtos" | "categorias" | "armazens" | "stock" | "stub";
+type Ecra = "dashboard" | "produtos" | "categorias" | "armazens" | "stock" | "farmacia" | "stub";
 type IconeSvg = ComponentType<SVGProps<SVGSVGElement>>;
 
 // Ícones outline de uma biblioteca única e neutra (SDD 7.3: "Lucide/Feather"
 // — Heroicons segue a mesma linguagem visual e cobre também as variantes
 // sólidas que o tema ferragem precisa em cmd/app, por isso ficou só uma
 // dependência de ícones no projeto todo em vez de duas).
-const NAV: { chave: Ecra; nome: string; Icone: IconeSvg; stub?: boolean }[] = [
+const NAV: { chave: Ecra; nome: string; Icone: IconeSvg; stub?: boolean; soFarmacia?: boolean }[] = [
   { chave: "dashboard", nome: "Dashboard", Icone: Squares2X2Icon },
   { chave: "produtos", nome: "Produtos", Icone: CubeIcon },
   { chave: "categorias", nome: "Categorias", Icone: TagIcon },
   { chave: "stub", nome: "Fichas técnicas", Icone: ClipboardDocumentListIcon, stub: true },
   { chave: "armazens", nome: "Armazéns", Icone: BuildingOffice2Icon },
   { chave: "stock", nome: "Stock", Icone: ArchiveBoxIcon },
+  { chave: "farmacia", nome: "Farmácia", Icone: BeakerIcon, soFarmacia: true },
   { chave: "stub", nome: "Inventário", Icone: ClipboardDocumentCheckIcon, stub: true },
   { chave: "stub", nome: "Vendas", Icone: ShoppingCartIcon, stub: true },
   { chave: "stub", nome: "Clientes e dívidas", Icone: UserGroupIcon, stub: true },
@@ -114,7 +117,8 @@ export default function App() {
  * "Categorias" adicionado fora do mock e "Lojas" removido (Fase 10
  * addendum, a pedido explícito — deixou de fazer sentido um registo de
  * várias lojas quando cada cmd/admin serve sempre uma só). "Dashboard",
- * "Produtos", "Categorias", "Armazéns" e "Stock" têm ecrã real; o resto da
+ * "Produtos", "Categorias", "Armazéns", "Stock" e "Farmácia" (só em
+ * lojas do tipo farmácia) têm ecrã real; o resto da
  * sidebar existe por fidelidade visual ao mock, mas a gestão de vendas/etc.
  * continua a acontecer no executável da loja (cmd/app). O botão "PDV" não
  * troca de ecrã aqui dentro — lança o cmd/app como processo à parte,
@@ -150,7 +154,7 @@ function AdminPrincipal({ loja, onSair }: { loja: LojaAtual | null; onSair: () =
           {aAbrirPDV ? "A abrir…" : "PDV"}
         </button>
         <nav className="admin-sidebar-nav">
-          {NAV.map((item) => (
+          {NAV.filter((item) => !item.soFarmacia || loja?.TipoNegocio === "farmacia").map((item) => (
             <button
               key={item.nome}
               className={`admin-sidebar-item${!item.stub && ecra === item.chave ? " active" : ""}${item.stub ? " stub" : ""}`}
@@ -182,6 +186,7 @@ function AdminPrincipal({ loja, onSair }: { loja: LojaAtual | null; onSair: () =
         {ecra === "categorias" && <CategoriasScreen onErro={setErro} />}
         {ecra === "armazens" && <ArmazensScreen onErro={setErro} />}
         {ecra === "stock" && <StockScreen onErro={setErro} />}
+        {ecra === "farmacia" && <FarmaciaScreen onErro={setErro} />}
         {ecra === "stub" && (
           <div className="admin-lojas-screen">
             <h2 style={{ margin: 0 }}>{stubNome}</h2>

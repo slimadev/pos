@@ -19,6 +19,9 @@ import {
   RegistarConsumoInternoStock,
   RegistarEntradaComLoteStock,
   ListarLotesStock,
+  RegistarPerdaDeLoteStock,
+  RegistarConsumoInternoDeLoteStock,
+  TransferirLoteStock,
 } from "../wailsjs/go/admin/AdminApp";
 import { domain, usecase } from "../wailsjs/go/models";
 import Modal from "./Modal";
@@ -279,10 +282,27 @@ function MovimentoForm({
   const [numeroLote, setNumeroLote] = useState("");
   const [validade, setValidade] = useState("");
   const [aGuardar, setAGuardar] = useState(false);
+  // Produtos lote-controlados: perda, consumo e transferência saem sempre
+  // de um lote escolhido aqui (o backend recusa a saída genérica).
+  const [lotes, setLotes] = useState<domain.Lote[] | null>(produto.LoteControlado ? null : []);
+  const [loteID, setLoteID] = useState<number | "">("");
+  const saiDeLote = produto.LoteControlado && tipo !== "entrada_com_lote";
+
+  useEffect(() => {
+    if (!produto.LoteControlado) return;
+    ListarLotesStock(produto.ID, armazemAtualID)
+      .then(setLotes)
+      .catch((e) => onErro(String(e)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- produto/armazém fixos por instância do modal
+  }, []);
 
   function guardar() {
     const qtd = Number(quantidade);
     if (qtd <= 0 || aGuardar) return;
+    if (saiDeLote && loteID === "") {
+      onErro("Escolha o lote");
+      return;
+    }
 
     let pedido: Promise<unknown>;
     switch (tipo) {
@@ -316,6 +336,14 @@ function MovimentoForm({
           onErro("Escolha o armazém de destino");
           return;
         }
+        if (saiDeLote) {
+          const p = new usecase.TransferenciaLoteParams();
+          p.LoteID = loteID as number;
+          p.ArmazemDestinoID = armazemDestinoID;
+          p.Quantidade = qtd;
+          pedido = TransferirLoteStock(p);
+          break;
+        }
         const p = new usecase.TransferenciaParams();
         p.ProdutoID = produto.ID;
         p.ArmazemOrigemID = armazemAtualID;
@@ -325,6 +353,14 @@ function MovimentoForm({
         break;
       }
       case "perda": {
+        if (saiDeLote) {
+          const p = new usecase.SaidaLoteParams();
+          p.LoteID = loteID as number;
+          p.Quantidade = qtd;
+          p.Motivo = motivo;
+          pedido = RegistarPerdaDeLoteStock(p);
+          break;
+        }
         const p = new usecase.SaidaParams();
         p.ProdutoID = produto.ID;
         p.ArmazemOrigemID = armazemAtualID;
@@ -334,6 +370,14 @@ function MovimentoForm({
         break;
       }
       case "consumo_interno": {
+        if (saiDeLote) {
+          const p = new usecase.SaidaLoteParams();
+          p.LoteID = loteID as number;
+          p.Quantidade = qtd;
+          p.Motivo = motivo;
+          pedido = RegistarConsumoInternoDeLoteStock(p);
+          break;
+        }
         const p = new usecase.SaidaParams();
         p.ProdutoID = produto.ID;
         p.ArmazemOrigemID = armazemAtualID;
@@ -368,9 +412,19 @@ function MovimentoForm({
           );
         })}
       </div>
-      {produto.LoteControlado && <LotesExistentes produtoID={produto.ID} armazemID={armazemAtualID} onErro={onErro} />}
+      {produto.LoteControlado && lotes !== null && <TabelaLotes lotes={lotes} />}
 
       <div className="admin-form">
+        {saiDeLote && (
+          <select value={loteID} onChange={(e) => setLoteID(e.target.value ? Number(e.target.value) : "")}>
+            <option value="">Lote…</option>
+            {(lotes ?? []).map((l) => (
+              <option key={l.ID} value={l.ID}>
+                {l.NumeroLote} — validade {String(l.DataValidade).slice(0, 10)} — {mt(l.Quantidade)} disponível
+              </option>
+            ))}
+          </select>
+        )}
         <input
           placeholder="Quantidade"
           type="number"
@@ -423,7 +477,11 @@ function MovimentoForm({
       </div>
 
       <div className="admin-form">
-        <button className="admin-btn" disabled={Number(quantidade) <= 0 || aGuardar} onClick={guardar}>
+        <button
+          className="admin-btn"
+          disabled={Number(quantidade) <= 0 || aGuardar || (saiDeLote && loteID === "")}
+          onClick={guardar}
+        >
           {aGuardar ? "A guardar…" : "Registar movimento"}
         </button>
         <button className="admin-btn-secundario" onClick={onCancelar}>
@@ -434,25 +492,7 @@ function MovimentoForm({
   );
 }
 
-function LotesExistentes({
-  produtoID,
-  armazemID,
-  onErro,
-}: {
-  produtoID: number;
-  armazemID: number;
-  onErro: (e: string) => void;
-}) {
-  const [lotes, setLotes] = useState<domain.Lote[] | null>(null);
-
-  useEffect(() => {
-    ListarLotesStock(produtoID, armazemID)
-      .then(setLotes)
-      .catch((e) => onErro(String(e)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- onErro é um setter estável; produto/armazém fixos por instância
-  }, []);
-
-  if (lotes === null) return null;
+function TabelaLotes({ lotes }: { lotes: domain.Lote[] }) {
   if (lotes.length === 0) {
     return <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>Sem lotes ainda neste armazém.</p>;
   }

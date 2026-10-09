@@ -312,3 +312,103 @@ func TestRegistarReceitaMedica(t *testing.T) {
 		t.Errorf("número da receita = %q, want %q", receitas[0].NumeroReceita, "REC-2026-001")
 	}
 }
+
+func entradaLote(t *testing.T, ctx context.Context, svc *usecase.FarmaciaService, produtoID, armazemID int64, numero string, validade time.Time, qtd float64) domain.Lote {
+	t.Helper()
+	lote, _, err := svc.RegistarEntradaComLote(ctx, usecase.EntradaComLoteParams{
+		ProdutoID: produtoID, ArmazemID: armazemID, NumeroLote: numero,
+		DataValidade: validade, Quantidade: qtd, CustoUnitario: 30, UtilizadorID: 1,
+	})
+	if err != nil {
+		t.Fatalf("entrada lote %s: %v", numero, err)
+	}
+	return lote
+}
+
+func TestSaidasGenericas_RejeitamProdutoLoteControlado(t *testing.T) {
+	ctx := context.Background()
+	produtoSvc, armazemSvc, stockSvc, _, farmaciaSvc := newTestFarmaciaServices(t)
+	principal := criarArmazem(t, ctx, armazemSvc, "Farmácia")
+	deposito := criarArmazem(t, ctx, armazemSvc, "Depósito")
+	p, _ := criarProdutoLoteControlado(t, ctx, produtoSvc, "Amoxicilina", 120)
+	entradaLote(t, ctx, farmaciaSvc, p.ID, principal.ID, "A1", time.Now().AddDate(1, 0, 0), 10)
+
+	saida := usecase.SaidaParams{ProdutoID: p.ID, ArmazemOrigemID: principal.ID, Quantidade: 1, Motivo: "x", UtilizadorID: 1}
+	if _, err := stockSvc.RegistarPerda(ctx, saida); !errors.Is(err, domain.ErrLoteObrigatorio) {
+		t.Errorf("perda genérica: esperava ErrLoteObrigatorio, obteve %v", err)
+	}
+	if _, err := stockSvc.RegistarConsumoInterno(ctx, saida); !errors.Is(err, domain.ErrLoteObrigatorio) {
+		t.Errorf("consumo genérico: esperava ErrLoteObrigatorio, obteve %v", err)
+	}
+	_, err := stockSvc.TransferirStock(ctx, usecase.TransferenciaParams{
+		ProdutoID: p.ID, ArmazemOrigemID: principal.ID, ArmazemDestinoID: deposito.ID, Quantidade: 1, UtilizadorID: 1,
+	})
+	if !errors.Is(err, domain.ErrLoteObrigatorio) {
+		t.Errorf("transferência genérica: esperava ErrLoteObrigatorio, obteve %v", err)
+	}
+}
+
+func TestPerdaEConsumoDeLote_BaixamLoteEStock(t *testing.T) {
+	ctx := context.Background()
+	produtoSvc, armazemSvc, stockSvc, _, farmaciaSvc := newTestFarmaciaServices(t)
+	armazem := criarArmazem(t, ctx, armazemSvc, "Farmácia")
+	p, _ := criarProdutoLoteControlado(t, ctx, produtoSvc, "Ibuprofeno", 80)
+	lote := entradaLote(t, ctx, farmaciaSvc, p.ID, armazem.ID, "I1", time.Now().AddDate(1, 0, 0), 10)
+
+	if _, err := farmaciaSvc.RegistarPerdaDeLote(ctx, usecase.SaidaLoteParams{LoteID: lote.ID, Quantidade: 3, Motivo: "partido", UtilizadorID: 1}); err != nil {
+		t.Fatalf("perda de lote: %v", err)
+	}
+	if _, err := farmaciaSvc.RegistarConsumoInternoDeLote(ctx, usecase.SaidaLoteParams{LoteID: lote.ID, Quantidade: 2, Motivo: "uso", UtilizadorID: 1}); err != nil {
+		t.Fatalf("consumo de lote: %v", err)
+	}
+	if _, err := farmaciaSvc.RegistarPerdaDeLote(ctx, usecase.SaidaLoteParams{LoteID: lote.ID, Quantidade: 6, Motivo: "x", UtilizadorID: 1}); !errors.Is(err, domain.ErrStockInsuficiente) {
+		t.Errorf("esperava ErrStockInsuficiente ao tirar mais do que o lote tem, obteve %v", err)
+	}
+
+	lotes, _ := farmaciaSvc.ListarLotes(ctx, p.ID, armazem.ID)
+	if len(lotes) != 1 || lotes[0].Quantidade != 5 {
+		t.Fatalf("lotes = %+v, want I1 com 5", lotes)
+	}
+	stock, _ := stockSvc.ObterStock(ctx, p.ID, armazem.ID)
+	if stock.Quantidade != 5 {
+		t.Errorf("stock_atual = %v, want 5 (igual à soma dos lotes)", stock.Quantidade)
+	}
+}
+
+func TestTransferirLote_MantemNumeroEValidadeNoDestino(t *testing.T) {
+	ctx := context.Background()
+	produtoSvc, armazemSvc, stockSvc, _, farmaciaSvc := newTestFarmaciaServices(t)
+	principal := criarArmazem(t, ctx, armazemSvc, "Farmácia")
+	deposito := criarArmazem(t, ctx, armazemSvc, "Depósito")
+	p, _ := criarProdutoLoteControlado(t, ctx, produtoSvc, "Omeprazol", 90)
+	validade := time.Now().AddDate(1, 0, 0).UTC().Truncate(time.Second)
+	lote := entradaLote(t, ctx, farmaciaSvc, p.ID, principal.ID, "O1", validade, 10)
+
+	for _, qtd := range []float64{4, 2} {
+		if _, err := farmaciaSvc.TransferirLote(ctx, usecase.TransferenciaLoteParams{
+			LoteID: lote.ID, ArmazemDestinoID: deposito.ID, Quantidade: qtd, UtilizadorID: 1,
+		}); err != nil {
+			t.Fatalf("transferir %v: %v", qtd, err)
+		}
+	}
+
+	destino, _ := farmaciaSvc.ListarLotes(ctx, p.ID, deposito.ID)
+	if len(destino) != 1 || destino[0].NumeroLote != "O1" || destino[0].Quantidade != 6 || !destino[0].DataValidade.Equal(validade) {
+		t.Fatalf("lotes no destino = %+v, want um único O1 com 6 e a mesma validade", destino)
+	}
+	origem, _ := farmaciaSvc.ListarLotes(ctx, p.ID, principal.ID)
+	if len(origem) != 1 || origem[0].Quantidade != 4 {
+		t.Fatalf("lotes na origem = %+v, want O1 com 4", origem)
+	}
+	stockDestino, _ := stockSvc.ObterStock(ctx, p.ID, deposito.ID)
+	stockOrigem, _ := stockSvc.ObterStock(ctx, p.ID, principal.ID)
+	if stockDestino.Quantidade != 6 || stockOrigem.Quantidade != 4 {
+		t.Errorf("stock_atual origem/destino = %v/%v, want 4/6", stockOrigem.Quantidade, stockDestino.Quantidade)
+	}
+
+	if _, err := farmaciaSvc.TransferirLote(ctx, usecase.TransferenciaLoteParams{
+		LoteID: lote.ID, ArmazemDestinoID: principal.ID, Quantidade: 1, UtilizadorID: 1,
+	}); !errors.Is(err, domain.ErrArmazemIgual) {
+		t.Errorf("esperava ErrArmazemIgual, obteve %v", err)
+	}
+}

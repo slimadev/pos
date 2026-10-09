@@ -146,3 +146,51 @@ func (q *Queries) ListarLotesFEFO(ctx context.Context, arg ListarLotesFEFOParams
 	}
 	return items, nil
 }
+
+const obterLote = `-- name: ObterLote :one
+SELECT id, produto_id, armazem_id, numero_lote, data_validade, quantidade, custo_unitario
+FROM lotes_produto
+WHERE id = ?
+`
+
+func (q *Queries) ObterLote(ctx context.Context, id int64) (LotesProduto, error) {
+	row := q.db.QueryRowContext(ctx, obterLote, id)
+	var i LotesProduto
+	err := row.Scan(
+		&i.ID,
+		&i.ProdutoID,
+		&i.ArmazemID,
+		&i.NumeroLote,
+		&i.DataValidade,
+		&i.Quantidade,
+		&i.CustoUnitario,
+	)
+	return i, err
+}
+
+const obterLotePorNumero = `-- name: ObterLotePorNumero :one
+SELECT id, produto_id, armazem_id, numero_lote, data_validade, quantidade, custo_unitario
+FROM lotes_produto
+WHERE produto_id = ? AND armazem_id = ? AND numero_lote = ?
+`
+
+type ObterLotePorNumeroParams struct {
+	ProdutoID  int64  `json:"produto_id"`
+	ArmazemID  int64  `json:"armazem_id"`
+	NumeroLote string `json:"numero_lote"`
+}
+
+func (q *Queries) ObterLotePorNumero(ctx context.Context, arg ObterLotePorNumeroParams) (LotesProduto, error) {
+	row := q.db.QueryRowContext(ctx, obterLotePorNumero, arg.ProdutoID, arg.ArmazemID, arg.NumeroLote)
+	var i LotesProduto
+	err := row.Scan(
+		&i.ID,
+		&i.ProdutoID,
+		&i.ArmazemID,
+		&i.NumeroLote,
+		&i.DataValidade,
+		&i.Quantidade,
+		&i.CustoUnitario,
+	)
+	return i, err
+}

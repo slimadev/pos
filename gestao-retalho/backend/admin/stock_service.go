@@ -95,6 +95,36 @@ func (s *StockService) RegistarEntradaComLote(ctx context.Context, p usecase.Ent
 	return app.RegistarEntradaComLote(p)
 }
 
+func (s *StockService) RegistarPerdaDeLote(ctx context.Context, p usecase.SaidaLoteParams) (domain.MovimentoStock, error) {
+	app, fechar, err := s.abrirLoja(ctx)
+	if err != nil {
+		return domain.MovimentoStock{}, err
+	}
+	defer fechar()
+
+	return app.RegistarPerdaDeLote(p)
+}
+
+func (s *StockService) RegistarConsumoInternoDeLote(ctx context.Context, p usecase.SaidaLoteParams) (domain.MovimentoStock, error) {
+	app, fechar, err := s.abrirLoja(ctx)
+	if err != nil {
+		return domain.MovimentoStock{}, err
+	}
+	defer fechar()
+
+	return app.RegistarConsumoInternoDeLote(p)
+}
+
+func (s *StockService) TransferirLote(ctx context.Context, p usecase.TransferenciaLoteParams) (domain.MovimentoStock, error) {
+	app, fechar, err := s.abrirLoja(ctx)
+	if err != nil {
+		return domain.MovimentoStock{}, err
+	}
+	defer fechar()
+
+	return app.TransferirLote(p)
+}
+
 func (s *StockService) ListarLotes(ctx context.Context, produtoID, armazemID int64) ([]domain.Lote, error) {
 	app, fechar, err := s.abrirLoja(ctx)
 	if err != nil {

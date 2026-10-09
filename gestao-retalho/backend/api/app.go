@@ -460,6 +460,21 @@ func (a *App) ListarLotes(produtoID, armazemID int64) ([]domain.Lote, error) {
 	return a.FarmaciaService.ListarLotes(a.ctx, produtoID, armazemID)
 }
 
+func (a *App) RegistarPerdaDeLote(p usecase.SaidaLoteParams) (domain.MovimentoStock, error) {
+	p.UtilizadorID = UtilizadorAtualID
+	return a.FarmaciaService.RegistarPerdaDeLote(a.ctx, p)
+}
+
+func (a *App) RegistarConsumoInternoDeLote(p usecase.SaidaLoteParams) (domain.MovimentoStock, error) {
+	p.UtilizadorID = UtilizadorAtualID
+	return a.FarmaciaService.RegistarConsumoInternoDeLote(a.ctx, p)
+}
+
+func (a *App) TransferirLote(p usecase.TransferenciaLoteParams) (domain.MovimentoStock, error) {
+	p.UtilizadorID = UtilizadorAtualID
+	return a.FarmaciaService.TransferirLote(a.ctx, p)
+}
+
 func (a *App) ListarLotesAVencer(dentroDeDias int) ([]domain.Lote, error) {
 	return a.FarmaciaService.ListarLotesAVencer(a.ctx, domain.NegocioID, dentroDeDias)
 }

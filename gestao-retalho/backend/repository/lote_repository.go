@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"time"
 
 	"gestao-retalho/backend/domain"
@@ -64,6 +65,34 @@ func (r *LoteRepository) ListarFEFO(ctx context.Context, produtoID, armazemID in
 		out = append(out, loteFromRow(row))
 	}
 	return out, nil
+}
+
+func (r *LoteRepository) Obter(ctx context.Context, id int64) (domain.Lote, error) {
+	row, err := r.q.ObterLote(ctx, id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return domain.Lote{}, domain.ErrLoteNaoEncontrado
+	}
+	if err != nil {
+		return domain.Lote{}, err
+	}
+	return loteFromRow(row), nil
+}
+
+// ObterPorNumero devolve ok=false quando o produto ainda não tem esse
+// número de lote no armazém (caso normal no destino de uma transferência).
+func (r *LoteRepository) ObterPorNumero(ctx context.Context, produtoID, armazemID int64, numeroLote string) (domain.Lote, bool, error) {
+	row, err := r.q.ObterLotePorNumero(ctx, sqlcgen.ObterLotePorNumeroParams{
+		ProdutoID:  produtoID,
+		ArmazemID:  armazemID,
+		NumeroLote: numeroLote,
+	})
+	if errors.Is(err, sql.ErrNoRows) {
+		return domain.Lote{}, false, nil
+	}
+	if err != nil {
+		return domain.Lote{}, false, err
+	}
+	return loteFromRow(row), true, nil
 }
 
 func (r *LoteRepository) AtualizarQuantidade(ctx context.Context, loteID int64, novaQuantidade float64) error {
