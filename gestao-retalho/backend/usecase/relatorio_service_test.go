@@ -37,7 +37,7 @@ func newTestRelatorioServices(t *testing.T) (
 	clienteSvc := usecase.NewClienteService(clienteRepo)
 	dividaSvc := usecase.NewDividaService(dividaRepo, clienteRepo)
 	contaSvc := usecase.NewContaService(vendaRepo, produtoRepo, armazemRepo, fichaRepo, dividaSvc)
-	fichaSvc := usecase.NewFichaTecnicaService(fichaRepo, produtoRepo, stockRepo)
+	fichaSvc := usecase.NewFichaTecnicaService(fichaRepo, produtoRepo, stockRepo, loteRepo)
 	relatorioSvc := usecase.NewRelatorioService(relatorioRepo, fichaRepo, produtoRepo, clienteRepo, dividaSvc)
 
 	return produtoSvc, armazemSvc, stockSvc, vendaSvc, contaSvc, clienteSvc, fichaSvc, relatorioSvc, db

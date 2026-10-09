@@ -428,23 +428,37 @@ func consumirFichaTecnica(
 	for _, ing := range ingredientes {
 		consumoTotal := ing.ConsumoReal() * quantidadeVendida
 
+		ingrediente, err := produtos.Obter(ctx, ing.ProdutoIngredienteID)
+		if err != nil {
+			return 0, err
+		}
+		refCopy := referenciaID
+
+		// Um ingrediente com lotes sai pelos lotes (FEFO, sem vencidos), como
+		// se fosse vendido sozinho — senão stock_atual e lotes_produto
+		// ficavam diferentes.
+		if ingrediente.LoteControlado {
+			custo, _, err := consumirLoteFEFO(ctx, tx.Lotes, ing.ProdutoIngredienteID,
+				fmt.Sprintf("%s (ingrediente de %s)", ingrediente.Nome, produtoCompostoNome),
+				armazemID, consumoTotal, utilizadorID, domain.TipoMovimentoVenda, &refCopy, false)
+			if err != nil {
+				return 0, err
+			}
+			custoTotal += custo
+			continue
+		}
+
 		stockAtual, err := tx.Stock.ObterStock(ctx, ing.ProdutoIngredienteID, armazemID)
 		if err != nil {
 			return 0, err
 		}
 		if stockAtual.Quantidade < consumoTotal {
-			ingrediente, errNome := produtos.Obter(ctx, ing.ProdutoIngredienteID)
-			nome := ingrediente.Nome
-			if errNome != nil {
-				nome = fmt.Sprintf("#%d", ing.ProdutoIngredienteID)
-			}
-			return 0, fmt.Errorf("%w: %s (ingrediente de %s) — disponível %s, pedido %s", domain.ErrStockInsuficiente, nome, produtoCompostoNome, qtd(stockAtual.Quantidade), qtd(consumoTotal))
+			return 0, fmt.Errorf("%w: %s (ingrediente de %s) — disponível %s, pedido %s", domain.ErrStockInsuficiente, ingrediente.Nome, produtoCompostoNome, qtd(stockAtual.Quantidade), qtd(consumoTotal))
 		}
 		custoTotal += consumoTotal * stockAtual.CustoMedioPonderado
 
 		armazemIDCopy := armazemID
 		custoCopy := stockAtual.CustoMedioPonderado
-		refCopy := referenciaID
 		if _, err := tx.Stock.CriarMovimento(ctx, repository.NovoMovimento{
 			ProdutoID:       ing.ProdutoIngredienteID,
 			ArmazemOrigemID: &armazemIDCopy,

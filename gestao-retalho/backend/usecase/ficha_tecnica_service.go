@@ -17,14 +17,16 @@ type FichaTecnicaService struct {
 	fichas  *repository.FichaTecnicaRepository
 	produto *repository.ProdutoRepository
 	stock   *repository.StockRepository
+	lotes   *repository.LoteRepository
 }
 
 func NewFichaTecnicaService(
 	fichas *repository.FichaTecnicaRepository,
 	produto *repository.ProdutoRepository,
 	stock *repository.StockRepository,
+	lotes *repository.LoteRepository,
 ) *FichaTecnicaService {
-	return &FichaTecnicaService{fichas: fichas, produto: produto, stock: stock}
+	return &FichaTecnicaService{fichas: fichas, produto: produto, stock: stock, lotes: lotes}
 }
 
 func (s *FichaTecnicaService) ListarIngredientes(ctx context.Context, produtoCompostoID int64) ([]domain.FichaTecnica, error) {
@@ -185,6 +187,11 @@ func (s *FichaTecnicaService) RegistarProducao(ctx context.Context, p ProducaoPa
 	if produto.TipoProduto != domain.TipoProdutoSemiElaborado {
 		return domain.MovimentoStock{}, fmt.Errorf("produção em lote só se aplica a produtos semi-elaborados")
 	}
+	// O produzido entraria sem número de lote nem validade, e o FEFO da
+	// venda nunca o encontraria.
+	if produto.LoteControlado {
+		return domain.MovimentoStock{}, fmt.Errorf("%q controla lotes — registe-o com \"Entrada c/ lote\" em vez de produção", produto.Nome)
+	}
 
 	ingredientes, err := s.fichas.ListarIngredientes(ctx, p.ProdutoSemiElaboradoID)
 	if err != nil {
@@ -194,24 +201,41 @@ func (s *FichaTecnicaService) RegistarProducao(ctx context.Context, p ProducaoPa
 		return domain.MovimentoStock{}, fmt.Errorf("%q não tem ficha técnica definida", produto.Nome)
 	}
 
+	nomes := make(map[int64]domain.Produto, len(ingredientes))
+	for _, ing := range ingredientes {
+		ingrediente, err := s.produto.Obter(ctx, ing.ProdutoIngredienteID)
+		if err != nil {
+			return domain.MovimentoStock{}, err
+		}
+		nomes[ing.ProdutoIngredienteID] = ingrediente
+	}
+
 	var movimentoProducao domain.MovimentoStock
-	err = s.stock.WithTx(ctx, func(tx *repository.StockRepository) error {
+	err = s.lotes.WithTx(ctx, func(ltx *repository.LoteRepository) error {
+		tx := ltx.Stock
 		var custoTotalIngredientes float64
 
 		for _, ing := range ingredientes {
 			consumoTotal := ing.ConsumoReal() * p.Quantidade
+			ingrediente := nomes[ing.ProdutoIngredienteID]
+
+			// Ingredientes com lotes saem pelos lotes (FEFO, sem vencidos).
+			if ingrediente.LoteControlado {
+				custo, _, err := consumirLoteFEFO(ctx, ltx, ing.ProdutoIngredienteID, ingrediente.Nome, p.ArmazemID,
+					consumoTotal, p.UtilizadorID, domain.TipoMovimentoProducao, nil, false)
+				if err != nil {
+					return err
+				}
+				custoTotalIngredientes += custo
+				continue
+			}
 
 			stockAtual, err := tx.ObterStock(ctx, ing.ProdutoIngredienteID, p.ArmazemID)
 			if err != nil {
 				return err
 			}
 			if stockAtual.Quantidade < consumoTotal {
-				ingrediente, errNome := s.produto.Obter(ctx, ing.ProdutoIngredienteID)
-				nome := ingrediente.Nome
-				if errNome != nil {
-					nome = fmt.Sprintf("#%d", ing.ProdutoIngredienteID)
-				}
-				return fmt.Errorf("%w: %s — disponível %s, pedido %s", domain.ErrStockInsuficiente, nome, qtd(stockAtual.Quantidade), qtd(consumoTotal))
+				return fmt.Errorf("%w: %s — disponível %s, pedido %s", domain.ErrStockInsuficiente, ingrediente.Nome, qtd(stockAtual.Quantidade), qtd(consumoTotal))
 			}
 			custoTotalIngredientes += consumoTotal * stockAtual.CustoMedioPonderado
 
