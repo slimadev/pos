@@ -347,7 +347,10 @@ type FechoCaixa struct {
 // só devolve o valor esperado, não há tabela de "caixa" no modelo de
 // dados para guardar uma contagem física).
 func (s *RelatorioService) FechoCaixaDiario(ctx context.Context, dia time.Time) (FechoCaixa, error) {
-	inicio := time.Date(dia.Year(), dia.Month(), dia.Day(), 0, 0, 0, 0, dia.Location())
+	// O dia é o do relógio da loja: um instante vindo do ecrã em UTC (a
+	// meia-noite local é 22:00 UTC da véspera em Moçambique) cairia na véspera.
+	dia = dia.Local()
+	inicio := time.Date(dia.Year(), dia.Month(), dia.Day(), 0, 0, 0, 0, time.Local)
 	fim := inicio.Add(24 * time.Hour)
 	porMetodo, err := s.VendasPorMetodoPagamento(ctx, FiltroPeriodo{Desde: inicio, Ate: fim})
 	if err != nil {

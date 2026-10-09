@@ -1,6 +1,6 @@
 -- name: RelatorioVendasPorDia :many
 SELECT
-    date(criado_em) AS dia,
+    date(criado_em, 'localtime') AS dia,
     COUNT(*) AS numero_vendas,
     COALESCE(SUM(total), 0) AS total_vendido
 FROM vendas
@@ -8,7 +8,7 @@ WHERE negocio_id = sqlc.arg('negocio_id')
   AND status != 'cancelada'
   AND criado_em >= sqlc.arg('desde') AND criado_em < sqlc.arg('ate')
   AND (sqlc.narg('armazem_id') IS NULL OR armazem_id = sqlc.narg('armazem_id'))
-GROUP BY date(criado_em)
+GROUP BY date(criado_em, 'localtime')
 ORDER BY dia;
 
 -- name: RelatorioLucroPorPeriodo :one

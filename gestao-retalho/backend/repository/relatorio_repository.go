@@ -38,6 +38,8 @@ type LinhaVendasPorDia struct {
 	TotalVendido float64
 }
 
+// VendasPorDia agrupa pelo dia do relógio da loja (date(criado_em,
+// 'localtime') na query), não pelo dia UTC em que criado_em é guardado.
 func (r *RelatorioRepository) VendasPorDia(ctx context.Context, f PeriodoFiltro) ([]LinhaVendasPorDia, error) {
 	rows, err := r.q.RelatorioVendasPorDia(ctx, sqlcgen.RelatorioVendasPorDiaParams{
 		NegocioID: f.NegocioID,

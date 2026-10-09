@@ -511,3 +511,58 @@ func TestConsumoTeoricoVsReal_SemDesvioQuandoConsumoSeguiuFicha(t *testing.T) {
 		t.Errorf("desvio = %v, want 0", linhas[0].Desvio)
 	}
 }
+
+// Uma venda às 00:30 da hora local é guardada (em UTC) com a data da
+// véspera fora de UTC; o relatório por dia e o fecho de caixa têm de a
+// contar no dia do relógio da loja.
+func TestRelatorios_DiaDaVendaEODoRelogioLocal(t *testing.T) {
+	if _, offset := time.Now().Zone(); offset <= 0 {
+		t.Skip("só distingue dia local de dia UTC num fuso a leste de UTC")
+	}
+	ctx := context.Background()
+	produtoSvc, armazemSvc, stockSvc, vendaSvc, _, _, _, relatorioSvc, db := newTestRelatorioServices(t)
+
+	armazem := criarArmazem(t, ctx, armazemSvc, "Balcão")
+	produto, unidade := criarProdutoComPreco(t, ctx, produtoSvc, "Prego", 100)
+	if _, err := stockSvc.RegistarEntrada(ctx, usecase.EntradaParams{
+		ProdutoID: produto.ID, ArmazemDestinoID: armazem.ID, Quantidade: 10, CustoUnitario: 50, UtilizadorID: 1,
+	}); err != nil {
+		t.Fatalf("entrada: %v", err)
+	}
+	venda, err := vendaSvc.RegistarVendaDireta(ctx, usecase.VendaDiretaParams{
+		ArmazemID:    armazem.ID,
+		Itens:        []usecase.ItemVendaDiretaParams{{ProdutoID: produto.ID, UnidadeProdutoID: unidade.ID, Quantidade: 1}},
+		Pagamentos:   []usecase.PagamentoVendaParams{{Metodo: domain.MetodoDinheiro, Valor: 100}},
+		UtilizadorID: 1,
+	})
+	if err != nil {
+		t.Fatalf("venda: %v", err)
+	}
+
+	agora := time.Now()
+	meiaNoiteLocal := time.Date(agora.Year(), agora.Month(), agora.Day(), 0, 0, 0, 0, time.Local)
+	madrugada := meiaNoiteLocal.Add(30 * time.Minute)
+	for _, tabela := range []string{"vendas", "pagamentos"} {
+		if _, err := db.Exec("UPDATE "+tabela+" SET criado_em = ? WHERE "+map[string]string{"vendas": "id", "pagamentos": "venda_id"}[tabela]+" = ?",
+			madrugada.UTC().Format("2006-01-02T15:04:05.000Z"), venda.Venda.ID); err != nil {
+			t.Fatalf("mudar hora da venda: %v", err)
+		}
+	}
+
+	_, linhas, err := relatorioSvc.VendasPorPeriodo(ctx, usecase.FiltroPeriodo{Desde: meiaNoiteLocal, Ate: meiaNoiteLocal.AddDate(0, 0, 1)})
+	if err != nil {
+		t.Fatalf("vendas por período: %v", err)
+	}
+	if len(linhas) != 1 || linhas[0].Dia != meiaNoiteLocal.Format("2006-01-02") {
+		t.Fatalf("linhas = %+v, want um único dia %s", linhas, meiaNoiteLocal.Format("2006-01-02"))
+	}
+
+	// O ecrã envia a meia-noite local já convertida para UTC.
+	fecho, err := relatorioSvc.FechoCaixaDiario(ctx, meiaNoiteLocal.UTC())
+	if err != nil {
+		t.Fatalf("fecho: %v", err)
+	}
+	if fecho.Dia != meiaNoiteLocal.Format("2006-01-02") || fecho.TotalVendido != 100 {
+		t.Fatalf("fecho = %+v, want dia %s com 100", fecho, meiaNoiteLocal.Format("2006-01-02"))
+	}
+}

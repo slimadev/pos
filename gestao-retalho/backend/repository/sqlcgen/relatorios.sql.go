@@ -371,7 +371,7 @@ func (q *Queries) RelatorioValorContas(ctx context.Context) ([]RelatorioValorCon
 
 const relatorioVendasPorDia = `-- name: RelatorioVendasPorDia :many
 SELECT
-    date(criado_em) AS dia,
+    date(criado_em, 'localtime') AS dia,
     COUNT(*) AS numero_vendas,
     COALESCE(SUM(total), 0) AS total_vendido
 FROM vendas
@@ -379,7 +379,7 @@ WHERE negocio_id = ?1
   AND status != 'cancelada'
   AND criado_em >= ?2 AND criado_em < ?3
   AND (?4 IS NULL OR armazem_id = ?4)
-GROUP BY date(criado_em)
+GROUP BY date(criado_em, 'localtime')
 ORDER BY dia
 `
 
