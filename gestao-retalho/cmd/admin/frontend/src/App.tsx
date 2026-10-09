@@ -28,8 +28,9 @@ import FarmaciaScreen from "./Farmacia";
 import InventarioScreen from "./Inventario";
 import VendasScreen from "./Vendas";
 import RelatoriosScreen from "./Relatorios";
+import ClientesScreen from "./Clientes";
 
-type Ecra = "dashboard" | "produtos" | "categorias" | "armazens" | "stock" | "inventario" | "vendas" | "relatorios" | "farmacia" | "stub";
+type Ecra = "dashboard" | "produtos" | "categorias" | "armazens" | "stock" | "inventario" | "vendas" | "relatorios" | "clientes" | "farmacia" | "stub";
 type IconeSvg = ComponentType<SVGProps<SVGSVGElement>>;
 
 // Ícones outline de uma biblioteca única e neutra (SDD 7.3: "Lucide/Feather"
@@ -46,7 +47,7 @@ const NAV: { chave: Ecra; nome: string; Icone: IconeSvg; stub?: boolean; soFarma
   { chave: "farmacia", nome: "Farmácia", Icone: BeakerIcon, soFarmacia: true },
   { chave: "inventario", nome: "Inventário", Icone: ClipboardDocumentCheckIcon },
   { chave: "vendas", nome: "Vendas", Icone: ShoppingCartIcon },
-  { chave: "stub", nome: "Clientes e dívidas", Icone: UserGroupIcon, stub: true },
+  { chave: "clientes", nome: "Clientes e dívidas", Icone: UserGroupIcon },
   { chave: "relatorios", nome: "Relatórios", Icone: ChartBarIcon },
   { chave: "stub", nome: "Utilizadores", Icone: UserCircleIcon, stub: true },
 ];
@@ -120,7 +121,8 @@ export default function App() {
  * "Categorias" adicionado fora do mock e "Lojas" removido (Fase 10
  * addendum, a pedido explícito — deixou de fazer sentido um registo de
  * várias lojas quando cada cmd/admin serve sempre uma só). "Dashboard",
- * "Produtos", "Categorias", "Armazéns", "Stock", "Inventário", "Vendas", "Relatórios" e "Farmácia" (só em
+ * "Produtos", "Categorias", "Armazéns", "Stock", "Inventário", "Vendas", "Clientes e dívidas", "Relatórios" e
+ * "Farmácia" (só em
  * lojas do tipo farmácia) têm ecrã real; o resto da
  * sidebar existe por fidelidade visual ao mock, mas a gestão de vendas/etc.
  * continua a acontecer no executável da loja (cmd/app). O botão "PDV" não
@@ -191,6 +193,7 @@ function AdminPrincipal({ loja, onSair }: { loja: LojaAtual | null; onSair: () =
         {ecra === "stock" && <StockScreen onErro={setErro} />}
         {ecra === "inventario" && <InventarioScreen onErro={setErro} />}
         {ecra === "vendas" && <VendasScreen onErro={setErro} />}
+        {ecra === "clientes" && <ClientesScreen onErro={setErro} />}
         {ecra === "relatorios" && <RelatoriosScreen tipoNegocio={loja?.TipoNegocio} onErro={setErro} />}
         {ecra === "farmacia" && <FarmaciaScreen onErro={setErro} />}
         {ecra === "stub" && (

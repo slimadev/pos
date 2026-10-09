@@ -37,11 +37,12 @@ type AdminApp struct {
 	Inventario *InventarioService
 	Vendas     *VendasService
 	Relatorios *RelatoriosService
+	Clientes   *ClientesService
 	PDV        *PDVService
 }
 
-func NewAdminApp(lojas *LojasService, dashboard *DashboardService, auth *AuthService, categorias *CategoriasService, produtos *ProdutosService, armazens *ArmazensService, stock *StockService, farmacia *FarmaciaService, inventario *InventarioService, vendas *VendasService, relatorios *RelatoriosService, pdv *PDVService) *AdminApp {
-	return &AdminApp{Lojas: lojas, Dashboard: dashboard, Auth: auth, Categorias: categorias, Produtos: produtos, Armazens: armazens, Stock: stock, Farmacia: farmacia, Inventario: inventario, Vendas: vendas, Relatorios: relatorios, PDV: pdv}
+func NewAdminApp(lojas *LojasService, dashboard *DashboardService, auth *AuthService, categorias *CategoriasService, produtos *ProdutosService, armazens *ArmazensService, stock *StockService, farmacia *FarmaciaService, inventario *InventarioService, vendas *VendasService, relatorios *RelatoriosService, clientes *ClientesService, pdv *PDVService) *AdminApp {
+	return &AdminApp{Lojas: lojas, Dashboard: dashboard, Auth: auth, Categorias: categorias, Produtos: produtos, Armazens: armazens, Stock: stock, Farmacia: farmacia, Inventario: inventario, Vendas: vendas, Relatorios: relatorios, Clientes: clientes, PDV: pdv}
 }
 
 func (a *AdminApp) OnStartup(ctx context.Context) {
@@ -462,6 +463,64 @@ func (a *AdminApp) AbrirRecibo(vendaID int64) (string, error) {
 	}
 	runtime.BrowserOpenURL(a.ctx, "file://"+caminho)
 	return caminho, nil
+}
+
+// --- Clientes e dívidas -------------------------------------------------------
+
+func (a *AdminApp) ListarClientes() ([]ClienteResumo, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Clientes.Listar(a.ctx)
+}
+
+func (a *AdminApp) ObterFichaCliente(clienteID int64) (FichaCliente, error) {
+	if err := a.exigirSessao(); err != nil {
+		return FichaCliente{}, err
+	}
+	return a.Clientes.ObterFicha(a.ctx, clienteID)
+}
+
+func (a *AdminApp) CriarCliente(c domain.Cliente) (domain.Cliente, error) {
+	if err := a.exigirSessao(); err != nil {
+		return domain.Cliente{}, err
+	}
+	return a.Clientes.Criar(a.ctx, c)
+}
+
+func (a *AdminApp) AtualizarCliente(c domain.Cliente) error {
+	if err := a.exigirSessao(); err != nil {
+		return err
+	}
+	return a.Clientes.Atualizar(a.ctx, c)
+}
+
+func (a *AdminApp) AtivarCliente(id int64) error {
+	if err := a.exigirSessao(); err != nil {
+		return err
+	}
+	return a.Clientes.Ativar(a.ctx, id)
+}
+
+func (a *AdminApp) DesativarCliente(id int64) error {
+	if err := a.exigirSessao(); err != nil {
+		return err
+	}
+	return a.Clientes.Desativar(a.ctx, id)
+}
+
+func (a *AdminApp) ListarPagamentosDivida(dividaID int64) ([]domain.PagamentoDivida, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Clientes.ListarPagamentosDivida(a.ctx, dividaID)
+}
+
+func (a *AdminApp) RegistarPagamentoDivida(p usecase.RegistarPagamentoDividaParams) (api.RegistarPagamentoDividaResponse, error) {
+	if err := a.exigirSessao(); err != nil {
+		return api.RegistarPagamentoDividaResponse{}, err
+	}
+	return a.Clientes.RegistarPagamentoDivida(a.ctx, p)
 }
 
 // --- Relatórios --------------------------------------------------------------
