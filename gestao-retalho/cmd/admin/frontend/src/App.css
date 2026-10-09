@@ -1461,3 +1461,18 @@ body {
   height: 36px;
   color: var(--ok);
 }
+/* Fichas.tsx: números sem quebra de linha; as ações podem passar à linha
+   seguinte em vez de saírem da tabela. */
+.admin-fichas-tabela td[style*="right"],
+.admin-fichas-tabela th {
+  white-space: nowrap;
+}
+.admin-fichas-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.admin-fichas-acoes button {
+  white-space: nowrap;
+}

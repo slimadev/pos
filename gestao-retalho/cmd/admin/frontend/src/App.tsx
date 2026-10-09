@@ -31,8 +31,9 @@ import VendasScreen from "./Vendas";
 import RelatoriosScreen from "./Relatorios";
 import ClientesScreen from "./Clientes";
 import VendaCreditoScreen from "./VendaCredito";
+import FichasScreen from "./Fichas";
 
-type Ecra = "dashboard" | "produtos" | "categorias" | "armazens" | "stock" | "inventario" | "vendas" | "relatorios" | "clientes" | "credito" | "farmacia" | "stub";
+type Ecra = "dashboard" | "produtos" | "categorias" | "armazens" | "stock" | "inventario" | "vendas" | "relatorios" | "clientes" | "credito" | "fichas" | "farmacia" | "stub";
 type IconeSvg = ComponentType<SVGProps<SVGSVGElement>>;
 
 // Ícones outline de uma biblioteca única e neutra (SDD 7.3: "Lucide/Feather"
@@ -43,7 +44,7 @@ const NAV: { chave: Ecra; nome: string; Icone: IconeSvg; stub?: boolean; soFarma
   { chave: "dashboard", nome: "Dashboard", Icone: Squares2X2Icon },
   { chave: "produtos", nome: "Produtos", Icone: CubeIcon },
   { chave: "categorias", nome: "Categorias", Icone: TagIcon },
-  { chave: "stub", nome: "Fichas técnicas", Icone: ClipboardDocumentListIcon, stub: true },
+  { chave: "fichas", nome: "Fichas técnicas", Icone: ClipboardDocumentListIcon },
   { chave: "armazens", nome: "Armazéns", Icone: BuildingOffice2Icon },
   { chave: "stock", nome: "Stock", Icone: ArchiveBoxIcon },
   { chave: "farmacia", nome: "Farmácia", Icone: BeakerIcon, soFarmacia: true },
@@ -123,13 +124,9 @@ export default function App() {
  * Sidebar fiel à tela `1c` dos mocks aprovados (SDD 7.3/8.5, Fase 9), com
  * "Categorias" adicionado fora do mock e "Lojas" removido (Fase 10
  * addendum, a pedido explícito — deixou de fazer sentido um registo de
- * várias lojas quando cada cmd/admin serve sempre uma só). "Dashboard",
- * "Produtos", "Categorias", "Armazéns", "Stock", "Inventário", "Vendas", "Venda a crédito" (só aqui, nunca no PDV), "Clientes e
- * dívidas", "Relatórios" e
- * "Farmácia" (só em
- * lojas do tipo farmácia) têm ecrã real; o resto da
- * sidebar existe por fidelidade visual ao mock, mas a gestão de vendas/etc.
- * continua a acontecer no executável da loja (cmd/app). O botão "PDV" não
+ * várias lojas quando cada cmd/admin serve sempre uma só). Toda a gestão
+ * da loja vive aqui; "Farmácia" só aparece em lojas desse tipo e a "Venda a
+ * crédito" só existe neste ecrã, nunca no PDV. O botão "PDV" não
  * troca de ecrã aqui dentro — lança o cmd/app como processo à parte,
  * maximizado, apontado à mesma base desta loja (decisão pós-Fase 10, a
  * pedido explícito: cmd/app deixou de abrir sozinho).
@@ -199,6 +196,7 @@ function AdminPrincipal({ loja, onSair }: { loja: LojaAtual | null; onSair: () =
         {ecra === "vendas" && <VendasScreen onErro={setErro} />}
         {ecra === "clientes" && <ClientesScreen onErro={setErro} />}
         {ecra === "credito" && <VendaCreditoScreen onErro={setErro} />}
+        {ecra === "fichas" && <FichasScreen onErro={setErro} />}
         {ecra === "relatorios" && <RelatoriosScreen tipoNegocio={loja?.TipoNegocio} onErro={setErro} />}
         {ecra === "farmacia" && <FarmaciaScreen onErro={setErro} />}
         {ecra === "stub" && (

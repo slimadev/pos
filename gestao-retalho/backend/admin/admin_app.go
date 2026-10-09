@@ -38,11 +38,12 @@ type AdminApp struct {
 	Vendas     *VendasService
 	Relatorios *RelatoriosService
 	Clientes   *ClientesService
+	Fichas     *FichasService
 	PDV        *PDVService
 }
 
-func NewAdminApp(lojas *LojasService, dashboard *DashboardService, auth *AuthService, categorias *CategoriasService, produtos *ProdutosService, armazens *ArmazensService, stock *StockService, farmacia *FarmaciaService, inventario *InventarioService, vendas *VendasService, relatorios *RelatoriosService, clientes *ClientesService, pdv *PDVService) *AdminApp {
-	return &AdminApp{Lojas: lojas, Dashboard: dashboard, Auth: auth, Categorias: categorias, Produtos: produtos, Armazens: armazens, Stock: stock, Farmacia: farmacia, Inventario: inventario, Vendas: vendas, Relatorios: relatorios, Clientes: clientes, PDV: pdv}
+func NewAdminApp(lojas *LojasService, dashboard *DashboardService, auth *AuthService, categorias *CategoriasService, produtos *ProdutosService, armazens *ArmazensService, stock *StockService, farmacia *FarmaciaService, inventario *InventarioService, vendas *VendasService, relatorios *RelatoriosService, clientes *ClientesService, fichas *FichasService, pdv *PDVService) *AdminApp {
+	return &AdminApp{Lojas: lojas, Dashboard: dashboard, Auth: auth, Categorias: categorias, Produtos: produtos, Armazens: armazens, Stock: stock, Farmacia: farmacia, Inventario: inventario, Vendas: vendas, Relatorios: relatorios, Clientes: clientes, Fichas: fichas, PDV: pdv}
 }
 
 func (a *AdminApp) OnStartup(ctx context.Context) {
@@ -482,6 +483,36 @@ func (a *AdminApp) AbrirRecibo(vendaID int64) (string, error) {
 	}
 	runtime.BrowserOpenURL(a.ctx, "file://"+caminho)
 	return caminho, nil
+}
+
+// --- Fichas técnicas ---------------------------------------------------------
+
+func (a *AdminApp) ListarFichasTecnicas(armazemID int64) ([]FichaResumo, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Fichas.Listar(a.ctx, armazemID)
+}
+
+func (a *AdminApp) DefinirReceita(produtoID int64, ingredientes []usecase.IngredienteInput) ([]domain.FichaTecnica, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Fichas.DefinirReceita(a.ctx, produtoID, ingredientes)
+}
+
+func (a *AdminApp) DuplicarReceita(origemID, destinoID int64) ([]domain.FichaTecnica, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Fichas.DuplicarReceita(a.ctx, origemID, destinoID)
+}
+
+func (a *AdminApp) RegistarProducao(p usecase.ProducaoParams) (domain.MovimentoStock, error) {
+	if err := a.exigirSessao(); err != nil {
+		return domain.MovimentoStock{}, err
+	}
+	return a.Fichas.RegistarProducao(a.ctx, p)
 }
 
 // --- Clientes e dívidas -------------------------------------------------------
