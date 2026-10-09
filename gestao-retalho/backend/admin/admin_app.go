@@ -26,24 +26,25 @@ type AdminApp struct {
 	// explícito: um administrador para todas as lojas, não um por loja).
 	administradorAtualID int64
 
-	Lojas      *LojasService
-	Dashboard  *DashboardService
-	Auth       *AuthService
-	Categorias *CategoriasService
-	Produtos   *ProdutosService
-	Armazens   *ArmazensService
-	Stock      *StockService
-	Farmacia   *FarmaciaService
-	Inventario *InventarioService
-	Vendas     *VendasService
-	Relatorios *RelatoriosService
-	Clientes   *ClientesService
-	Fichas     *FichasService
-	PDV        *PDVService
+	Lojas        *LojasService
+	Dashboard    *DashboardService
+	Auth         *AuthService
+	Categorias   *CategoriasService
+	Produtos     *ProdutosService
+	Armazens     *ArmazensService
+	Stock        *StockService
+	Farmacia     *FarmaciaService
+	Inventario   *InventarioService
+	Vendas       *VendasService
+	Relatorios   *RelatoriosService
+	Clientes     *ClientesService
+	Fichas       *FichasService
+	Utilizadores *UtilizadoresService
+	PDV          *PDVService
 }
 
-func NewAdminApp(lojas *LojasService, dashboard *DashboardService, auth *AuthService, categorias *CategoriasService, produtos *ProdutosService, armazens *ArmazensService, stock *StockService, farmacia *FarmaciaService, inventario *InventarioService, vendas *VendasService, relatorios *RelatoriosService, clientes *ClientesService, fichas *FichasService, pdv *PDVService) *AdminApp {
-	return &AdminApp{Lojas: lojas, Dashboard: dashboard, Auth: auth, Categorias: categorias, Produtos: produtos, Armazens: armazens, Stock: stock, Farmacia: farmacia, Inventario: inventario, Vendas: vendas, Relatorios: relatorios, Clientes: clientes, Fichas: fichas, PDV: pdv}
+func NewAdminApp(lojas *LojasService, dashboard *DashboardService, auth *AuthService, categorias *CategoriasService, produtos *ProdutosService, armazens *ArmazensService, stock *StockService, farmacia *FarmaciaService, inventario *InventarioService, vendas *VendasService, relatorios *RelatoriosService, clientes *ClientesService, fichas *FichasService, utilizadores *UtilizadoresService, pdv *PDVService) *AdminApp {
+	return &AdminApp{Lojas: lojas, Dashboard: dashboard, Auth: auth, Categorias: categorias, Produtos: produtos, Armazens: armazens, Stock: stock, Farmacia: farmacia, Inventario: inventario, Vendas: vendas, Relatorios: relatorios, Clientes: clientes, Fichas: fichas, Utilizadores: utilizadores, PDV: pdv}
 }
 
 func (a *AdminApp) OnStartup(ctx context.Context) {
@@ -485,6 +486,50 @@ func (a *AdminApp) AbrirRecibo(vendaID int64) (string, error) {
 	return caminho, nil
 }
 
+// --- Utilizadores (operadores do PDV) -----------------------------------------
+
+func (a *AdminApp) ListarOperadores() ([]usecase.Operador, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Utilizadores.Listar(a.ctx)
+}
+
+func (a *AdminApp) CriarOperador(nome, pin string) (usecase.Operador, error) {
+	if err := a.exigirSessao(); err != nil {
+		return usecase.Operador{}, err
+	}
+	return a.Utilizadores.Criar(a.ctx, nome, pin)
+}
+
+func (a *AdminApp) RenomearOperador(id int64, nome string) error {
+	if err := a.exigirSessao(); err != nil {
+		return err
+	}
+	return a.Utilizadores.Renomear(a.ctx, id, nome)
+}
+
+func (a *AdminApp) RedefinirPINOperador(id int64, pin string) error {
+	if err := a.exigirSessao(); err != nil {
+		return err
+	}
+	return a.Utilizadores.RedefinirPIN(a.ctx, id, pin)
+}
+
+func (a *AdminApp) AtivarOperador(id int64) error {
+	if err := a.exigirSessao(); err != nil {
+		return err
+	}
+	return a.Utilizadores.DefinirAtivo(a.ctx, id, true)
+}
+
+func (a *AdminApp) DesativarOperador(id int64) error {
+	if err := a.exigirSessao(); err != nil {
+		return err
+	}
+	return a.Utilizadores.DefinirAtivo(a.ctx, id, false)
+}
+
 // --- Fichas técnicas ---------------------------------------------------------
 
 func (a *AdminApp) ListarFichasTecnicas(armazemID int64) ([]FichaResumo, error) {
@@ -652,6 +697,14 @@ func (a *AdminApp) RelatorioFechoCaixaDiario(dia string) (usecase.FechoCaixa, er
 		return usecase.FechoCaixa{}, err
 	}
 	return a.Relatorios.FechoCaixaDiario(a.ctx, dia)
+}
+
+// RelatorioVendasPorOperador recebe datas "AAAA-MM-DD", ambas inclusive.
+func (a *AdminApp) RelatorioVendasPorOperador(desde, ate string) ([]LinhaVendasPorOperador, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Relatorios.VendasPorOperador(a.ctx, desde, ate)
 }
 
 // ExportarRelatorio grava a tabela ("xlsx" ou "pdf") e abre-a no programa

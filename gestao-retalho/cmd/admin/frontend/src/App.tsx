@@ -32,8 +32,9 @@ import RelatoriosScreen from "./Relatorios";
 import ClientesScreen from "./Clientes";
 import VendaCreditoScreen from "./VendaCredito";
 import FichasScreen from "./Fichas";
+import UtilizadoresScreen from "./Utilizadores";
 
-type Ecra = "dashboard" | "produtos" | "categorias" | "armazens" | "stock" | "inventario" | "vendas" | "relatorios" | "clientes" | "credito" | "fichas" | "farmacia" | "stub";
+type Ecra = "dashboard" | "produtos" | "categorias" | "armazens" | "stock" | "inventario" | "vendas" | "relatorios" | "clientes" | "credito" | "fichas" | "utilizadores" | "farmacia" | "stub";
 type IconeSvg = ComponentType<SVGProps<SVGSVGElement>>;
 
 // Ícones outline de uma biblioteca única e neutra (SDD 7.3: "Lucide/Feather"
@@ -53,7 +54,7 @@ const NAV: { chave: Ecra; nome: string; Icone: IconeSvg; stub?: boolean; soFarma
   { chave: "credito", nome: "Venda a crédito", Icone: BanknotesIcon },
   { chave: "clientes", nome: "Clientes e dívidas", Icone: UserGroupIcon },
   { chave: "relatorios", nome: "Relatórios", Icone: ChartBarIcon },
-  { chave: "stub", nome: "Utilizadores", Icone: UserCircleIcon, stub: true },
+  { chave: "utilizadores", nome: "Utilizadores", Icone: UserCircleIcon },
 ];
 
 type Estado = { tipo: "a-carregar" } | { tipo: "configurar" } | { tipo: "login" } | { tipo: "pronto" };
@@ -197,6 +198,7 @@ function AdminPrincipal({ loja, onSair }: { loja: LojaAtual | null; onSair: () =
         {ecra === "clientes" && <ClientesScreen onErro={setErro} />}
         {ecra === "credito" && <VendaCreditoScreen onErro={setErro} />}
         {ecra === "fichas" && <FichasScreen onErro={setErro} />}
+        {ecra === "utilizadores" && <UtilizadoresScreen onErro={setErro} />}
         {ecra === "relatorios" && <RelatoriosScreen tipoNegocio={loja?.TipoNegocio} onErro={setErro} />}
         {ecra === "farmacia" && <FarmaciaScreen onErro={setErro} />}
         {ecra === "stub" && (

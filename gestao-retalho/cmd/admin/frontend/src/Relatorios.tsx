@@ -13,9 +13,10 @@ import {
   RelatorioContasPorPeriodo,
   RelatorioDividasEmAberto,
   RelatorioFechoCaixaDiario,
+  RelatorioVendasPorOperador,
   ExportarRelatorio,
 } from "../wailsjs/go/admin/AdminApp";
-import { api, domain, repository, usecase } from "../wailsjs/go/models";
+import { admin, api, domain, repository, usecase } from "../wailsjs/go/models";
 import Breadcrumb from "./Breadcrumb";
 
 type Relatorio =
@@ -23,6 +24,7 @@ type Relatorio =
   | "lucro"
   | "produtos"
   | "metodos"
+  | "operadores"
   | "caixa"
   | "stock"
   | "movimentos"
@@ -41,6 +43,7 @@ const GRUPOS: { nome: string; relatorios: { chave: Relatorio; nome: string; filt
       { chave: "lucro", nome: "Lucro por período", filtro: "periodo" },
       { chave: "produtos", nome: "Vendas por produto", filtro: "periodo" },
       { chave: "metodos", nome: "Vendas por método de pagamento", filtro: "periodo" },
+      { chave: "operadores", nome: "Vendas por operador", filtro: "periodo" },
       { chave: "caixa", nome: "Fecho de caixa diário", filtro: "dia" },
     ],
   },
@@ -205,7 +208,7 @@ export default function RelatoriosScreen({
               <label>
                 até <input type="date" value={ate} min={desde} onChange={(e) => setAte(e.target.value)} />
               </label>
-              {relatorio !== "contas" && (
+              {relatorio !== "contas" && relatorio !== "operadores" && (
                 <select value={armazemID} onChange={(e) => setArmazemID(e.target.value ? Number(e.target.value) : "")}>
                   <option value="">Todos os armazéns</option>
                   {armazens.map((a) => (
@@ -276,6 +279,9 @@ export default function RelatoriosScreen({
           {consulta.relatorio === "lucro" && <RelLucro key={chave} {...props} />}
           {consulta.relatorio === "produtos" && <RelProdutos key={chave} {...props} />}
           {consulta.relatorio === "metodos" && <RelMetodos key={chave} {...props} />}
+          {consulta.relatorio === "operadores" && (
+            <RelOperadores key={chave} desde={consulta.desde} ate={consulta.ate} onErro={onErro} />
+          )}
           {consulta.relatorio === "caixa" && <RelCaixa key={chave} dia={consulta.dia} onErro={onErro} />}
           {consulta.relatorio === "stock" && (
             <RelStock key={chave} armazemID={consulta.armazemID} armazens={armazens} onErro={onErro} />
@@ -500,6 +506,32 @@ function RelMetodos({ filtro, onErro }: PropsPeriodo) {
           : null
       }
       totais={linhas ? ["Total", mt(total), ""] : undefined}
+      onErro={onErro}
+    />
+  );
+}
+
+function RelOperadores({ desde, ate, onErro }: { desde: string; ate: string; onErro: (e: string) => void }) {
+  const linhas = useCarregar<admin.LinhaVendasPorOperador[]>(() => RelatorioVendasPorOperador(desde, ate), onErro);
+  const total = (linhas ?? []).reduce((s, l) => s + l.Total, 0);
+  const vendas = (linhas ?? []).reduce((s, l) => s + l.NumeroVendas, 0);
+  return (
+    <TabelaRelatorio
+      titulo="Vendas por operador"
+      colunas={["Operador", "N.º vendas", "Total", "Por venda", "% do total"]}
+      numericas={[1, 2, 3, 4]}
+      linhas={
+        linhas
+          ? linhas.map((l) => [
+              l.OperadorNome,
+              String(l.NumeroVendas),
+              mt(l.Total),
+              mt(l.NumeroVendas > 0 ? l.Total / l.NumeroVendas : 0),
+              total > 0 ? pct((l.Total / total) * 100) : "—",
+            ])
+          : null
+      }
+      totais={linhas ? ["Total", String(vendas), mt(total), "", ""] : undefined}
       onErro={onErro}
     />
   );

@@ -3,9 +3,11 @@ package admin
 import (
 	"context"
 	"fmt"
+	"sort"
 	"time"
 
 	"gestao-retalho/backend/api"
+	"gestao-retalho/backend/domain"
 	"gestao-retalho/backend/export"
 	"gestao-retalho/backend/repository"
 	"gestao-retalho/backend/usecase"
@@ -106,6 +108,48 @@ func diaLocal(dia string) (time.Time, error) {
 		return time.Time{}, fmt.Errorf("data inválida: %q", dia)
 	}
 	return d, nil
+}
+
+type LinhaVendasPorOperador struct {
+	OperadorNome string
+	NumeroVendas int
+	Total        float64
+}
+
+// VendasPorOperador recebe datas "AAAA-MM-DD", ambas inclusive; as vendas
+// canceladas ficam de fora, como nos outros relatórios de vendas.
+func (s *RelatoriosService) VendasPorOperador(ctx context.Context, desde, ate string) ([]LinhaVendasPorOperador, error) {
+	return comLoja(ctx, s.lojas, func(a *api.App) ([]LinhaVendasPorOperador, error) {
+		vendas, err := a.ListarVendasEntreDatas(desde, ate)
+		if err != nil {
+			return nil, err
+		}
+		nomeOperador, err := nomesDeOperadores(ctx, a)
+		if err != nil {
+			return nil, err
+		}
+		porOperador := map[int64]*LinhaVendasPorOperador{}
+		ordem := []int64{}
+		for _, v := range vendas {
+			if v.Status == domain.StatusVendaCancelada {
+				continue
+			}
+			l, ok := porOperador[v.UtilizadorID]
+			if !ok {
+				l = &LinhaVendasPorOperador{OperadorNome: nomeOperador(v.UtilizadorID)}
+				porOperador[v.UtilizadorID] = l
+				ordem = append(ordem, v.UtilizadorID)
+			}
+			l.NumeroVendas++
+			l.Total += v.Total
+		}
+		out := make([]LinhaVendasPorOperador, 0, len(ordem))
+		for _, id := range ordem {
+			out = append(out, *porOperador[id])
+		}
+		sort.Slice(out, func(i, j int) bool { return out[i].Total > out[j].Total })
+		return out, nil
+	})
 }
 
 // Exportar grava a tabela já formatada pelo ecrã ("xlsx" ou "pdf") e

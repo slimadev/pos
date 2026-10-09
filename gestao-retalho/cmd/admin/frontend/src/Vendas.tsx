@@ -59,6 +59,7 @@ export default function VendasScreen({ onErro }: { onErro: (e: string) => void }
   const [desde, setDesde] = useState(diaLocal(new Date()));
   const [ate, setAte] = useState(diaLocal(new Date()));
   const [estado, setEstado] = useState("");
+  const [operador, setOperador] = useState("");
   const [vendas, setVendas] = useState<admin.VendaResumo[] | null>(null);
   const [periodo, setPeriodo] = useState({ desde, ate });
   const [aberta, setAberta] = useState<number | null>(null);
@@ -92,7 +93,10 @@ export default function VendasScreen({ onErro }: { onErro: (e: string) => void }
     consultar(d, a);
   }
 
-  const visiveis = (vendas ?? []).filter((v) => !estado || v.Venda.Status === estado);
+  const operadores = [...new Set((vendas ?? []).map((v) => v.OperadorNome))].sort((a, b) => a.localeCompare(b, "pt"));
+  const visiveis = (vendas ?? []).filter(
+    (v) => (!estado || v.Venda.Status === estado) && (!operador || v.OperadorNome === operador),
+  );
   const validas = visiveis.filter((v) => v.Venda.Status !== "cancelada");
   const total = validas.reduce((s, v) => s + v.Venda.Total, 0);
   const emDivida = validas.filter((v) => v.Venda.Status === "divida" || v.Venda.Status === "parcial").length;
@@ -127,6 +131,16 @@ export default function VendasScreen({ onErro }: { onErro: (e: string) => void }
             </option>
           ))}
         </select>
+        {operadores.length > 1 && (
+          <select value={operador} onChange={(e) => setOperador(e.target.value)}>
+            <option value="">Todos os operadores</option>
+            {operadores.map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
+            ))}
+          </select>
+        )}
         <button className="admin-btn" disabled={!desde || !ate} onClick={() => consultar(desde, ate)}>
           Consultar
         </button>
@@ -162,6 +176,7 @@ export default function VendasScreen({ onErro }: { onErro: (e: string) => void }
             <th>N.º</th>
             <th>Data</th>
             <th>Cliente</th>
+            <th>Operador</th>
             <th>Tipo</th>
             <th>Estado</th>
             <th style={{ textAlign: "right" }}>Total</th>
@@ -171,19 +186,20 @@ export default function VendasScreen({ onErro }: { onErro: (e: string) => void }
         <tbody>
           {vendas === null && (
             <tr>
-              <td colSpan={7}>A carregar…</td>
+              <td colSpan={8}>A carregar…</td>
             </tr>
           )}
           {vendas !== null && visiveis.length === 0 && (
             <tr>
-              <td colSpan={7}>Sem vendas neste período.</td>
+              <td colSpan={8}>Sem vendas neste período.</td>
             </tr>
           )}
-          {visiveis.map(({ Venda: v, ClienteNome }) => (
+          {visiveis.map(({ Venda: v, ClienteNome, OperadorNome }) => (
             <tr key={v.ID}>
               <td>#{v.ID}</td>
               <td>{dataHora(v.CriadoEm)}</td>
               <td>{ClienteNome}</td>
+              <td>{OperadorNome}</td>
               <td>{ROTULO_TIPO[v.TipoVenda] ?? v.TipoVenda}</td>
               <td>
                 <span className={`admin-venda-estado ${v.Status}`}>{ROTULO_ESTADO[v.Status] ?? v.Status}</span>
@@ -238,6 +254,7 @@ function DetalheVenda({ vendaID, onErro }: { vendaID: number; onErro: (e: string
       <div className="admin-venda-cabecalho">
         <span>{dataHora(v.CriadoEm)}</span>
         <span>{detalhe.ClienteNome}</span>
+        <span>vendido por {detalhe.OperadorNome}</span>
         <span>{ROTULO_TIPO[v.TipoVenda] ?? v.TipoVenda}</span>
         <span className={`admin-venda-estado ${v.Status}`}>{ROTULO_ESTADO[v.Status] ?? v.Status}</span>
       </div>

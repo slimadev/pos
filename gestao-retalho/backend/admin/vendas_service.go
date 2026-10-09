@@ -25,8 +25,9 @@ func NewVendasService(lojas *repository.LojaRepository) *VendasService {
 }
 
 type VendaResumo struct {
-	Venda       domain.Venda
-	ClienteNome string
+	Venda        domain.Venda
+	ClienteNome  string
+	OperadorNome string
 }
 
 type ItemVendaDetalhe struct {
@@ -36,10 +37,11 @@ type ItemVendaDetalhe struct {
 }
 
 type VendaDetalhe struct {
-	Venda       domain.Venda
-	ClienteNome string
-	Itens       []ItemVendaDetalhe
-	Pagamentos  []domain.Pagamento
+	Venda        domain.Venda
+	ClienteNome  string
+	OperadorNome string
+	Itens        []ItemVendaDetalhe
+	Pagamentos   []domain.Pagamento
 }
 
 // Listar recebe datas "AAAA-MM-DD", ambas inclusive.
@@ -58,10 +60,14 @@ func (s *VendasService) Listar(ctx context.Context, desde, ate string) ([]VendaR
 	if err != nil {
 		return nil, err
 	}
+	nomeOperador, err := nomesDeOperadores(ctx, app)
+	if err != nil {
+		return nil, err
+	}
 
 	out := make([]VendaResumo, 0, len(vendas))
 	for _, v := range vendas {
-		out = append(out, VendaResumo{Venda: v, ClienteNome: nomeCliente(v.ClienteID)})
+		out = append(out, VendaResumo{Venda: v, ClienteNome: nomeCliente(v.ClienteID), OperadorNome: nomeOperador(v.UtilizadorID)})
 	}
 	return out, nil
 }
@@ -78,6 +84,10 @@ func (s *VendasService) ObterDetalhe(ctx context.Context, vendaID int64) (VendaD
 		return VendaDetalhe{}, err
 	}
 	nomeCliente, err := nomesDeClientes(app)
+	if err != nil {
+		return VendaDetalhe{}, err
+	}
+	nomeOperador, err := nomesDeOperadores(ctx, app)
 	if err != nil {
 		return VendaDetalhe{}, err
 	}
@@ -112,10 +122,11 @@ func (s *VendasService) ObterDetalhe(ctx context.Context, vendaID int64) (VendaD
 	}
 
 	return VendaDetalhe{
-		Venda:       completa.Venda,
-		ClienteNome: nomeCliente(completa.Venda.ClienteID),
-		Itens:       itens,
-		Pagamentos:  completa.Pagamentos,
+		Venda:        completa.Venda,
+		ClienteNome:  nomeCliente(completa.Venda.ClienteID),
+		OperadorNome: nomeOperador(completa.Venda.UtilizadorID),
+		Itens:        itens,
+		Pagamentos:   completa.Pagamentos,
 	}, nil
 }
 
@@ -142,6 +153,28 @@ func (s *VendasService) GerarRecibo(ctx context.Context, vendaID int64) (string,
 		return "", fmt.Errorf("gravar recibo: %w", err)
 	}
 	return caminho, nil
+}
+
+// nomesDeOperadores: as vendas sem operador identificado (lojas sem
+// operadores, ou feitas no admin) ficam com o administrador.
+func nomesDeOperadores(ctx context.Context, app *api.App) (func(int64) string, error) {
+	operadores, err := app.OperadorService.Listar(ctx)
+	if err != nil {
+		return nil, err
+	}
+	nomes := make(map[int64]string, len(operadores))
+	for _, o := range operadores {
+		nomes[o.ID] = o.Nome
+	}
+	return func(id int64) string {
+		if n, ok := nomes[id]; ok {
+			return n
+		}
+		if id == api.UtilizadorAdminID {
+			return "Administrador"
+		}
+		return fmt.Sprintf("Utilizador #%d", id)
+	}, nil
 }
 
 func nomesDeClientes(app *api.App) (func(int64) string, error) {
