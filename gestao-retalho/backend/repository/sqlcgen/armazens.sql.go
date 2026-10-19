@@ -10,34 +10,46 @@ import (
 )
 
 const atualizarArmazem = `-- name: AtualizarArmazem :exec
-UPDATE armazens SET nome = ?, tipo = ? WHERE id = ?
+UPDATE armazens SET nome = ?, tipo = ?, fora_de_venda = ? WHERE id = ?
 `
 
 type AtualizarArmazemParams struct {
-	Nome string `json:"nome"`
-	Tipo string `json:"tipo"`
-	ID   int64  `json:"id"`
+	Nome        string `json:"nome"`
+	Tipo        string `json:"tipo"`
+	ForaDeVenda int64  `json:"fora_de_venda"`
+	ID          int64  `json:"id"`
 }
 
 func (q *Queries) AtualizarArmazem(ctx context.Context, arg AtualizarArmazemParams) error {
-	_, err := q.db.ExecContext(ctx, atualizarArmazem, arg.Nome, arg.Tipo, arg.ID)
+	_, err := q.db.ExecContext(ctx, atualizarArmazem,
+		arg.Nome,
+		arg.Tipo,
+		arg.ForaDeVenda,
+		arg.ID,
+	)
 	return err
 }
 
 const criarArmazem = `-- name: CriarArmazem :one
-INSERT INTO armazens (negocio_id, nome, tipo, ativo)
-VALUES (?, ?, ?, 1)
-RETURNING id, negocio_id, nome, tipo, ativo
+INSERT INTO armazens (negocio_id, nome, tipo, ativo, fora_de_venda)
+VALUES (?, ?, ?, 1, ?)
+RETURNING id, negocio_id, nome, tipo, ativo, fora_de_venda
 `
 
 type CriarArmazemParams struct {
-	NegocioID int64  `json:"negocio_id"`
-	Nome      string `json:"nome"`
-	Tipo      string `json:"tipo"`
+	NegocioID   int64  `json:"negocio_id"`
+	Nome        string `json:"nome"`
+	Tipo        string `json:"tipo"`
+	ForaDeVenda int64  `json:"fora_de_venda"`
 }
 
 func (q *Queries) CriarArmazem(ctx context.Context, arg CriarArmazemParams) (Armazens, error) {
-	row := q.db.QueryRowContext(ctx, criarArmazem, arg.NegocioID, arg.Nome, arg.Tipo)
+	row := q.db.QueryRowContext(ctx, criarArmazem,
+		arg.NegocioID,
+		arg.Nome,
+		arg.Tipo,
+		arg.ForaDeVenda,
+	)
 	var i Armazens
 	err := row.Scan(
 		&i.ID,
@@ -45,6 +57,7 @@ func (q *Queries) CriarArmazem(ctx context.Context, arg CriarArmazemParams) (Arm
 		&i.Nome,
 		&i.Tipo,
 		&i.Ativo,
+		&i.ForaDeVenda,
 	)
 	return i, err
 }
@@ -64,7 +77,7 @@ func (q *Queries) DefinirArmazemAtivo(ctx context.Context, arg DefinirArmazemAti
 }
 
 const listarArmazens = `-- name: ListarArmazens :many
-SELECT id, negocio_id, nome, tipo, ativo
+SELECT id, negocio_id, nome, tipo, ativo, fora_de_venda
 FROM armazens
 WHERE negocio_id = ?
 ORDER BY nome
@@ -85,6 +98,7 @@ func (q *Queries) ListarArmazens(ctx context.Context, negocioID int64) ([]Armaze
 			&i.Nome,
 			&i.Tipo,
 			&i.Ativo,
+			&i.ForaDeVenda,
 		); err != nil {
 			return nil, err
 		}
@@ -100,7 +114,7 @@ func (q *Queries) ListarArmazens(ctx context.Context, negocioID int64) ([]Armaze
 }
 
 const obterArmazem = `-- name: ObterArmazem :one
-SELECT id, negocio_id, nome, tipo, ativo
+SELECT id, negocio_id, nome, tipo, ativo, fora_de_venda
 FROM armazens
 WHERE id = ?
 `
@@ -114,6 +128,7 @@ func (q *Queries) ObterArmazem(ctx context.Context, id int64) (Armazens, error) 
 		&i.Nome,
 		&i.Tipo,
 		&i.Ativo,
+		&i.ForaDeVenda,
 	)
 	return i, err
 }

@@ -184,9 +184,11 @@ function ContaDetalhe({
     // Só para o nome dos itens já lançados na comanda.
     ListarProdutos().then(setProdutos);
     ListarArmazens().then((lista) => {
-      const ativos = lista.filter((a) => a.Ativo);
+      const ativos = lista.filter((a) => a.Ativo && !a.ForaDeVenda);
       setArmazens(ativos);
-      if (ativos.length > 0) setArmazemId(ativos[0].ID);
+      // Abre no armazém principal (se estiver à venda), não no primeiro por nome.
+      const inicial = ativos.find((a) => a.Tipo === "principal") ?? ativos[0];
+      if (inicial) setArmazemId(inicial.ID);
     });
   }, []);
 

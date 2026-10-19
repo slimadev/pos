@@ -6,6 +6,8 @@ import {
   ArchiveBoxIcon,
   CheckCircleIcon,
   PauseCircleIcon,
+  ShoppingCartIcon,
+  NoSymbolIcon,
 } from "@heroicons/react/24/outline";
 import { ListarArmazens, CriarArmazem, AtualizarArmazem, AtivarArmazem, DesativarArmazem } from "../wailsjs/go/admin/AdminApp";
 import { domain } from "../wailsjs/go/models";
@@ -98,6 +100,14 @@ export default function ArmazensScreen({ onErro }: { onErro: (e: string) => void
                     </div>
                     <div className="admin-armazem-nome">{a.Nome}</div>
                     <div className={`admin-armazem-tag cor-${info.cor}`}>{info.rotulo}</div>
+                    <div className={`admin-armazem-venda${a.ForaDeVenda ? " fora" : ""}`}>
+                      {a.ForaDeVenda ? (
+                        <NoSymbolIcon className="admin-armazem-status-icon" aria-hidden="true" />
+                      ) : (
+                        <ShoppingCartIcon className="admin-armazem-status-icon" aria-hidden="true" />
+                      )}
+                      {a.ForaDeVenda ? "Fora de venda — não aparece no PDV" : "Disponível para venda no PDV"}
+                    </div>
                     <div className="admin-armazem-card-acoes">
                       <button className="admin-btn-secundario" onClick={() => setVista({ tipo: "form", armazem: a })}>
                         Editar
@@ -142,6 +152,15 @@ function ArmazemForm({
 }) {
   const [nome, setNome] = useState(armazem?.Nome ?? "");
   const [tipo, setTipo] = useState<TipoArmazem>((armazem?.Tipo as TipoArmazem) ?? "principal");
+  const [disponivel, setDisponivel] = useState(armazem ? !armazem.ForaDeVenda : true);
+  // Num armazém novo, a caixa acompanha o tipo (depósito = fora de venda)
+  // até o utilizador lhe mexer.
+  const [mexeuNaVenda, setMexeuNaVenda] = useState(!!armazem);
+
+  function escolherTipo(t: TipoArmazem) {
+    setTipo(t);
+    if (!mexeuNaVenda) setDisponivel(t !== "deposito");
+  }
   const [aGuardar, setAGuardar] = useState(false);
 
   function guardar() {
@@ -151,6 +170,7 @@ function ArmazemForm({
     a.ID = armazem?.ID ?? 0;
     a.Nome = nome.trim();
     a.Tipo = tipo;
+    a.ForaDeVenda = !disponivel;
 
     setAGuardar(true);
     const pedido = armazem ? AtualizarArmazem(a) : CriarArmazem(a);
@@ -169,7 +189,7 @@ function ArmazemForm({
             <div
               key={t}
               className={`admin-armazem-tipo-opcao cor-${info.cor}${tipo === t ? " ativo" : ""}`}
-              onClick={() => setTipo(t)}
+              onClick={() => escolherTipo(t)}
             >
               <info.Icone className="admin-armazem-tipo-opcao-icone" aria-hidden="true" />
               {info.rotulo}
@@ -177,6 +197,18 @@ function ArmazemForm({
           );
         })}
       </div>
+
+      <label className="admin-produto-check">
+        <input
+          type="checkbox"
+          checked={disponivel}
+          onChange={(e) => {
+            setDisponivel(e.target.checked);
+            setMexeuNaVenda(true);
+          }}
+        />
+        Disponível para venda — aparece para escolher no PDV
+      </label>
 
       <div className="admin-form">
         <input placeholder="Nome do armazém" value={nome} onChange={(e) => setNome(e.target.value)} autoFocus />

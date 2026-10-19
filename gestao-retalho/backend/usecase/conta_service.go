@@ -191,6 +191,9 @@ func (s *ContaService) FecharConta(ctx context.Context, contaID int64, p FecharC
 	if !armazem.Ativo {
 		return VendaCompleta{}, AlertaLimiteCredito{}, domain.ErrArmazemInativo
 	}
+	if armazem.ForaDeVenda {
+		return VendaCompleta{}, AlertaLimiteCredito{}, domain.ErrArmazemForaDeVenda
+	}
 
 	itensConta, err := s.vendas.ListarItensConta(ctx, contaID)
 	if err != nil {

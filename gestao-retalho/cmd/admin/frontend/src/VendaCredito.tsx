@@ -52,9 +52,10 @@ export default function VendaCreditoScreen({
   useEffect(() => {
     ListarArmazens()
       .then((lista) => {
-        const ativos = lista.filter((a) => a.Ativo);
+        const ativos = lista.filter((a) => a.Ativo && !a.ForaDeVenda);
         setArmazens(ativos);
-        if (ativos.length > 0) setArmazemID(ativos[0].ID);
+        const inicial = ativos.find((a) => a.Tipo === "principal") ?? ativos[0];
+        if (inicial) setArmazemID(inicial.ID);
       })
       .catch((e) => onErro(String(e)));
     ListarClientes()
@@ -114,7 +115,7 @@ export default function VendaCreditoScreen({
           onErro={onErro}
         />
       ) : armazemID === "" ? (
-        <p style={{ color: "var(--text-secondary)" }}>Nenhum armazém ativo.</p>
+        <p style={{ color: "var(--text-secondary)" }}>Nenhum armazém ativo disponível para venda — marque um em "Armazéns".</p>
       ) : (
         <NovaVenda
           key={`${armazemID}-${nova}`}

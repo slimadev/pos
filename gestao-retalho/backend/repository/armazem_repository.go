@@ -39,9 +39,10 @@ func (r *ArmazemRepository) Obter(ctx context.Context, id int64) (domain.Armazem
 
 func (r *ArmazemRepository) Criar(ctx context.Context, a domain.Armazem) (domain.Armazem, error) {
 	row, err := r.q.CriarArmazem(ctx, sqlcgen.CriarArmazemParams{
-		NegocioID: a.NegocioID,
-		Nome:      a.Nome,
-		Tipo:      string(a.Tipo),
+		NegocioID:   a.NegocioID,
+		Nome:        a.Nome,
+		Tipo:        string(a.Tipo),
+		ForaDeVenda: boolToInt64(a.ForaDeVenda),
 	})
 	if err != nil {
 		return domain.Armazem{}, err
@@ -51,9 +52,10 @@ func (r *ArmazemRepository) Criar(ctx context.Context, a domain.Armazem) (domain
 
 func (r *ArmazemRepository) Atualizar(ctx context.Context, a domain.Armazem) error {
 	return r.q.AtualizarArmazem(ctx, sqlcgen.AtualizarArmazemParams{
-		Nome: a.Nome,
-		Tipo: string(a.Tipo),
-		ID:   a.ID,
+		Nome:        a.Nome,
+		Tipo:        string(a.Tipo),
+		ForaDeVenda: boolToInt64(a.ForaDeVenda),
+		ID:          a.ID,
 	})
 }
 
@@ -66,10 +68,11 @@ func (r *ArmazemRepository) DefinirAtivo(ctx context.Context, id int64, ativo bo
 
 func armazemFromRow(row sqlcgen.Armazens) domain.Armazem {
 	return domain.Armazem{
-		ID:        row.ID,
-		NegocioID: row.NegocioID,
-		Nome:      row.Nome,
-		Tipo:      domain.TipoArmazem(row.Tipo),
-		Ativo:     int64ToBool(row.Ativo),
+		ID:          row.ID,
+		NegocioID:   row.NegocioID,
+		Nome:        row.Nome,
+		Tipo:        domain.TipoArmazem(row.Tipo),
+		Ativo:       int64ToBool(row.Ativo),
+		ForaDeVenda: int64ToBool(row.ForaDeVenda),
 	}
 }

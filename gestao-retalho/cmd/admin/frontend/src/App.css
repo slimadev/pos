@@ -1807,3 +1807,15 @@ body {
   background: var(--accent);
   border: none;
 }
+
+/* Armazens.tsx: se o armazém aparece no PDV para vender. */
+.admin-armazem-venda {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ok);
+}
+.admin-armazem-venda.fora {
+  color: var(--text-secondary);
+}

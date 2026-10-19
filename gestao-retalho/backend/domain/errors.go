@@ -10,6 +10,7 @@ var (
 	ErrProdutoComposto    = errors.New("produto composto não tem stock próprio")
 	ErrProdutoInativo     = errors.New("produto inativo")
 	ErrArmazemInativo     = errors.New("armazém inativo")
+	ErrArmazemForaDeVenda = errors.New("este armazém não está disponível para venda")
 	ErrArmazemIgual       = errors.New("armazém de origem e destino não podem ser o mesmo")
 	ErrInventarioFechado  = errors.New("inventário já está fechado")
 	ErrItemNaoPertenceInv = errors.New("item não pertence a este inventário")

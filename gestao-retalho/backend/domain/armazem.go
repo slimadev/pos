@@ -17,4 +17,8 @@ type Armazem struct {
 	Nome      string
 	Tipo      TipoArmazem
 	Ativo     bool
+	// ForaDeVenda tira o armazém do PDV e recusa vendas a partir dele (ex:
+	// um depósito). Ao contrário de "disponível", para que o valor por
+	// omissão (false) mantenha o armazém disponível para venda.
+	ForaDeVenda bool
 }

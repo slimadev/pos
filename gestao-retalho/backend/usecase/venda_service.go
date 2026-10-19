@@ -106,6 +106,9 @@ func (s *VendaService) registarVenda(ctx context.Context, p VendaDiretaParams, c
 	if !armazem.Ativo {
 		return VendaCompleta{}, domain.ErrArmazemInativo
 	}
+	if armazem.ForaDeVenda {
+		return VendaCompleta{}, domain.ErrArmazemForaDeVenda
+	}
 
 	clienteID := domain.ClienteAnonimoID
 	if p.ClienteID != nil {

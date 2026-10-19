@@ -9,11 +9,12 @@ import (
 )
 
 type Armazens struct {
-	ID        int64  `json:"id"`
-	NegocioID int64  `json:"negocio_id"`
-	Nome      string `json:"nome"`
-	Tipo      string `json:"tipo"`
-	Ativo     int64  `json:"ativo"`
+	ID          int64  `json:"id"`
+	NegocioID   int64  `json:"negocio_id"`
+	Nome        string `json:"nome"`
+	Tipo        string `json:"tipo"`
+	Ativo       int64  `json:"ativo"`
+	ForaDeVenda int64  `json:"fora_de_venda"`
 }
 
 type Categorias struct {
