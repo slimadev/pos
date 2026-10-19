@@ -19,6 +19,14 @@
   gap: 12px;
 }
 
+.app-header-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  object-fit: contain;
+  flex: none;
+}
+
 .app-header-tipo {
   font-family: "IBM Plex Mono", monospace;
   font-size: 12px;

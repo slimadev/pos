@@ -107,6 +107,8 @@ function AppPrincipal({ config }: { config: usecase.EstadoConfig }) {
   return (
     <div id="App">
       <div className="app-header">
+        {/* Logótipo escolhido no admin (Configurações da loja); sem ele, só o nome. */}
+        {config.Logo && <img src={config.Logo} alt="" className="app-header-logo" />}
         <h1>{config.Negocio.Nome}</h1>
         <span className="app-header-tipo">{config.Negocio.TipoNegocio}</span>
         {turno.tipo === "ativo" && (
