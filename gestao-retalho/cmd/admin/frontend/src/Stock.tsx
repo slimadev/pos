@@ -7,6 +7,7 @@ import {
   MinusCircleIcon,
   ClockIcon,
   ExclamationTriangleIcon,
+  MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import {
   ListarArmazens,
@@ -25,6 +26,7 @@ import {
 } from "../wailsjs/go/admin/AdminApp";
 import { domain, usecase } from "../wailsjs/go/models";
 import Modal from "./Modal";
+import Rececao from "./Rececao";
 import type { Navegar } from "./App";
 
 type IconeSvg = ComponentType<SVGProps<SVGSVGElement>>;
@@ -52,7 +54,8 @@ type ModalEstado =
   | { aberto: false }
   | { aberto: true; produto: domain.Produto }
   | { aberto: true; historico: domain.Produto }
-  | { aberto: true; entradaEmLote: true };
+  | { aberto: true; entradaEmLote: true }
+  | { aberto: true; rececao: true };
 
 /**
  * Stock da única loja que este cmd/admin serve — escolhe o armazém, vê a
@@ -70,6 +73,8 @@ export default function StockScreen({ onNavegar, onErro }: { onNavegar: Navegar;
   // TabelaStock para forçar um remonte (e portanto recarregar) em vez de
   // expor um método imperativo de refresh.
   const [versao, setVersao] = useState(0);
+  const [pesquisa, setPesquisa] = useState("");
+  const [aviso, setAviso] = useState<string | null>(null);
 
   useEffect(() => {
     ListarProdutos()
@@ -106,19 +111,44 @@ export default function StockScreen({ onNavegar, onErro }: { onNavegar: Navegar;
             ))}
           </select>
         </label>
-        {produtos.some((p) => p.LoteControlado) && armazemID !== "" && (
-          <button className="admin-btn-secundario" onClick={() => setModal({ aberto: true, entradaEmLote: true })}>
-            + Entrada em lote (vários produtos)
+        <div className="admin-form" style={{ marginLeft: "auto" }}>
+          <button
+            className="admin-btn-secundario"
+            title="Valor do stock ao custo, para exportar em Excel ou PDF"
+            onClick={() => onNavegar({ ecra: "relatorios", relatorio: "stock" })}
+          >
+            Valor do stock / exportar
           </button>
-        )}
-        <button
-          className="admin-btn-secundario"
-          title="Valor do stock ao custo, para exportar em Excel ou PDF"
-          onClick={() => onNavegar({ ecra: "relatorios", relatorio: "stock" })}
-        >
-          Valor do stock / exportar
-        </button>
+          {produtos.some((p) => p.LoteControlado) && armazemID !== "" && (
+            <button className="admin-btn-secundario" onClick={() => setModal({ aberto: true, entradaEmLote: true })}>
+              + Entrada em lote
+            </button>
+          )}
+          {armazemID !== "" && (
+            <button className="admin-btn" onClick={() => setModal({ aberto: true, rececao: true })}>
+              + Receção de mercadoria
+            </button>
+          )}
+        </div>
       </div>
+
+      {aviso && (
+        <div className="admin-aviso-ok">
+          {aviso}
+          <button onClick={() => setAviso(null)} aria-label="Fechar">
+            ×
+          </button>
+        </div>
+      )}
+
+      {armazens.length > 0 && (
+        <div className="admin-form">
+          <label className="admin-pesquisa">
+            <MagnifyingGlassIcon className="admin-pesquisa-icone" aria-hidden="true" />
+            <input placeholder="Pesquisar produto" value={pesquisa} onChange={(e) => setPesquisa(e.target.value)} />
+          </label>
+        </div>
+      )}
 
       {armazens.length === 0 ? (
         <p style={{ color: "var(--text-secondary)" }}>Nenhum armazém registado — crie um em "Armazéns" primeiro.</p>
@@ -128,6 +158,7 @@ export default function StockScreen({ onNavegar, onErro }: { onNavegar: Navegar;
             key={`${armazemID}-${versao}`}
             armazemID={armazemID}
             produtos={produtos}
+            pesquisa={pesquisa}
             onAbrirMovimento={(produto) => setModal({ aberto: true, produto })}
             onAbrirHistorico={(produto) => setModal({ aberto: true, historico: produto })}
             onErro={onErro}
@@ -157,6 +188,22 @@ export default function StockScreen({ onNavegar, onErro }: { onNavegar: Navegar;
         </Modal>
       )}
 
+      {modal.aberto && "rececao" in modal && armazemID !== "" && (
+        <Modal titulo="Receção de mercadoria" largo onFechar={fecharModal}>
+          <Rececao
+            armazem={armazens.find((a) => a.ID === armazemID)!}
+            produtos={produtos}
+            onConcluido={(n) => {
+              fecharModal();
+              setVersao((v) => v + 1);
+              setAviso(`Receção registada: ${n} produto(s) deram entrada no stock.`);
+            }}
+            onCancelar={fecharModal}
+            onErro={onErro}
+          />
+        </Modal>
+      )}
+
       {modal.aberto && "entradaEmLote" in modal && armazemID !== "" && (
         <Modal titulo="Entrada em lote — vários produtos" onFechar={fecharModal}>
           <EntradaLoteEmMassa
@@ -178,12 +225,14 @@ export default function StockScreen({ onNavegar, onErro }: { onNavegar: Navegar;
 function TabelaStock({
   armazemID,
   produtos,
+  pesquisa,
   onAbrirMovimento,
   onAbrirHistorico,
   onErro,
 }: {
   armazemID: number;
   produtos: domain.Produto[];
+  pesquisa: string;
   onAbrirMovimento: (p: domain.Produto) => void;
   onAbrirHistorico: (p: domain.Produto) => void;
   onErro: (e: string) => void;
@@ -207,28 +256,39 @@ function TabelaStock({
 
   // Produtos "composto" nunca guardam stock próprio (é inferido via ficha
   // técnica, ainda não portada) — não fazem sentido aqui.
-  const produtosDoArmazem = [...produtos]
-    .filter((p) => p.Ativo && p.ControlaStock)
+  const ativos = produtos.filter((p) => p.Ativo && p.ControlaStock);
+  const termo = pesquisa.trim().toLowerCase();
+  const produtosDoArmazem = ativos
+    .filter((p) => !termo || p.Nome.toLowerCase().includes(termo))
     .sort((a, b) => a.Nome.localeCompare(b.Nome, "pt"));
+  const valorTotal = ativos.reduce((s, p) => {
+    const i = stockDoProduto(p.ID);
+    return s + (i ? i.Quantidade * i.CustoMedioPonderado : 0);
+  }, 0);
 
   return (
     <table className="admin-tabela">
       <thead>
         <tr>
           <th>Produto</th>
-          <th>Quantidade</th>
-          <th>Custo médio</th>
+          <th style={{ textAlign: "right" }}>Quantidade</th>
+          <th style={{ textAlign: "right" }}>Custo médio</th>
+          <th style={{ textAlign: "right" }}>Valor</th>
           <th></th>
         </tr>
       </thead>
       <tbody>
         {stockItens === null ? (
           <tr>
-            <td colSpan={4}>A carregar…</td>
+            <td colSpan={5}>A carregar…</td>
           </tr>
         ) : produtosDoArmazem.length === 0 ? (
           <tr>
-            <td colSpan={4}>Sem produtos com controlo de stock — crie um em "Produtos" primeiro.</td>
+            <td colSpan={5}>
+              {ativos.length === 0
+                ? 'Sem produtos com controlo de stock — crie um em "Produtos" primeiro.'
+                : "Nenhum produto com esse nome."}
+            </td>
           </tr>
         ) : (
           produtosDoArmazem.map((produto) => {
@@ -246,11 +306,14 @@ function TabelaStock({
                     </span>
                   )}
                 </td>
-                <td>
+                <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
                   {mt(quantidade)} {produto.UnidadeBase}
                 </td>
-                <td>{mt(item?.CustoMedioPonderado ?? 0)} MT</td>
-                <td className="admin-form">
+                <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>{mt(item?.CustoMedioPonderado ?? 0)} MT</td>
+                <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+                  {mt(quantidade * (item?.CustoMedioPonderado ?? 0))} MT
+                </td>
+                <td className="admin-acoes">
                   <button className="admin-btn-secundario" onClick={() => onAbrirMovimento(produto)}>
                     + Movimento
                   </button>
@@ -264,6 +327,19 @@ function TabelaStock({
           })
         )}
       </tbody>
+      {stockItens !== null && ativos.length > 0 && (
+        <tfoot>
+          <tr>
+            <td colSpan={3}>
+              <strong>Valor em stock neste armazém</strong>
+            </td>
+            <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+              <strong>{mt(valorTotal)} MT</strong>
+            </td>
+            <td></td>
+          </tr>
+        </tfoot>
+      )}
     </table>
   );
 }

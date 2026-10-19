@@ -361,6 +361,15 @@ func (a *AdminApp) RegistarEntradaStock(p usecase.EntradaParams) (domain.Movimen
 	return a.Stock.RegistarEntrada(a.ctx, p)
 }
 
+// RegistarRececaoMercadoria dá entrada da mercadoria de uma guia/fatura
+// (vários produtos, na unidade de compra) de uma só vez.
+func (a *AdminApp) RegistarRececaoMercadoria(p usecase.RececaoParams) ([]domain.MovimentoStock, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Stock.RegistarRececao(a.ctx, p)
+}
+
 func (a *AdminApp) TransferirStock(p usecase.TransferenciaParams) (domain.MovimentoStock, error) {
 	if err := a.exigirSessao(); err != nil {
 		return domain.MovimentoStock{}, err

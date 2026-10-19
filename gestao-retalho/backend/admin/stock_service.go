@@ -52,6 +52,16 @@ func (s *StockService) RegistarEntrada(ctx context.Context, p usecase.EntradaPar
 	return app.RegistarEntradaStock(p)
 }
 
+func (s *StockService) RegistarRececao(ctx context.Context, p usecase.RececaoParams) ([]domain.MovimentoStock, error) {
+	app, fechar, err := s.abrirLoja(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer fechar()
+
+	return app.RegistarRececao(p)
+}
+
 func (s *StockService) Transferir(ctx context.Context, p usecase.TransferenciaParams) (domain.MovimentoStock, error) {
 	app, fechar, err := s.abrirLoja(ctx)
 	if err != nil {

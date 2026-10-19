@@ -322,6 +322,13 @@ func (a *App) RegistarEntradaStock(p usecase.EntradaParams) (domain.MovimentoSto
 	return a.StockService.RegistarEntrada(a.ctx, p)
 }
 
+// RegistarRececao dá entrada de todas as linhas de uma guia/fatura do
+// fornecedor numa só transação.
+func (a *App) RegistarRececao(p usecase.RececaoParams) ([]domain.MovimentoStock, error) {
+	p.UtilizadorID = a.utilizadorAtual()
+	return a.StockService.RegistarRececao(a.ctx, p)
+}
+
 func (a *App) TransferirStock(p usecase.TransferenciaParams) (domain.MovimentoStock, error) {
 	p.UtilizadorID = a.utilizadorAtual()
 	return a.StockService.TransferirStock(a.ctx, p)
