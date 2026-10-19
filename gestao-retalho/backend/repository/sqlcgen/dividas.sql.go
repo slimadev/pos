@@ -9,6 +9,15 @@ import (
 	"context"
 )
 
+const apagarDivida = `-- name: ApagarDivida :exec
+DELETE FROM dividas WHERE id = ?
+`
+
+func (q *Queries) ApagarDivida(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, apagarDivida, id)
+	return err
+}
+
 const atualizarDivida = `-- name: AtualizarDivida :one
 UPDATE dividas
 SET valor_pago = ?, valor_em_aberto = ?, status = ?
@@ -252,6 +261,28 @@ WHERE id = ?
 
 func (q *Queries) ObterDivida(ctx context.Context, id int64) (Dividas, error) {
 	row := q.db.QueryRowContext(ctx, obterDivida, id)
+	var i Dividas
+	err := row.Scan(
+		&i.ID,
+		&i.ClienteID,
+		&i.VendaID,
+		&i.ValorOriginal,
+		&i.ValorPago,
+		&i.ValorEmAberto,
+		&i.Status,
+		&i.CriadoEm,
+	)
+	return i, err
+}
+
+const obterDividaPorVenda = `-- name: ObterDividaPorVenda :one
+SELECT id, cliente_id, venda_id, valor_original, valor_pago, valor_em_aberto, status, criado_em
+FROM dividas
+WHERE venda_id = ?
+`
+
+func (q *Queries) ObterDividaPorVenda(ctx context.Context, vendaID int64) (Dividas, error) {
+	row := q.db.QueryRowContext(ctx, obterDividaPorVenda, vendaID)
 	var i Dividas
 	err := row.Scan(
 		&i.ID,

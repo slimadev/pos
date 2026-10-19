@@ -528,13 +528,19 @@ func consumirLoteFEFO(
 
 		armazemIDCopy := armazemID
 		custoCopy := lote.CustoUnitario
+		// O lote fica na referência ("<ref>;lote:<id>") para que anular a
+		// venda devolva as unidades ao lote de onde saíram.
+		refLote := fmt.Sprintf("lote:%d", lote.ID)
+		if referenciaID != nil {
+			refLote = *referenciaID + ";" + refLote
+		}
 		movimento, err := lotesTx.Stock.CriarMovimento(ctx, repository.NovoMovimento{
 			ProdutoID:       produtoID,
 			ArmazemOrigemID: &armazemIDCopy,
 			Tipo:            tipo,
 			Quantidade:      consumoDoLote,
 			CustoUnitario:   &custoCopy,
-			ReferenciaID:    referenciaID,
+			ReferenciaID:    &refLote,
 			UtilizadorID:    utilizadorID,
 		})
 		if err != nil {

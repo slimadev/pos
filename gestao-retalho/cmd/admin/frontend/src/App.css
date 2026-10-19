@@ -1476,3 +1476,22 @@ body {
 .admin-fichas-acoes button {
   white-space: nowrap;
 }
+
+/* Ações destrutivas (anular venda). */
+.admin-btn.admin-btn-perigo {
+  background: var(--danger);
+  border-color: var(--danger);
+}
+.admin-btn-secundario.admin-btn-perigo-contorno {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+.admin-venda-anular {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--danger);
+  border-radius: 10px;
+  background: var(--danger-bg);
+}

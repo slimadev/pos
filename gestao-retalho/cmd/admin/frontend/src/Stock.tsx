@@ -41,6 +41,7 @@ const TIPO_MOVIMENTO_INFO: Record<TipoMovimento, { rotulo: string; Icone: IconeS
 const ROTULO_OUTROS_MOVIMENTOS: Record<string, string> = {
   venda: "Venda",
   ajuste_inventario: "Ajuste de inventário",
+  anulacao_venda: "Anulação de venda",
   producao: "Produção",
 };
 

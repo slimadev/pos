@@ -3,6 +3,8 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"strconv"
 	"time"
 
 	"gestao-retalho/backend/domain"
@@ -373,4 +375,53 @@ func pagamentoFromRow(row sqlcgen.Pagamentos) domain.Pagamento {
 		Valor:    row.Valor,
 		CriadoEm: parseTimestamp(row.CriadoEm),
 	}
+}
+
+// --- Anulação de venda ------------------------------------------------------
+
+// ListarMovimentosDaVenda devolve os movimentos de saída de uma venda: os
+// do produto (ou dos ingredientes) com referência "<vendaID>", e os de
+// lotes com "<vendaID>;lote:<loteID>".
+func (r *VendaRepository) ListarMovimentosDaVenda(ctx context.Context, vendaID int64) ([]domain.MovimentoStock, error) {
+	ref := strconv.FormatInt(vendaID, 10)
+	rows, err := r.q.ListarMovimentosDaVenda(ctx, sqlcgen.ListarMovimentosDaVendaParams{
+		Referencia: sql.NullString{String: ref, Valid: true},
+		Prefixo:    sql.NullString{String: ref + ";%", Valid: true},
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.MovimentoStock, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, movimentoFromRow(row))
+	}
+	return out, nil
+}
+
+// ObterDividaPorVenda devolve ok=false quando a venda não deixou dívida.
+func (r *VendaRepository) ObterDividaPorVenda(ctx context.Context, vendaID int64) (domain.Divida, bool, error) {
+	row, err := r.q.ObterDividaPorVenda(ctx, vendaID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return domain.Divida{}, false, nil
+	}
+	if err != nil {
+		return domain.Divida{}, false, err
+	}
+	return dividaFromRow(row), true, nil
+}
+
+func (r *VendaRepository) ContarPagamentosDivida(ctx context.Context, dividaID int64) (int, error) {
+	rows, err := r.q.ListarPagamentosDivida(ctx, dividaID)
+	if err != nil {
+		return 0, err
+	}
+	return len(rows), nil
+}
+
+func (r *VendaRepository) ApagarDivida(ctx context.Context, dividaID int64) error {
+	return r.q.ApagarDivida(ctx, dividaID)
+}
+
+func (r *VendaRepository) AtualizarStatusVenda(ctx context.Context, vendaID int64, status domain.StatusVenda) error {
+	return r.q.AtualizarStatusVenda(ctx, sqlcgen.AtualizarStatusVendaParams{Status: string(status), ID: vendaID})
 }

@@ -40,3 +40,11 @@ ORDER BY id;
 
 -- name: AtualizarStatusVenda :exec
 UPDATE vendas SET status = ? WHERE id = ?;
+
+-- name: ObterDividaPorVenda :one
+SELECT id, cliente_id, venda_id, valor_original, valor_pago, valor_em_aberto, status, criado_em
+FROM dividas
+WHERE venda_id = ?;
+
+-- name: ApagarDivida :exec
+DELETE FROM dividas WHERE id = ?;

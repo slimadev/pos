@@ -14,6 +14,8 @@ const (
 	// já vivem aqui porque o schema é o mesmo para todas as fases (SDD 8.4).
 	TipoMovimentoVenda    TipoMovimento = "venda"
 	TipoMovimentoProducao TipoMovimento = "producao"
+	// TipoMovimentoAnulacaoVenda repõe o stock de uma venda anulada.
+	TipoMovimentoAnulacaoVenda TipoMovimento = "anulacao_venda"
 )
 
 // MovimentoStock é o único mecanismo de alteração de stock (SDD 3.2) — tudo

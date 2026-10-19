@@ -130,6 +130,15 @@ func (s *VendasService) ObterDetalhe(ctx context.Context, vendaID int64) (VendaD
 	}, nil
 }
 
+// Anular desfaz uma venda do próprio dia (stock reposto, dívida apagada,
+// venda cancelada) — ver VendaService.AnularVenda.
+func (s *VendasService) Anular(ctx context.Context, vendaID int64, motivo string) error {
+	_, err := comLoja(ctx, s.lojas, func(a *api.App) (struct{}, error) {
+		return struct{}{}, a.VendaService.AnularVenda(ctx, vendaID, motivo, api.UtilizadorAdminID)
+	})
+	return err
+}
+
 // GerarRecibo grava o PDF e devolve o caminho. Não o abre: quem abre é o
 // AdminApp, com o contexto Wails do cmd/admin — o api.App aberto por
 // AbrirLoja não tem um, e GerarRecibo do cmd/app usaria esse contexto.

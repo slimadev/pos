@@ -82,6 +82,7 @@ const ROTULO_MOVIMENTO: Record<string, string> = {
   perda: "Perda",
   consumo_interno: "Consumo interno",
   ajuste_inventario: "Ajuste de inventário",
+  anulacao_venda: "Anulação de venda",
   venda: "Venda",
   producao: "Produção",
 };

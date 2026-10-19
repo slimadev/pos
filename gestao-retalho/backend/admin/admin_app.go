@@ -473,6 +473,14 @@ func (a *AdminApp) RegistarVendaACredito(p usecase.VendaDiretaParams) (Resultado
 	return a.Vendas.RegistarVendaACredito(a.ctx, p)
 }
 
+// AnularVenda desfaz uma venda do próprio dia registada por engano.
+func (a *AdminApp) AnularVenda(vendaID int64, motivo string) error {
+	if err := a.exigirSessao(); err != nil {
+		return err
+	}
+	return a.Vendas.Anular(a.ctx, vendaID, motivo)
+}
+
 // AbrirRecibo grava o PDF e abre-o no visualizador do sistema.
 func (a *AdminApp) AbrirRecibo(vendaID int64) (string, error) {
 	if err := a.exigirSessao(); err != nil {

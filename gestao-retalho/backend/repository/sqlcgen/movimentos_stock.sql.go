@@ -66,6 +66,56 @@ func (q *Queries) CriarMovimentoStock(ctx context.Context, arg CriarMovimentoSto
 	return i, err
 }
 
+const listarMovimentosDaVenda = `-- name: ListarMovimentosDaVenda :many
+SELECT id, produto_id, armazem_origem_id, armazem_destino_id, tipo,
+       quantidade_unidade_base, custo_unitario, unidade_produto_id,
+       motivo, referencia_id, utilizador_id, criado_em
+FROM movimentos_stock
+WHERE tipo = 'venda' AND (referencia_id = ?1 OR referencia_id LIKE ?2)
+ORDER BY id
+`
+
+type ListarMovimentosDaVendaParams struct {
+	Referencia sql.NullString `json:"referencia"`
+	Prefixo    sql.NullString `json:"prefixo"`
+}
+
+func (q *Queries) ListarMovimentosDaVenda(ctx context.Context, arg ListarMovimentosDaVendaParams) ([]MovimentosStock, error) {
+	rows, err := q.db.QueryContext(ctx, listarMovimentosDaVenda, arg.Referencia, arg.Prefixo)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []MovimentosStock
+	for rows.Next() {
+		var i MovimentosStock
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProdutoID,
+			&i.ArmazemOrigemID,
+			&i.ArmazemDestinoID,
+			&i.Tipo,
+			&i.QuantidadeUnidadeBase,
+			&i.CustoUnitario,
+			&i.UnidadeProdutoID,
+			&i.Motivo,
+			&i.ReferenciaID,
+			&i.UtilizadorID,
+			&i.CriadoEm,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listarMovimentosPorProduto = `-- name: ListarMovimentosPorProduto :many
 SELECT id, produto_id, armazem_origem_id, armazem_destino_id, tipo,
        quantidade_unidade_base, custo_unitario, unidade_produto_id,

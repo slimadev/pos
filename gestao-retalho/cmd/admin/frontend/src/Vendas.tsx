@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { PrinterIcon } from "@heroicons/react/24/outline";
-import { ListarVendas, ObterDetalheVenda, AbrirRecibo } from "../wailsjs/go/admin/AdminApp";
+import { PrinterIcon, XCircleIcon } from "@heroicons/react/24/outline";
+import { ListarVendas, ObterDetalheVenda, AbrirRecibo, AnularVenda } from "../wailsjs/go/admin/AdminApp";
 import { admin } from "../wailsjs/go/models";
 import Breadcrumb from "./Breadcrumb";
 import Modal from "./Modal";
@@ -217,16 +217,34 @@ export default function VendasScreen({ onErro }: { onErro: (e: string) => void }
 
       {aberta !== null && (
         <Modal titulo={`Venda #${aberta}`} onFechar={() => setAberta(null)}>
-          <DetalheVenda vendaID={aberta} onErro={onErro} />
+          <DetalheVenda
+            vendaID={aberta}
+            onAnulada={() => {
+              setAberta(null);
+              consultar(periodo.desde, periodo.ate);
+            }}
+            onErro={onErro}
+          />
         </Modal>
       )}
     </div>
   );
 }
 
-function DetalheVenda({ vendaID, onErro }: { vendaID: number; onErro: (e: string) => void }) {
+function DetalheVenda({
+  vendaID,
+  onAnulada,
+  onErro,
+}: {
+  vendaID: number;
+  onAnulada: () => void;
+  onErro: (e: string) => void;
+}) {
   const [detalhe, setDetalhe] = useState<admin.VendaDetalhe | null>(null);
   const [aImprimir, setAImprimir] = useState(false);
+  const [aAnular, setAAnular] = useState(false);
+  const [motivo, setMotivo] = useState("");
+  const [aConfirmar, setAConfirmar] = useState(false);
 
   useEffect(() => {
     ObterDetalheVenda(vendaID)
@@ -241,6 +259,20 @@ function DetalheVenda({ vendaID, onErro }: { vendaID: number; onErro: (e: string
   const custo = detalhe.Itens.reduce((s, i) => s + i.Item.CustoUnitarioNoMomento * i.Item.Quantidade, 0);
   const lucro = v.Total - custo;
   const pago = detalhe.Pagamentos.reduce((s, p) => s + p.Valor, 0);
+
+  // Só se anula no próprio dia (o backend também o exige): o dinheiro
+  // devolve-se nesse dia e fechos de dias anteriores nunca mudam.
+  const deHoje = new Date(String(v.CriadoEm)).toDateString() === new Date().toDateString();
+  const podeAnular = v.Status !== "cancelada" && deHoje;
+
+  function anular() {
+    if (!motivo.trim() || aConfirmar) return;
+    setAConfirmar(true);
+    AnularVenda(vendaID, motivo.trim())
+      .then(onAnulada)
+      .catch((e) => onErro(String(e)))
+      .finally(() => setAConfirmar(false));
+  }
 
   function imprimir() {
     setAImprimir(true);
@@ -330,12 +362,50 @@ function DetalheVenda({ vendaID, onErro }: { vendaID: number; onErro: (e: string
         )}
       </div>
 
-      <div className="admin-form">
-        <button className="admin-btn" disabled={aImprimir} onClick={imprimir}>
-          <PrinterIcon className="admin-btn-icon-inline" aria-hidden="true" />
-          {aImprimir ? "A gerar…" : "Recibo (PDF)"}
-        </button>
-      </div>
+      {aAnular ? (
+        <div className="admin-venda-anular">
+          <strong>Anular a venda #{v.ID}?</strong>
+          <p style={{ margin: 0 }}>
+            O stock volta ao armazém (e aos lotes de onde saiu), a venda deixa de contar nos relatórios e no fecho de
+            caixa de hoje{detalhe.Pagamentos.length > 0 ? ` — devolva ${mt(pago)} ao cliente` : ""}. Não se pode desfazer.
+          </p>
+          <label className="admin-campo">
+            Motivo
+            <input
+              autoFocus
+              placeholder="ex: registada por engano, cliente desistiu"
+              value={motivo}
+              onChange={(e) => setMotivo(e.target.value)}
+            />
+          </label>
+          <div className="admin-form">
+            <button className="admin-btn admin-btn-perigo" disabled={!motivo.trim() || aConfirmar} onClick={anular}>
+              {aConfirmar ? "A anular…" : "Confirmar anulação"}
+            </button>
+            <button className="admin-btn-secundario" onClick={() => setAAnular(false)}>
+              Voltar
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="admin-form">
+          <button className="admin-btn" disabled={aImprimir || v.Status === "cancelada"} onClick={imprimir}>
+            <PrinterIcon className="admin-btn-icon-inline" aria-hidden="true" />
+            {aImprimir ? "A gerar…" : "Recibo (PDF)"}
+          </button>
+          {podeAnular && (
+            <button className="admin-btn-secundario admin-btn-perigo-contorno" onClick={() => setAAnular(true)}>
+              <XCircleIcon className="admin-btn-icon-inline" aria-hidden="true" />
+              Anular venda
+            </button>
+          )}
+          {v.Status !== "cancelada" && !deHoje && (
+            <span style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>
+              Só se anula uma venda no próprio dia.
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
