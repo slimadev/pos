@@ -37,6 +37,8 @@ func main() {
 		Title:  "Gestão de Retalho — Administração",
 		Width:  1280,
 		Height: 800,
+		// Maximizado como o PDV: nos terminais de toque o ecrã é pequeno.
+		WindowStartState: options.Maximised,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},

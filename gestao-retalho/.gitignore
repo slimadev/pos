@@ -17,3 +17,6 @@ cmd/*/frontend/dist/
 
 # Editors / OS
 .DS_Store
+
+# Instalador Windows: o bootstrapper do WebView2 que o Wails descarrega
+cmd/*/build/windows/installer/tmp/
