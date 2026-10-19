@@ -62,6 +62,7 @@ type EstadoConfig struct {
 	ModulosAtivos []domain.Modulo
 	Tema          domain.Tema
 	Logo          string // "" = sem logótipo (ver FinalizarWizardParams.Logo)
+	PapelRecibo   string // "80", "58" ou "a5" (ver ReciboService)
 }
 
 func (s *ConfigService) ObterEstado(ctx context.Context) (EstadoConfig, error) {
@@ -89,7 +90,11 @@ func (s *ConfigService) ObterEstado(ctx context.Context) (EstadoConfig, error) {
 		tema = domain.TemaAdmin
 	}
 
-	return EstadoConfig{Negocio: negocio, ModulosAtivos: modulos, Tema: tema, Logo: todas["logo"]}, nil
+	papel := todas["recibo_papel"]
+	if papel == "" {
+		papel = PapelRecibo80
+	}
+	return EstadoConfig{Negocio: negocio, ModulosAtivos: modulos, Tema: tema, Logo: todas["logo"], PapelRecibo: papel}, nil
 }
 
 // FinalizarWizardParams junta os quatro passos do wizard (SDD 9.2) numa só
@@ -203,10 +208,17 @@ func resolverModulosETema(tipo domain.TipoNegocio, modulosPersonalizados []domai
 // base64) — vive numa linha de configuracoes e é lido a cada arranque.
 const tamanhoMaximoLogo = 2_200_000
 
-// AtualizarIdentidade muda o nome do negócio e o logótipo depois do
-// assistente inicial; o tipo de negócio (e com ele módulos e tema) não
-// muda aqui. logo "" remove o logótipo.
-func (s *ConfigService) AtualizarIdentidade(ctx context.Context, nome, logo string) (domain.Negocio, error) {
+// AtualizarIdentidade muda o nome do negócio, o logótipo e o papel da
+// impressora de recibos depois do assistente inicial; o tipo de negócio (e
+// com ele módulos e tema) não muda aqui. logo "" remove o logótipo.
+func (s *ConfigService) AtualizarIdentidade(ctx context.Context, nome, logo, papelRecibo string) (domain.Negocio, error) {
+	switch papelRecibo {
+	case "":
+		papelRecibo = PapelRecibo80
+	case PapelRecibo80, PapelRecibo58, PapelReciboA5:
+	default:
+		return domain.Negocio{}, fmt.Errorf("papel do recibo inválido: %q", papelRecibo)
+	}
 	nome = strings.TrimSpace(nome)
 	if nome == "" {
 		return domain.Negocio{}, fmt.Errorf("nome do negócio é obrigatório")
@@ -227,6 +239,9 @@ func (s *ConfigService) AtualizarIdentidade(ctx context.Context, nome, logo stri
 	}
 	if err := s.configs.Definir(ctx, "logo", logo); err != nil {
 		return domain.Negocio{}, fmt.Errorf("gravar logótipo: %w", err)
+	}
+	if err := s.configs.Definir(ctx, "recibo_papel", papelRecibo); err != nil {
+		return domain.Negocio{}, fmt.Errorf("gravar papel do recibo: %w", err)
 	}
 	return negocio, nil
 }

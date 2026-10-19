@@ -161,11 +161,11 @@ func (a *AdminApp) ObterLojaAtual() (LojaAtual, error) {
 
 // AtualizarIdentidadeLoja muda o nome e o logótipo da loja (logo "" remove
 // o logótipo — volta o quadrado com a cor do tipo de negócio).
-func (a *AdminApp) AtualizarIdentidadeLoja(nome, logo string) (LojaAtual, error) {
+func (a *AdminApp) AtualizarIdentidadeLoja(nome, logo, papelRecibo string) (LojaAtual, error) {
 	if err := a.exigirSessao(); err != nil {
 		return LojaAtual{}, err
 	}
-	return a.Lojas.AtualizarIdentidade(a.ctx, nome, logo)
+	return a.Lojas.AtualizarIdentidade(a.ctx, nome, logo, papelRecibo)
 }
 
 // --- Dashboard ---------------------------------------------------------------

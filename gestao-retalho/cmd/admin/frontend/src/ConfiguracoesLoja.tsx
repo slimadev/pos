@@ -6,7 +6,8 @@ import { admin } from "../wailsjs/go/models";
 const TAMANHO_MAXIMO_LOGO = 1.5 * 1024 * 1024;
 
 /**
- * Configurações da loja depois do assistente inicial: nome e logótipo. O
+ * Configurações da loja depois do assistente inicial: nome, logótipo e o
+ * papel da impressora de recibos (rolo de 80/58 mm ou A5). O
  * tipo de negócio não muda aqui (define módulos e tema). Sem logótipo, a
  * app mostra o quadrado com a cor do tipo de negócio, como antes.
  */
@@ -23,6 +24,7 @@ export default function ConfiguracoesLoja({
 }) {
   const [nome, setNome] = useState(loja.Nome);
   const [logo, setLogo] = useState(loja.Logo);
+  const [papel, setPapel] = useState(loja.PapelRecibo || "80");
   const [aGuardar, setAGuardar] = useState(false);
   const ficheiroRef = useRef<HTMLInputElement>(null);
 
@@ -39,12 +41,12 @@ export default function ConfiguracoesLoja({
     leitor.readAsDataURL(ficheiro);
   }
 
-  const mudou = nome.trim() !== loja.Nome || logo !== loja.Logo;
+  const mudou = nome.trim() !== loja.Nome || logo !== loja.Logo || papel !== (loja.PapelRecibo || "80");
 
   function guardar() {
     if (!nome.trim() || !mudou || aGuardar) return;
     setAGuardar(true);
-    AtualizarIdentidadeLoja(nome.trim(), logo)
+    AtualizarIdentidadeLoja(nome.trim(), logo, papel)
       .then(onGuardada)
       .catch((e) => onErro(String(e)))
       .finally(() => setAGuardar(false));
@@ -81,6 +83,15 @@ export default function ConfiguracoesLoja({
           PNG ou JPG até 1,5 MB, de preferência quadrado. Aparece no menu e no ecrã de entrada.
         </span>
       </div>
+
+      <label className="admin-campo">
+        Papel da impressora de recibos
+        <select value={papel} onChange={(e) => setPapel(e.target.value)}>
+          <option value="80">Rolo de 80 mm (impressora de talão)</option>
+          <option value="58">Rolo de 58 mm (impressora de talão pequena)</option>
+          <option value="a5">Folha A5 (impressora normal)</option>
+        </select>
+      </label>
 
       <div className="admin-form">
         <button className="admin-btn" disabled={!nome.trim() || !mudou || aGuardar} onClick={guardar}>

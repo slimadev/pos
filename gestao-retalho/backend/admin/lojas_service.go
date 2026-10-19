@@ -90,6 +90,7 @@ type LojaAtual struct {
 	TipoNegocio string
 	Tema        string
 	Logo        string // data URL, "" = sem logótipo
+	PapelRecibo string // "80", "58" ou "a5"
 }
 
 func (s *LojasService) ObterAtual(ctx context.Context) (LojaAtual, error) {
@@ -108,12 +109,13 @@ func (s *LojasService) ObterAtual(ctx context.Context) (LojaAtual, error) {
 		TipoNegocio: string(estado.Negocio.TipoNegocio),
 		Tema:        string(estado.Tema),
 		Logo:        estado.Logo,
+		PapelRecibo: estado.PapelRecibo,
 	}, nil
 }
 
 // AtualizarIdentidade muda o nome e o logótipo da loja (dentro da base da
 // loja) e o nome no registo do admin, e devolve a loja já atualizada.
-func (s *LojasService) AtualizarIdentidade(ctx context.Context, nome, logo string) (LojaAtual, error) {
+func (s *LojasService) AtualizarIdentidade(ctx context.Context, nome, logo, papelRecibo string) (LojaAtual, error) {
 	loja, existe, err := s.repo.ObterUnica(ctx)
 	if err != nil {
 		return LojaAtual{}, err
@@ -125,7 +127,7 @@ func (s *LojasService) AtualizarIdentidade(ctx context.Context, nome, logo strin
 	if err != nil {
 		return LojaAtual{}, err
 	}
-	negocio, err := app.AtualizarIdentidadeLoja(nome, logo)
+	negocio, err := app.AtualizarIdentidadeLoja(nome, logo, papelRecibo)
 	fechar()
 	if err != nil {
 		return LojaAtual{}, err

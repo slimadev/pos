@@ -18,15 +18,25 @@ type ReciboService struct {
 	produto *repository.ProdutoRepository
 	cliente *repository.ClienteRepository
 	negocio *repository.NegocioRepository
+	configs *repository.ConfigRepository
 }
+
+// Valores da configuração "recibo_papel": a largura do papel da impressora
+// de recibos. Sem valor, o rolo de 80 mm (o mais comum nos terminais).
+const (
+	PapelRecibo80 = "80"
+	PapelRecibo58 = "58"
+	PapelReciboA5 = "a5"
+)
 
 func NewReciboService(
 	vendas *VendaService,
 	produto *repository.ProdutoRepository,
 	cliente *repository.ClienteRepository,
 	negocio *repository.NegocioRepository,
+	configs *repository.ConfigRepository,
 ) *ReciboService {
-	return &ReciboService{vendas: vendas, produto: produto, cliente: cliente, negocio: negocio}
+	return &ReciboService{vendas: vendas, produto: produto, cliente: cliente, negocio: negocio, configs: configs}
 }
 
 func (s *ReciboService) GerarPDF(ctx context.Context, vendaID int64) ([]byte, error) {
@@ -68,7 +78,7 @@ func (s *ReciboService) GerarPDF(ctx context.Context, vendaID int64) ([]byte, er
 		pagamentos = append(pagamentos, export.PagamentoRecibo{Metodo: rotuloMetodo(p.Metodo), Valor: p.Valor})
 	}
 
-	return export.GerarReciboPDF(export.DadosRecibo{
+	dados := export.DadosRecibo{
 		NegocioNome:   negocio.Nome,
 		VendaID:       completa.Venda.ID,
 		CriadoEm:      completa.Venda.CriadoEm,
@@ -78,7 +88,19 @@ func (s *ReciboService) GerarPDF(ctx context.Context, vendaID int64) ([]byte, er
 		DescontoTotal: completa.Venda.DescontoTotal,
 		Total:         completa.Venda.Total,
 		Pagamentos:    pagamentos,
-	})
+	}
+	papel, _, err := s.configs.Obter(ctx, "recibo_papel")
+	if err != nil {
+		return nil, err
+	}
+	switch papel {
+	case PapelReciboA5:
+		return export.GerarReciboPDF(dados)
+	case PapelRecibo58:
+		return export.GerarReciboTalao(dados, export.PapelRolo58)
+	default:
+		return export.GerarReciboTalao(dados, export.PapelRolo80)
+	}
 }
 
 func rotuloMetodo(m domain.MetodoPagamento) string {

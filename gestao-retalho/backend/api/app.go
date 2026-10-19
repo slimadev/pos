@@ -403,9 +403,10 @@ func (a *App) ObterTodosModulos() []domain.Modulo {
 	return domain.TodosModulos
 }
 
-// AtualizarIdentidadeLoja muda o nome e o logótipo ("" remove-o).
-func (a *App) AtualizarIdentidadeLoja(nome, logo string) (domain.Negocio, error) {
-	return a.ConfigService.AtualizarIdentidade(a.ctx, nome, logo)
+// AtualizarIdentidadeLoja muda o nome, o logótipo ("" remove-o) e o papel
+// da impressora de recibos ("80", "58" ou "a5").
+func (a *App) AtualizarIdentidadeLoja(nome, logo, papelRecibo string) (domain.Negocio, error) {
+	return a.ConfigService.AtualizarIdentidade(a.ctx, nome, logo, papelRecibo)
 }
 
 func (a *App) FinalizarWizard(p usecase.FinalizarWizardParams) error {
