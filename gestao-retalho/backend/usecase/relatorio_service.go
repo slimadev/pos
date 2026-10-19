@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"sort"
 	"time"
 
 	"gestao-retalho/backend/domain"
@@ -335,30 +336,70 @@ func (s *RelatorioService) DividasEmAberto(ctx context.Context) ([]LinhaDividaRe
 
 // --- 11. Fecho de caixa diário ----------------------------------------------------
 
-type FechoCaixa struct {
-	Dia          string
-	TotalVendido float64
-	PorMetodo    []repository.LinhaVendasPorMetodo
+// LinhaFechoMetodo é o que devia estar na gaveta (ou na conta M-Pesa, etc.)
+// por método: o recebido de vendas mais o recebido de dívidas.
+type LinhaFechoMetodo struct {
+	Metodo  domain.MetodoPagamento
+	Vendas  float64
+	Dividas float64
+	// Total é o esperado = Vendas + Dividas.
+	Total float64
 }
 
-// FechoCaixaDiario reduz-se a "vendas por método de pagamento" com a janela
-// fechada num único dia — a comparação "esperado vs contado" do SDD 6 fica
-// só no ecrã (o operador introduz o valor contado na gaveta; este método
-// só devolve o valor esperado, não há tabela de "caixa" no modelo de
-// dados para guardar uma contagem física).
+type FechoCaixa struct {
+	Dia string
+	// TotalVendido é o recebido de vendas no dia (uma venda a crédito só
+	// conta com a entrada que foi paga).
+	TotalVendido          float64
+	TotalDividasRecebidas float64
+	TotalRecebido         float64
+	PorMetodo             []LinhaFechoMetodo
+}
+
+// FechoCaixaDiario junta, por método, o recebido de vendas e de dívidas no
+// dia do relógio da loja — a comparação "esperado vs contado" do SDD 6
+// fica no ecrã (o operador escreve o que contou na gaveta). Sem as dívidas,
+// um cliente que viesse pagar o que devia deixava a gaveta "com dinheiro a
+// mais" face ao relatório.
 func (s *RelatorioService) FechoCaixaDiario(ctx context.Context, dia time.Time) (FechoCaixa, error) {
 	// O dia é o do relógio da loja: um instante vindo do ecrã em UTC (a
 	// meia-noite local é 22:00 UTC da véspera em Moçambique) cairia na véspera.
 	dia = dia.Local()
 	inicio := time.Date(dia.Year(), dia.Month(), dia.Day(), 0, 0, 0, 0, time.Local)
 	fim := inicio.Add(24 * time.Hour)
-	porMetodo, err := s.VendasPorMetodoPagamento(ctx, FiltroPeriodo{Desde: inicio, Ate: fim})
+	vendas, err := s.VendasPorMetodoPagamento(ctx, FiltroPeriodo{Desde: inicio, Ate: fim})
 	if err != nil {
 		return FechoCaixa{}, err
 	}
-	var total float64
-	for _, m := range porMetodo {
-		total += m.Total
+	dividas, err := s.relatorios.PagamentosDividaPorMetodo(ctx, repository.PeriodoFiltro{NegocioID: domain.NegocioID, Desde: inicio, Ate: fim})
+	if err != nil {
+		return FechoCaixa{}, err
 	}
-	return FechoCaixa{Dia: inicio.Format("2006-01-02"), TotalVendido: total, PorMetodo: porMetodo}, nil
+
+	fecho := FechoCaixa{Dia: inicio.Format("2006-01-02")}
+	porMetodo := map[domain.MetodoPagamento]*LinhaFechoMetodo{}
+	linha := func(m domain.MetodoPagamento) *LinhaFechoMetodo {
+		if l, ok := porMetodo[m]; ok {
+			return l
+		}
+		l := &LinhaFechoMetodo{Metodo: m}
+		porMetodo[m] = l
+		return l
+	}
+	for _, v := range vendas {
+		linha(v.Metodo).Vendas += v.Total
+		fecho.TotalVendido += v.Total
+	}
+	for _, d := range dividas {
+		linha(d.Metodo).Dividas += d.Total
+		fecho.TotalDividasRecebidas += d.Total
+	}
+	fecho.PorMetodo = make([]LinhaFechoMetodo, 0, len(porMetodo))
+	for _, l := range porMetodo {
+		l.Total = l.Vendas + l.Dividas
+		fecho.PorMetodo = append(fecho.PorMetodo, *l)
+	}
+	sort.Slice(fecho.PorMetodo, func(i, j int) bool { return fecho.PorMetodo[i].Total > fecho.PorMetodo[j].Total })
+	fecho.TotalRecebido = fecho.TotalVendido + fecho.TotalDividasRecebidas
+	return fecho, nil
 }

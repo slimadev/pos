@@ -114,3 +114,12 @@ SELECT
     COALESCE(SUM(quantidade * preco_unitario_aplicado - desconto), 0) AS valor_total
 FROM itens_conta
 GROUP BY conta_id;
+
+-- name: RelatorioPagamentosDividaPorMetodo :many
+SELECT
+    metodo,
+    COALESCE(SUM(valor), 0) AS total
+FROM pagamentos_divida
+WHERE criado_em >= sqlc.arg('desde') AND criado_em < sqlc.arg('ate')
+GROUP BY metodo
+ORDER BY total DESC;

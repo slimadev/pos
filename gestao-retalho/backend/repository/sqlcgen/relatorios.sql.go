@@ -215,6 +215,49 @@ func (q *Queries) RelatorioMovimentosPorPeriodo(ctx context.Context, arg Relator
 	return items, nil
 }
 
+const relatorioPagamentosDividaPorMetodo = `-- name: RelatorioPagamentosDividaPorMetodo :many
+SELECT
+    metodo,
+    COALESCE(SUM(valor), 0) AS total
+FROM pagamentos_divida
+WHERE criado_em >= ?1 AND criado_em < ?2
+GROUP BY metodo
+ORDER BY total DESC
+`
+
+type RelatorioPagamentosDividaPorMetodoParams struct {
+	Desde string `json:"desde"`
+	Ate   string `json:"ate"`
+}
+
+type RelatorioPagamentosDividaPorMetodoRow struct {
+	Metodo string      `json:"metodo"`
+	Total  interface{} `json:"total"`
+}
+
+func (q *Queries) RelatorioPagamentosDividaPorMetodo(ctx context.Context, arg RelatorioPagamentosDividaPorMetodoParams) ([]RelatorioPagamentosDividaPorMetodoRow, error) {
+	rows, err := q.db.QueryContext(ctx, relatorioPagamentosDividaPorMetodo, arg.Desde, arg.Ate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []RelatorioPagamentosDividaPorMetodoRow
+	for rows.Next() {
+		var i RelatorioPagamentosDividaPorMetodoRow
+		if err := rows.Scan(&i.Metodo, &i.Total); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const relatorioPerdasConsumoInterno = `-- name: RelatorioPerdasConsumoInterno :many
 SELECT
     m.tipo,

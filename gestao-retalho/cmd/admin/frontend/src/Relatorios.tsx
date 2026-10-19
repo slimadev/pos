@@ -550,14 +550,23 @@ function RelCaixa({ dia, onErro }: { dia: string; onErro: (e: string) => void })
 
   return (
     <>
-      <Resumo itens={[[mt(fecho.TotalVendido), `vendido a ${porExtenso(fecho.Dia)}`]]} />
+      <Resumo
+        itens={[
+          [mt(fecho.TotalRecebido), `recebido a ${porExtenso(fecho.Dia)}`],
+          [mt(fecho.TotalVendido), "de vendas"],
+          [mt(fecho.TotalDividasRecebidas), "de dívidas pagas"],
+        ]}
+      />
       <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", margin: 0 }}>
-        Escreva o que contou em caixa para cada método e veja a diferença face ao que o sistema registou.
+        Escreva o que contou para cada método (gaveta, M-Pesa, etc.) e veja a diferença face ao que devia lá estar.
+        Uma venda a crédito só conta com a entrada que foi paga.
       </p>
       <table className="admin-tabela">
         <thead>
           <tr>
             <th>Método</th>
+            <th style={{ textAlign: "right" }}>Vendas</th>
+            <th style={{ textAlign: "right" }}>Dívidas pagas</th>
             <th style={{ textAlign: "right" }}>Esperado</th>
             <th style={{ textAlign: "right" }}>Contado</th>
             <th style={{ textAlign: "right" }}>Diferença</th>
@@ -566,7 +575,7 @@ function RelCaixa({ dia, onErro }: { dia: string; onErro: (e: string) => void })
         <tbody>
           {fecho.PorMetodo.length === 0 && (
             <tr>
-              <td colSpan={4}>Sem vendas neste dia.</td>
+              <td colSpan={6}>Nada recebido neste dia.</td>
             </tr>
           )}
           {fecho.PorMetodo.map((m) => {
@@ -575,7 +584,9 @@ function RelCaixa({ dia, onErro }: { dia: string; onErro: (e: string) => void })
             return (
               <tr key={m.Metodo}>
                 <td>{ROTULO_METODO[m.Metodo] ?? m.Metodo}</td>
-                <td style={{ textAlign: "right" }}>{mt(m.Total)}</td>
+                <td style={{ textAlign: "right" }}>{m.Vendas ? mt(m.Vendas) : "—"}</td>
+                <td style={{ textAlign: "right" }}>{m.Dividas ? mt(m.Dividas) : "—"}</td>
+                <td style={{ textAlign: "right", fontWeight: 600 }}>{mt(m.Total)}</td>
                 <td style={{ textAlign: "right" }}>
                   <input
                     className="admin-inventario-contagem"
@@ -596,6 +607,8 @@ function RelCaixa({ dia, onErro }: { dia: string; onErro: (e: string) => void })
           <tfoot>
             <tr className="admin-relatorios-totais">
               <td>Diferença total</td>
+              <td></td>
+              <td></td>
               <td></td>
               <td></td>
               <td style={{ textAlign: "right" }}>

@@ -114,6 +114,23 @@ type LinhaVendasPorMetodo struct {
 	Total  float64
 }
 
+// PagamentosDividaPorMetodo soma o dinheiro recebido de dívidas no período
+// — entra na gaveta como o das vendas, por isso conta no fecho de caixa.
+func (r *RelatorioRepository) PagamentosDividaPorMetodo(ctx context.Context, f PeriodoFiltro) ([]LinhaVendasPorMetodo, error) {
+	rows, err := r.q.RelatorioPagamentosDividaPorMetodo(ctx, sqlcgen.RelatorioPagamentosDividaPorMetodoParams{
+		Desde: f.desdeStr(),
+		Ate:   f.ateStr(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]LinhaVendasPorMetodo, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, LinhaVendasPorMetodo{Metodo: domain.MetodoPagamento(row.Metodo), Total: anyToFloat64(row.Total)})
+	}
+	return out, nil
+}
+
 func (r *RelatorioRepository) VendasPorMetodoPagamento(ctx context.Context, f PeriodoFiltro) ([]LinhaVendasPorMetodo, error) {
 	rows, err := r.q.RelatorioVendasPorMetodoPagamento(ctx, sqlcgen.RelatorioVendasPorMetodoPagamentoParams{
 		NegocioID: f.NegocioID,

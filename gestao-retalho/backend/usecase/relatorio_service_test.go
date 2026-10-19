@@ -566,3 +566,68 @@ func TestRelatorios_DiaDaVendaEODoRelogioLocal(t *testing.T) {
 		t.Fatalf("fecho = %+v, want dia %s com 100", fecho, meiaNoiteLocal.Format("2006-01-02"))
 	}
 }
+
+// O dinheiro recebido de uma dívida entra na gaveta como o de uma venda — o
+// fecho de caixa tem de o esperar, ou a contagem dá sempre "a mais".
+func TestFechoCaixaDiario_ContaPagamentosDeDividas(t *testing.T) {
+	ctx := context.Background()
+	produtoSvc, armazemSvc, stockSvc, vendaSvc, contaSvc, clienteSvc, _, relatorioSvc, db := newTestRelatorioServices(t)
+	dividaSvc := usecase.NewDividaService(repository.NewDividaRepository(db), repository.NewClienteRepository(db))
+
+	armazem := criarArmazem(t, ctx, armazemSvc, "Balcão")
+	produto, unidade := criarProdutoComPreco(t, ctx, produtoSvc, "Prego", 100)
+	if _, err := stockSvc.RegistarEntrada(ctx, usecase.EntradaParams{
+		ProdutoID: produto.ID, ArmazemDestinoID: armazem.ID, Quantidade: 10, CustoUnitario: 50, UtilizadorID: 1,
+	}); err != nil {
+		t.Fatalf("entrada: %v", err)
+	}
+	if _, err := vendaSvc.RegistarVendaDireta(ctx, usecase.VendaDiretaParams{
+		ArmazemID:    armazem.ID,
+		Itens:        []usecase.ItemVendaDiretaParams{{ProdutoID: produto.ID, UnidadeProdutoID: unidade.ID, Quantidade: 1}},
+		Pagamentos:   []usecase.PagamentoVendaParams{{Metodo: domain.MetodoDinheiro, Valor: 100}},
+		UtilizadorID: 1,
+	}); err != nil {
+		t.Fatalf("venda: %v", err)
+	}
+
+	cliente, err := clienteSvc.Criar(ctx, domain.Cliente{Nome: "Paulo Tembe"})
+	if err != nil {
+		t.Fatalf("cliente: %v", err)
+	}
+	conta, err := contaSvc.AbrirConta(ctx, "Obra", &cliente.ID, 1)
+	if err != nil {
+		t.Fatalf("abrir conta: %v", err)
+	}
+	if _, err := contaSvc.AdicionarItem(ctx, usecase.AdicionarItemContaParams{ContaID: conta.ID, ProdutoID: produto.ID, UnidadeProdutoID: unidade.ID, Quantidade: 3, UtilizadorID: 1}); err != nil {
+		t.Fatalf("item: %v", err)
+	}
+	if _, _, err := contaSvc.FecharConta(ctx, conta.ID, usecase.FecharContaParams{ArmazemID: armazem.ID, UtilizadorID: 1}); err != nil {
+		t.Fatalf("fechar em dívida: %v", err)
+	}
+	dividas, _ := dividaSvc.ListarPorCliente(ctx, cliente.ID)
+	if _, _, err := dividaSvc.RegistarPagamento(ctx, usecase.RegistarPagamentoDividaParams{
+		DividaID: dividas[0].ID, Valor: 120, Metodo: domain.MetodoMpesa, UtilizadorID: 1,
+	}); err != nil {
+		t.Fatalf("pagar dívida: %v", err)
+	}
+
+	fecho, err := relatorioSvc.FechoCaixaDiario(ctx, time.Now())
+	if err != nil {
+		t.Fatalf("fecho: %v", err)
+	}
+	if fecho.TotalVendido != 100 || fecho.TotalDividasRecebidas != 120 || fecho.TotalRecebido != 220 {
+		t.Fatalf("fecho = vendas %v, dívidas %v, total %v; want 100, 120, 220", fecho.TotalVendido, fecho.TotalDividasRecebidas, fecho.TotalRecebido)
+	}
+	esperado := map[domain.MetodoPagamento]usecase.LinhaFechoMetodo{
+		domain.MetodoDinheiro: {Metodo: domain.MetodoDinheiro, Vendas: 100, Total: 100},
+		domain.MetodoMpesa:    {Metodo: domain.MetodoMpesa, Dividas: 120, Total: 120},
+	}
+	if len(fecho.PorMetodo) != 2 {
+		t.Fatalf("por método = %+v, want dinheiro e M-Pesa", fecho.PorMetodo)
+	}
+	for _, l := range fecho.PorMetodo {
+		if l != esperado[l.Metodo] {
+			t.Errorf("linha %s = %+v, want %+v", l.Metodo, l, esperado[l.Metodo])
+		}
+	}
+}

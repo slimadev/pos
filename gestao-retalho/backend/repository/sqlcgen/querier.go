@@ -103,6 +103,7 @@ type Querier interface {
 	RelatorioContasPorPeriodo(ctx context.Context, arg RelatorioContasPorPeriodoParams) ([]Contas, error)
 	RelatorioLucroPorPeriodo(ctx context.Context, arg RelatorioLucroPorPeriodoParams) (RelatorioLucroPorPeriodoRow, error)
 	RelatorioMovimentosPorPeriodo(ctx context.Context, arg RelatorioMovimentosPorPeriodoParams) ([]RelatorioMovimentosPorPeriodoRow, error)
+	RelatorioPagamentosDividaPorMetodo(ctx context.Context, arg RelatorioPagamentosDividaPorMetodoParams) ([]RelatorioPagamentosDividaPorMetodoRow, error)
 	RelatorioPerdasConsumoInterno(ctx context.Context, arg RelatorioPerdasConsumoInternoParams) ([]RelatorioPerdasConsumoInternoRow, error)
 	RelatorioStockAtual(ctx context.Context, arg RelatorioStockAtualParams) ([]RelatorioStockAtualRow, error)
 	RelatorioValorContas(ctx context.Context) ([]RelatorioValorContasRow, error)
