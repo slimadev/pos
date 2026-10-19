@@ -94,6 +94,26 @@ func (s *ProdutosService) AdicionarUnidade(ctx context.Context, u domain.Unidade
 	return app.AdicionarUnidadeProduto(u)
 }
 
+func (s *ProdutosService) AtualizarUnidade(ctx context.Context, u domain.UnidadeProduto) (domain.UnidadeProduto, error) {
+	app, fechar, err := s.abrirLoja(ctx)
+	if err != nil {
+		return domain.UnidadeProduto{}, err
+	}
+	defer fechar()
+
+	return app.AtualizarUnidadeProduto(u)
+}
+
+func (s *ProdutosService) ListarTodasUnidades(ctx context.Context) ([]domain.UnidadeProduto, error) {
+	app, fechar, err := s.abrirLoja(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer fechar()
+
+	return app.ListarUnidadesDoNegocio()
+}
+
 func (s *ProdutosService) abrirLoja(ctx context.Context) (*api.App, func(), error) {
 	return abrirLojaUnica(ctx, s.lojas)
 }

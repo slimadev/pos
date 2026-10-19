@@ -154,6 +154,25 @@ func (r *ProdutoRepository) CriarUnidade(ctx context.Context, u domain.UnidadePr
 	return unidadeFromRow(row), nil
 }
 
+// AtualizarUnidade grava nome, conversão, preços, código de barras e
+// padrões de uma unidade existente — o produto a que pertence não muda.
+func (r *ProdutoRepository) AtualizarUnidade(ctx context.Context, u domain.UnidadeProduto) (domain.UnidadeProduto, error) {
+	err := r.q.AtualizarUnidadeProduto(ctx, sqlcgen.AtualizarUnidadeProdutoParams{
+		ID:               u.ID,
+		NomeUnidade:      u.NomeUnidade,
+		QtdEmUnidadeBase: u.QtdEmUnidadeBase,
+		PrecoCusto:       u.PrecoCusto,
+		PrecoVenda:       u.PrecoVenda,
+		CodigoBarras:     ptrToNullString(u.CodigoBarras),
+		IsPadraoVenda:    boolToInt64(u.IsPadraoVenda),
+		IsPadraoCompra:   boolToInt64(u.IsPadraoCompra),
+	})
+	if err != nil {
+		return domain.UnidadeProduto{}, err
+	}
+	return r.ObterUnidade(ctx, u.ID)
+}
+
 func produtoFromRow(row sqlcgen.Produtos) domain.Produto {
 	return domain.Produto{
 		ID:             row.ID,

@@ -251,6 +251,14 @@ func (a *App) AdicionarUnidadeProduto(u domain.UnidadeProduto) (domain.UnidadePr
 	return a.ProdutoService.AdicionarUnidade(a.ctx, u)
 }
 
+func (a *App) AtualizarUnidadeProduto(u domain.UnidadeProduto) (domain.UnidadeProduto, error) {
+	return a.ProdutoService.AtualizarUnidade(a.ctx, u)
+}
+
+func (a *App) ListarUnidadesDoNegocio() ([]domain.UnidadeProduto, error) {
+	return a.ProdutoService.ListarUnidadesDoNegocio(a.ctx)
+}
+
 // --- Categorias (SDD 3.2) ---------------------------------------------------
 
 func (a *App) ListarCategorias() ([]domain.Categoria, error) {

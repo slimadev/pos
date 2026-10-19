@@ -8,7 +8,17 @@ import { XMarkIcon } from "@heroicons/react/24/outline";
  * Escape ou o botão ×; não fecha ao clicar no fundo, para não perder um
  * formulário grande por engano com um clique a mais.
  */
-export default function Modal({ titulo, onFechar, children }: { titulo: string; onFechar: () => void; children: ReactNode }) {
+export default function Modal({
+  titulo,
+  largo,
+  onFechar,
+  children,
+}: {
+  titulo: string;
+  largo?: boolean;
+  onFechar: () => void;
+  children: ReactNode;
+}) {
   useEffect(() => {
     function aoTeclar(e: KeyboardEvent) {
       if (e.key === "Escape") onFechar();
@@ -19,7 +29,7 @@ export default function Modal({ titulo, onFechar, children }: { titulo: string; 
 
   return (
     <div className="admin-modal-overlay">
-      <div className="admin-modal-card">
+      <div className={`admin-modal-card${largo ? " largo" : ""}`}>
         <div className="admin-modal-header">
           <h2 className="admin-modal-titulo">{titulo}</h2>
           <button className="admin-modal-fechar" onClick={onFechar} aria-label="Fechar">

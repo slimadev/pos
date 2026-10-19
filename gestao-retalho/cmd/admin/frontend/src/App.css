@@ -890,7 +890,8 @@ body {
   background: var(--accent-hover);
 }
 .admin-btn:disabled {
-  background: #c9d9f9;
+  background: var(--accent);
+  opacity: 0.45;
   cursor: not-allowed;
 }
 .admin-btn-secundario {
@@ -1534,4 +1535,109 @@ body {
   border: 1px solid var(--danger);
   border-radius: 10px;
   background: var(--danger-bg);
+}
+
+/* Campo de pesquisa com lupa (Produtos, Stock). */
+.admin-pesquisa {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 260px;
+  max-width: 420px;
+}
+.admin-pesquisa-icone {
+  position: absolute;
+  left: 10px;
+  width: 16px;
+  height: 16px;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+.admin-form .admin-pesquisa input {
+  width: 100%;
+  padding-left: 32px;
+}
+
+.admin-etiqueta {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 11px;
+  vertical-align: 1px;
+}
+.admin-linha-inativa td {
+  color: var(--text-secondary);
+}
+.admin-texto-fraco {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+/* Produtos.tsx: campos do produto em grelha, com rótulo por cima. */
+.admin-modal-card.largo {
+  width: 980px;
+}
+.admin-produto-campos {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 12px;
+  align-items: end;
+}
+.admin-produto-campos .admin-campo {
+  min-width: 0;
+}
+.admin-produto-campos .admin-campo input:disabled,
+.admin-produto-campos .admin-campo select:disabled {
+  background: var(--bg);
+  color: var(--text-secondary);
+}
+.admin-produto-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  padding-bottom: 9px;
+}
+.admin-unidades-tabela td,
+.admin-unidades-tabela th {
+  padding: 6px 6px;
+}
+.admin-unidades-tabela input:not([type="radio"]) {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 9px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+}
+.admin-unidades-radio {
+  text-align: center;
+}
+.admin-unidades-tabela th:nth-child(6),
+.admin-unidades-tabela th:nth-child(7) {
+  text-align: center;
+  width: 56px;
+}
+
+/* Botões de ação numa linha de tabela: compactos e lado a lado. */
+.admin-acoes {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.admin-acoes .admin-btn-secundario {
+  padding: 5px 10px;
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+.admin-produto-campos .admin-campo input,
+.admin-produto-campos .admin-campo select {
+  height: 40px;
+  box-sizing: border-box;
 }

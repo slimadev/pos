@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"gestao-retalho/backend/domain"
 	"gestao-retalho/backend/repository"
@@ -32,6 +33,35 @@ func (s *ProdutoService) ListarUnidades(ctx context.Context, produtoID int64) ([
 	return s.repo.ListarUnidades(ctx, produtoID)
 }
 
+// ListarUnidadesDoNegocio devolve as unidades de todos os produtos (ativos
+// ou não) numa só consulta — a lista de produtos do admin mostra o preço e
+// pesquisa por código de barras sem pedir produto a produto.
+func (s *ProdutoService) ListarUnidadesDoNegocio(ctx context.Context) ([]domain.UnidadeProduto, error) {
+	return s.repo.ListarUnidadesDoNegocio(ctx, domain.NegocioID)
+}
+
+// erroCodigoBarras troca a violação do índice único de código de barras
+// por uma mensagem que diz ao utilizador o que fazer.
+func erroCodigoBarras(err error) error {
+	if err != nil && strings.Contains(err.Error(), "unidades_produto.codigo_barras") {
+		return fmt.Errorf("este código de barras já está noutro produto ou unidade")
+	}
+	return err
+}
+
+func validarUnidade(u domain.UnidadeProduto) error {
+	if strings.TrimSpace(u.NomeUnidade) == "" {
+		return fmt.Errorf("nome da unidade é obrigatório")
+	}
+	if u.QtdEmUnidadeBase <= 0 {
+		return fmt.Errorf("unidade %q: quantidade em unidade base deve ser positiva", u.NomeUnidade)
+	}
+	if u.PrecoCusto < 0 || u.PrecoVenda < 0 {
+		return fmt.Errorf("unidade %q: os preços não podem ser negativos", u.NomeUnidade)
+	}
+	return nil
+}
+
 // NovoProduto agrupa produto e unidades: um produto sem unidade de
 // venda/compra não é vendável (SDD 4.1), por isso a criação exige as duas
 // coisas juntas em vez de deixar um produto "incompleto" gravável.
@@ -48,8 +78,8 @@ func (s *ProdutoService) Criar(ctx context.Context, np NovoProduto) (domain.Prod
 		return domain.Produto{}, nil, fmt.Errorf("produto precisa de pelo menos uma unidade de venda/compra")
 	}
 	for _, u := range np.Unidades {
-		if u.QtdEmUnidadeBase <= 0 {
-			return domain.Produto{}, nil, fmt.Errorf("unidade %q: quantidade em unidade base deve ser positiva", u.NomeUnidade)
+		if err := validarUnidade(u); err != nil {
+			return domain.Produto{}, nil, err
 		}
 	}
 
@@ -66,7 +96,8 @@ func (s *ProdutoService) Criar(ctx context.Context, np NovoProduto) (domain.Prod
 	}
 	np.Produto.Ativo = true
 
-	return s.repo.Criar(ctx, np.Produto, np.Unidades)
+	produto, unidades, err := s.repo.Criar(ctx, np.Produto, np.Unidades)
+	return produto, unidades, erroCodigoBarras(err)
 }
 
 func (s *ProdutoService) Atualizar(ctx context.Context, p domain.Produto) (domain.Produto, error) {
@@ -96,13 +127,25 @@ func (s *ProdutoService) Desativar(ctx context.Context, id int64) error {
 // caixa, além de unidade) — Criar só aceitava unidades no momento da
 // criação, sem forma nenhuma de acrescentar depois.
 func (s *ProdutoService) AdicionarUnidade(ctx context.Context, u domain.UnidadeProduto) (domain.UnidadeProduto, error) {
-	if u.NomeUnidade == "" {
-		return domain.UnidadeProduto{}, fmt.Errorf("nome da unidade é obrigatório")
+	if err := validarUnidade(u); err != nil {
+		return domain.UnidadeProduto{}, err
 	}
-	if u.QtdEmUnidadeBase <= 0 {
-		return domain.UnidadeProduto{}, fmt.Errorf("quantidade em unidade base deve ser positiva")
+	criada, err := s.repo.CriarUnidade(ctx, u)
+	return criada, erroCodigoBarras(err)
+}
+
+// AtualizarUnidade corrige uma unidade já criada (preços, código de barras,
+// nome, conversão, padrões). O histórico não muda: os movimentos guardam a
+// quantidade em unidade base, nunca na unidade de venda.
+func (s *ProdutoService) AtualizarUnidade(ctx context.Context, u domain.UnidadeProduto) (domain.UnidadeProduto, error) {
+	if err := validarUnidade(u); err != nil {
+		return domain.UnidadeProduto{}, err
 	}
-	return s.repo.CriarUnidade(ctx, u)
+	if _, err := s.repo.ObterUnidade(ctx, u.ID); err != nil {
+		return domain.UnidadeProduto{}, fmt.Errorf("unidade não encontrada: %w", err)
+	}
+	atualizada, err := s.repo.AtualizarUnidade(ctx, u)
+	return atualizada, erroCodigoBarras(err)
 }
 
 // Duplicar cria uma cópia do produto e das suas unidades — útil para

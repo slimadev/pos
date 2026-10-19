@@ -276,6 +276,23 @@ func (a *AdminApp) AdicionarUnidadeProduto(u domain.UnidadeProduto) (domain.Unid
 	return a.Produtos.AdicionarUnidade(a.ctx, u)
 }
 
+func (a *AdminApp) AtualizarUnidadeProduto(u domain.UnidadeProduto) (domain.UnidadeProduto, error) {
+	if err := a.exigirSessao(); err != nil {
+		return domain.UnidadeProduto{}, err
+	}
+	return a.Produtos.AtualizarUnidade(a.ctx, u)
+}
+
+// ListarTodasUnidades devolve as unidades de todos os produtos numa só
+// ligação — a lista de Produtos mostra o preço e pesquisa por código de
+// barras com isto.
+func (a *AdminApp) ListarTodasUnidades() ([]domain.UnidadeProduto, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Produtos.ListarTodasUnidades(a.ctx)
+}
+
 // --- Armazéns ----------------------------------------------------------------
 //
 // Armazéns são dado de negócio (vivem dentro da base da loja, nunca em

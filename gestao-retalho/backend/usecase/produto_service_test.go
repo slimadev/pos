@@ -162,3 +162,70 @@ func TestProdutoService_AtualizarRenomeiaProduto(t *testing.T) {
 		t.Errorf("nome = %q, want Cerveja Premium", atualizado.Nome)
 	}
 }
+
+func TestProdutoService_AtualizarUnidadeMudaPrecoECodigo(t *testing.T) {
+	ctx := context.Background()
+	svc := newTestProdutoService(t)
+
+	_, unidades, err := svc.Criar(ctx, usecase.NovoProduto{
+		Produto:  domain.Produto{Nome: "Cerveja", TipoProduto: domain.TipoProdutoSimples, UnidadeBase: "unidade"},
+		Unidades: []domain.UnidadeProduto{novaUnidadeTeste("unidade", 1, 40, 80)},
+	})
+	if err != nil {
+		t.Fatalf("criar produto: %v", err)
+	}
+
+	u := unidades[0]
+	u.PrecoVenda = 95
+	codigo := "5601234567890"
+	u.CodigoBarras = &codigo
+	atualizada, err := svc.AtualizarUnidade(ctx, u)
+	if err != nil {
+		t.Fatalf("atualizar unidade: %v", err)
+	}
+	if atualizada.PrecoVenda != 95 || atualizada.CodigoBarras == nil || *atualizada.CodigoBarras != codigo {
+		t.Errorf("unidade = %+v, want preço 95 e código %s", atualizada, codigo)
+	}
+	if atualizada.ProdutoID != u.ProdutoID {
+		t.Errorf("ProdutoID = %d, want %d (a unidade não muda de produto)", atualizada.ProdutoID, u.ProdutoID)
+	}
+
+	todas, err := svc.ListarUnidadesDoNegocio(ctx)
+	if err != nil || len(todas) != 1 || todas[0].PrecoVenda != 95 {
+		t.Fatalf("unidades do negócio = %+v, %v; want uma com preço 95", todas, err)
+	}
+}
+
+func TestProdutoService_AtualizarUnidadeRecusaCodigoRepetidoEPrecoNegativo(t *testing.T) {
+	ctx := context.Background()
+	svc := newTestProdutoService(t)
+
+	codigo := "5601234567890"
+	comCodigo := novaUnidadeTeste("unidade", 1, 40, 80)
+	comCodigo.CodigoBarras = &codigo
+	if _, _, err := svc.Criar(ctx, usecase.NovoProduto{
+		Produto:  domain.Produto{Nome: "Cerveja", TipoProduto: domain.TipoProdutoSimples, UnidadeBase: "unidade"},
+		Unidades: []domain.UnidadeProduto{comCodigo},
+	}); err != nil {
+		t.Fatalf("criar cerveja: %v", err)
+	}
+	_, unidades, err := svc.Criar(ctx, usecase.NovoProduto{
+		Produto:  domain.Produto{Nome: "Sumo", TipoProduto: domain.TipoProdutoSimples, UnidadeBase: "unidade"},
+		Unidades: []domain.UnidadeProduto{novaUnidadeTeste("unidade", 1, 20, 50)},
+	})
+	if err != nil {
+		t.Fatalf("criar sumo: %v", err)
+	}
+
+	u := unidades[0]
+	u.CodigoBarras = &codigo
+	if _, err := svc.AtualizarUnidade(ctx, u); err == nil || err.Error() != "este código de barras já está noutro produto ou unidade" {
+		t.Errorf("err = %v, want aviso de código de barras repetido", err)
+	}
+
+	u = unidades[0]
+	u.PrecoVenda = -1
+	if _, err := svc.AtualizarUnidade(ctx, u); err == nil {
+		t.Error("esperava erro com preço negativo")
+	}
+}
