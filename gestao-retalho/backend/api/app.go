@@ -13,8 +13,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/wailsapp/wails/v2/pkg/runtime"
-
 	"gestao-retalho/backend/config"
 	"gestao-retalho/backend/domain"
 	"gestao-retalho/backend/export"
@@ -491,7 +489,9 @@ func (a *App) GerarRecibo(vendaID int64) (string, error) {
 		return "", fmt.Errorf("gravar recibo: %w", err)
 	}
 
-	runtime.BrowserOpenURL(a.ctx, "file://"+path)
+	if err := export.AbrirFicheiro(path); err != nil {
+		return path, err
+	}
 	return path, nil
 }
 
@@ -789,6 +789,8 @@ func (a *App) exportarTabela(t export.Tabela, formato string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	runtime.BrowserOpenURL(a.ctx, "file://"+path)
+	if err := export.AbrirFicheiro(path); err != nil {
+		return path, err
+	}
 	return path, nil
 }

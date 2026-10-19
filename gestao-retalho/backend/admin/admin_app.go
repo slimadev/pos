@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/wailsapp/wails/v2/pkg/runtime"
-
 	"gestao-retalho/backend/api"
 	"gestao-retalho/backend/domain"
 	"gestao-retalho/backend/export"
@@ -534,7 +532,9 @@ func (a *AdminApp) AbrirRecibo(vendaID int64) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	runtime.BrowserOpenURL(a.ctx, "file://"+caminho)
+	if err := export.AbrirFicheiro(caminho); err != nil {
+		return caminho, err
+	}
 	return caminho, nil
 }
 
@@ -769,7 +769,9 @@ func (a *AdminApp) ExportarRelatorio(titulo string, colunas []string, linhas [][
 	if err != nil {
 		return "", err
 	}
-	runtime.BrowserOpenURL(a.ctx, "file://"+caminho)
+	if err := export.AbrirFicheiro(caminho); err != nil {
+		return caminho, err
+	}
 	return caminho, nil
 }
 

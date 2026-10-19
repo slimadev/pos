@@ -9,6 +9,7 @@ require (
 	github.com/xuri/excelize/v2 v2.11.0
 	go.uber.org/fx v1.24.0
 	golang.org/x/crypto v0.53.0
+	golang.org/x/sys v0.47.0
 	modernc.org/sqlite v1.59.0
 )
 
@@ -49,7 +50,6 @@ require (
 	go.uber.org/multierr v1.10.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/net v0.56.0 // indirect
-	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.39.0 // indirect
 	modernc.org/libc v1.75.7 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
