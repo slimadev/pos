@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { PrinterIcon, XCircleIcon } from "@heroicons/react/24/outline";
+import { BanknotesIcon, CalculatorIcon, PrinterIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import { ListarVendas, ObterDetalheVenda, AbrirRecibo, AnularVenda } from "../wailsjs/go/admin/AdminApp";
 import { admin } from "../wailsjs/go/models";
 import Breadcrumb from "./Breadcrumb";
 import Modal from "./Modal";
+import type { Navegar } from "./App";
 
 const mt = (n: number) => `${n.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MT`;
 const qtd = (n: number) => n.toLocaleString("pt-PT", { maximumFractionDigits: 3 });
@@ -55,7 +56,7 @@ const ATALHOS = [
  * Histórico de vendas por período (por omissão, hoje), com o detalhe de
  * cada venda — itens, pagamentos e margem — e a reimpressão do recibo.
  */
-export default function VendasScreen({ onErro }: { onErro: (e: string) => void }) {
+export default function VendasScreen({ onNavegar, onErro }: { onNavegar: Navegar; onErro: (e: string) => void }) {
   const [desde, setDesde] = useState(diaLocal(new Date()));
   const [ate, setAte] = useState(diaLocal(new Date()));
   const [estado, setEstado] = useState("");
@@ -108,11 +109,17 @@ export default function VendasScreen({ onErro }: { onErro: (e: string) => void }
       <div className="admin-ecra-header">
         <h2 style={{ margin: 0 }}>Vendas</h2>
         <div className="admin-form">
-          {ATALHOS.map((a) => (
-            <button key={a.rotulo} className="admin-btn-secundario" onClick={() => atalho(a.dias)}>
-              {a.rotulo}
-            </button>
-          ))}
+          <button
+            className="admin-btn-secundario"
+            onClick={() => onNavegar({ ecra: "relatorios", relatorio: "caixa" })}
+          >
+            <CalculatorIcon className="admin-btn-icon-inline" aria-hidden="true" />
+            Fecho de caixa
+          </button>
+          <button className="admin-btn" onClick={() => onNavegar({ ecra: "credito", origem: "vendas" })}>
+            <BanknotesIcon className="admin-btn-icon-inline" aria-hidden="true" />
+            Venda a crédito
+          </button>
         </div>
       </div>
 
@@ -144,6 +151,11 @@ export default function VendasScreen({ onErro }: { onErro: (e: string) => void }
         <button className="admin-btn" disabled={!desde || !ate} onClick={() => consultar(desde, ate)}>
           Consultar
         </button>
+        {ATALHOS.map((a) => (
+          <button key={a.rotulo} className="admin-btn-secundario" onClick={() => atalho(a.dias)}>
+            {a.rotulo}
+          </button>
+        ))}
       </div>
 
       <div className="admin-inventario-resumo">

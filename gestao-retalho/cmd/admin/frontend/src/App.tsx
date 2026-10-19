@@ -14,7 +14,6 @@ import {
   UserCircleIcon,
   ComputerDesktopIcon,
   BeakerIcon,
-  BanknotesIcon,
   ArrowRightStartOnRectangleIcon,
 } from "@heroicons/react/24/outline";
 import { PrecisaConfigurarAdmin, Logout, ObterLojaAtual, AbrirPDV } from "../wailsjs/go/admin/AdminApp";
@@ -29,6 +28,7 @@ import FarmaciaScreen from "./Farmacia";
 import InventarioScreen from "./Inventario";
 import VendasScreen from "./Vendas";
 import RelatoriosScreen from "./Relatorios";
+import type { Relatorio } from "./Relatorios";
 import ClientesScreen from "./Clientes";
 import VendaCreditoScreen from "./VendaCredito";
 import FichasScreen from "./Fichas";
@@ -37,24 +37,56 @@ import UtilizadoresScreen from "./Utilizadores";
 type Ecra = "dashboard" | "produtos" | "categorias" | "armazens" | "stock" | "inventario" | "vendas" | "relatorios" | "clientes" | "credito" | "fichas" | "utilizadores" | "farmacia" | "stub";
 type IconeSvg = ComponentType<SVGProps<SVGSVGElement>>;
 
+/** Destino de navegação entre ecrãs (ex: "Vendas" → "Fecho de caixa"). */
+export type Destino = {
+  ecra: Ecra;
+  relatorio?: Relatorio;
+  cliente?: { ID: number; Nome: string };
+  origem?: "vendas" | "clientes";
+};
+export type Navegar = (d: Destino) => void;
+
 // Ícones outline de uma biblioteca única e neutra (SDD 7.3: "Lucide/Feather"
 // — Heroicons segue a mesma linguagem visual e cobre também as variantes
 // sólidas que o tema ferragem precisa em cmd/app, por isso ficou só uma
 // dependência de ícones no projeto todo em vez de duas).
-const NAV: { chave: Ecra; nome: string; Icone: IconeSvg; stub?: boolean; soFarmacia?: boolean }[] = [
-  { chave: "dashboard", nome: "Dashboard", Icone: Squares2X2Icon },
-  { chave: "produtos", nome: "Produtos", Icone: CubeIcon },
-  { chave: "categorias", nome: "Categorias", Icone: TagIcon },
-  { chave: "fichas", nome: "Fichas técnicas", Icone: ClipboardDocumentListIcon },
-  { chave: "armazens", nome: "Armazéns", Icone: BuildingOffice2Icon },
-  { chave: "stock", nome: "Stock", Icone: ArchiveBoxIcon },
-  { chave: "farmacia", nome: "Farmácia", Icone: BeakerIcon, soFarmacia: true },
-  { chave: "inventario", nome: "Inventário", Icone: ClipboardDocumentCheckIcon },
-  { chave: "vendas", nome: "Vendas", Icone: ShoppingCartIcon },
-  { chave: "credito", nome: "Venda a crédito", Icone: BanknotesIcon },
-  { chave: "clientes", nome: "Clientes e dívidas", Icone: UserGroupIcon },
-  { chave: "relatorios", nome: "Relatórios", Icone: ChartBarIcon },
-  { chave: "utilizadores", nome: "Utilizadores", Icone: UserCircleIcon },
+type ItemNav = { chave: Ecra; nome: string; Icone: IconeSvg; stub?: boolean; soFarmacia?: boolean };
+
+// Menu agrupado pelo trabalho do dia a dia. "Venda a crédito" não tem
+// entrada própria — abre-se a partir de Vendas ou da ficha do cliente.
+const NAV: { grupo?: string; itens: ItemNav[] }[] = [
+  { itens: [{ chave: "dashboard", nome: "Dashboard", Icone: Squares2X2Icon }] },
+  {
+    grupo: "Vendas",
+    itens: [
+      { chave: "vendas", nome: "Vendas", Icone: ShoppingCartIcon },
+      { chave: "clientes", nome: "Clientes e dívidas", Icone: UserGroupIcon },
+    ],
+  },
+  {
+    grupo: "Stock",
+    itens: [
+      { chave: "stock", nome: "Stock", Icone: ArchiveBoxIcon },
+      { chave: "inventario", nome: "Inventário", Icone: ClipboardDocumentCheckIcon },
+      { chave: "farmacia", nome: "Farmácia", Icone: BeakerIcon, soFarmacia: true },
+      { chave: "armazens", nome: "Armazéns", Icone: BuildingOffice2Icon },
+    ],
+  },
+  {
+    grupo: "Catálogo",
+    itens: [
+      { chave: "produtos", nome: "Produtos", Icone: CubeIcon },
+      { chave: "categorias", nome: "Categorias", Icone: TagIcon },
+      { chave: "fichas", nome: "Fichas técnicas", Icone: ClipboardDocumentListIcon },
+    ],
+  },
+  {
+    grupo: "Gestão",
+    itens: [
+      { chave: "relatorios", nome: "Relatórios", Icone: ChartBarIcon },
+      { chave: "utilizadores", nome: "Utilizadores", Icone: UserCircleIcon },
+    ],
+  },
 ];
 
 type Estado = { tipo: "a-carregar" } | { tipo: "configurar" } | { tipo: "login" } | { tipo: "pronto" };
@@ -126,14 +158,17 @@ export default function App() {
  * "Categorias" adicionado fora do mock e "Lojas" removido (Fase 10
  * addendum, a pedido explícito — deixou de fazer sentido um registo de
  * várias lojas quando cada cmd/admin serve sempre uma só). Toda a gestão
- * da loja vive aqui; "Farmácia" só aparece em lojas desse tipo e a "Venda a
- * crédito" só existe neste ecrã, nunca no PDV. O botão "PDV" não
+ * da loja vive aqui, em grupos; "Farmácia" só aparece em lojas desse tipo e
+ * a "Venda a crédito" (só no admin, nunca no PDV) abre-se a partir de
+ * Vendas ou da ficha do cliente. O botão "PDV" não
  * troca de ecrã aqui dentro — lança o cmd/app como processo à parte,
  * maximizado, apontado à mesma base desta loja (decisão pós-Fase 10, a
  * pedido explícito: cmd/app deixou de abrir sozinho).
  */
 function AdminPrincipal({ loja, onSair }: { loja: LojaAtual | null; onSair: () => void }) {
-  const [ecra, setEcra] = useState<Ecra>("dashboard");
+  const [destino, setDestino] = useState<Destino & { n: number }>({ ecra: "dashboard", n: 0 });
+  const ecra = destino.ecra;
+  const navegar: Navegar = (d) => setDestino((atual) => ({ ...d, n: atual.n + 1 }));
   const [stubNome, setStubNome] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [aAbrirPDV, setAAbrirPDV] = useState(false);
@@ -161,19 +196,27 @@ function AdminPrincipal({ loja, onSair }: { loja: LojaAtual | null; onSair: () =
           {aAbrirPDV ? "A abrir…" : "PDV"}
         </button>
         <nav className="admin-sidebar-nav">
-          {NAV.filter((item) => !item.soFarmacia || loja?.TipoNegocio === "farmacia").map((item) => (
-            <button
-              key={item.nome}
-              className={`admin-sidebar-item${!item.stub && ecra === item.chave ? " active" : ""}${item.stub ? " stub" : ""}`}
-              onClick={() => {
-                setEcra(item.chave);
-                if (item.stub) setStubNome(item.nome);
-              }}
-            >
-              <item.Icone className="admin-sidebar-icon" aria-hidden="true" />
-              {item.nome}
-            </button>
-          ))}
+          {NAV.map((g) => {
+            const itens = g.itens.filter((item) => !item.soFarmacia || loja?.TipoNegocio === "farmacia");
+            return (
+              <div key={g.grupo ?? "inicio"} className="admin-sidebar-grupo">
+                {g.grupo && <div className="admin-sidebar-grupo-nome">{g.grupo}</div>}
+                {itens.map((item) => (
+                  <button
+                    key={item.nome}
+                    className={`admin-sidebar-item${!item.stub && (ecra === item.chave || (ecra === "credito" && item.chave === destino.origem)) ? " active" : ""}${item.stub ? " stub" : ""}`}
+                    onClick={() => {
+                      navegar({ ecra: item.chave });
+                      if (item.stub) setStubNome(item.nome);
+                    }}
+                  >
+                    <item.Icone className="admin-sidebar-icon" aria-hidden="true" />
+                    {item.nome}
+                  </button>
+                ))}
+              </div>
+            );
+          })}
         </nav>
         <button className="admin-sidebar-item admin-sidebar-sair" onClick={onSair}>
           <ArrowRightStartOnRectangleIcon className="admin-sidebar-icon" aria-hidden="true" />
@@ -188,19 +231,30 @@ function AdminPrincipal({ loja, onSair }: { loja: LojaAtual | null; onSair: () =
             <button onClick={() => setErro(null)}>×</button>
           </div>
         )}
-        {ecra === "dashboard" && <Dashboard onErro={setErro} />}
-        {ecra === "produtos" && <ProdutosScreen onErro={setErro} />}
-        {ecra === "categorias" && <CategoriasScreen onErro={setErro} />}
-        {ecra === "armazens" && <ArmazensScreen onErro={setErro} />}
-        {ecra === "stock" && <StockScreen onErro={setErro} />}
-        {ecra === "inventario" && <InventarioScreen onErro={setErro} />}
-        {ecra === "vendas" && <VendasScreen onErro={setErro} />}
-        {ecra === "clientes" && <ClientesScreen onErro={setErro} />}
-        {ecra === "credito" && <VendaCreditoScreen onErro={setErro} />}
-        {ecra === "fichas" && <FichasScreen onErro={setErro} />}
-        {ecra === "utilizadores" && <UtilizadoresScreen onErro={setErro} />}
-        {ecra === "relatorios" && <RelatoriosScreen tipoNegocio={loja?.TipoNegocio} onErro={setErro} />}
-        {ecra === "farmacia" && <FarmaciaScreen onErro={setErro} />}
+        <div key={destino.n} className="admin-ecra">
+          {ecra === "dashboard" && <Dashboard onErro={setErro} />}
+          {ecra === "produtos" && <ProdutosScreen onErro={setErro} />}
+          {ecra === "categorias" && <CategoriasScreen onErro={setErro} />}
+          {ecra === "armazens" && <ArmazensScreen onErro={setErro} />}
+          {ecra === "stock" && <StockScreen onNavegar={navegar} onErro={setErro} />}
+          {ecra === "inventario" && <InventarioScreen onErro={setErro} />}
+          {ecra === "vendas" && <VendasScreen onNavegar={navegar} onErro={setErro} />}
+          {ecra === "clientes" && <ClientesScreen cliente={destino.cliente} onNavegar={navegar} onErro={setErro} />}
+          {ecra === "credito" && (
+            <VendaCreditoScreen
+              cliente={destino.cliente}
+              origem={destino.origem ?? "vendas"}
+              onNavegar={navegar}
+              onErro={setErro}
+            />
+          )}
+          {ecra === "fichas" && <FichasScreen onErro={setErro} />}
+          {ecra === "utilizadores" && <UtilizadoresScreen onErro={setErro} />}
+          {ecra === "relatorios" && (
+            <RelatoriosScreen tipoNegocio={loja?.TipoNegocio} relatorioInicial={destino.relatorio} onErro={setErro} />
+          )}
+          {ecra === "farmacia" && <FarmaciaScreen onErro={setErro} />}
+        </div>
         {ecra === "stub" && (
           <div className="admin-lojas-screen">
             <h2 style={{ margin: 0 }}>{stubNome}</h2>

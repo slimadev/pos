@@ -9,6 +9,7 @@ import {
 } from "../wailsjs/go/admin/AdminApp";
 import { admin, domain, usecase } from "../wailsjs/go/models";
 import Breadcrumb from "./Breadcrumb";
+import type { Navegar } from "./App";
 
 const mt = (n: number) => `${n.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MT`;
 const num = (n: number) => n.toLocaleString("pt-PT", { maximumFractionDigits: 3 });
@@ -32,7 +33,17 @@ let proximaChave = 0;
  * dívida, que se cobra em "Clientes e dívidas". O limite de crédito só
  * avisa, nunca bloqueia (como no fecho de uma conta).
  */
-export default function VendaCreditoScreen({ onErro }: { onErro: (e: string) => void }) {
+export default function VendaCreditoScreen({
+  cliente,
+  origem,
+  onNavegar,
+  onErro,
+}: {
+  cliente?: { ID: number; Nome: string };
+  origem: "vendas" | "clientes";
+  onNavegar: Navegar;
+  onErro: (e: string) => void;
+}) {
   const [armazens, setArmazens] = useState<domain.Armazem[]>([]);
   const [armazemID, setArmazemID] = useState<number | "">("");
   const [clientes, setClientes] = useState<admin.ClienteResumo[]>([]);
@@ -63,7 +74,17 @@ export default function VendaCreditoScreen({ onErro }: { onErro: (e: string) => 
 
   return (
     <div className="admin-lojas-screen">
-      <Breadcrumb itens={[{ rotulo: "Venda a crédito" }]} />
+      <Breadcrumb
+        itens={
+          origem === "clientes"
+            ? [
+                { rotulo: "Clientes e dívidas", onClick: () => onNavegar({ ecra: "clientes" }) },
+                ...(cliente ? [{ rotulo: cliente.Nome, onClick: () => onNavegar({ ecra: "clientes", cliente }) }] : []),
+                { rotulo: "Venda a crédito" },
+              ]
+            : [{ rotulo: "Vendas", onClick: () => onNavegar({ ecra: "vendas" }) }, { rotulo: "Venda a crédito" }]
+        }
+      />
       <div className="admin-ecra-header">
         <div>
           <h2 style={{ margin: 0 }}>Venda a crédito</h2>
@@ -86,7 +107,13 @@ export default function VendaCreditoScreen({ onErro }: { onErro: (e: string) => 
       </div>
 
       {resultado ? (
-        <Concluida resultado={resultado} clientes={clientes} onNova={recomecar} onErro={onErro} />
+        <Concluida
+          resultado={resultado}
+          clientes={clientes}
+          onNova={recomecar}
+          onVerCliente={(c) => onNavegar({ ecra: "clientes", cliente: c })}
+          onErro={onErro}
+        />
       ) : armazemID === "" ? (
         <p style={{ color: "var(--text-secondary)" }}>Nenhum armazém ativo.</p>
       ) : (
@@ -94,6 +121,7 @@ export default function VendaCreditoScreen({ onErro }: { onErro: (e: string) => 
           key={`${armazemID}-${nova}`}
           armazemID={armazemID}
           clientes={clientes.filter((c) => c.Cliente.Ativo)}
+          clienteInicial={cliente?.ID}
           onConcluida={setResultado}
           onErro={onErro}
         />
@@ -105,17 +133,19 @@ export default function VendaCreditoScreen({ onErro }: { onErro: (e: string) => 
 function NovaVenda({
   armazemID,
   clientes,
+  clienteInicial,
   onConcluida,
   onErro,
 }: {
   armazemID: number;
   clientes: admin.ClienteResumo[];
+  clienteInicial?: number;
   onConcluida: (r: admin.ResultadoVendaCredito) => void;
   onErro: (e: string) => void;
 }) {
   const [catalogo, setCatalogo] = useState<admin.ItemCatalogo[] | null>(null);
   const [pesquisa, setPesquisa] = useState("");
-  const [clienteID, setClienteID] = useState<number | "">("");
+  const [clienteID, setClienteID] = useState<number | "">(clienteInicial ?? "");
   const [linhas, setLinhas] = useState<Linha[]>([]);
   const [entrada, setEntrada] = useState("");
   const [metodo, setMetodo] = useState("dinheiro");
@@ -388,11 +418,13 @@ function Concluida({
   resultado,
   clientes,
   onNova,
+  onVerCliente,
   onErro,
 }: {
   resultado: admin.ResultadoVendaCredito;
   clientes: admin.ClienteResumo[];
   onNova: () => void;
+  onVerCliente: (c: { ID: number; Nome: string }) => void;
   onErro: (e: string) => void;
 }) {
   const v = resultado.Venda.Venda;
@@ -440,6 +472,11 @@ function Concluida({
           <PrinterIcon className="admin-btn-icon-inline" aria-hidden="true" />
           {aImprimir ? "A gerar…" : "Recibo (PDF)"}
         </button>
+        {v.ClienteID != null && (
+          <button className="admin-btn-secundario" onClick={() => onVerCliente({ ID: v.ClienteID!, Nome: nome })}>
+            Ver ficha do cliente
+          </button>
+        )}
         <button className="admin-btn" onClick={onNova}>
           Nova venda a crédito
         </button>

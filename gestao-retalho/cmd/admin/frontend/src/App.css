@@ -121,17 +121,32 @@ body {
 }
 
 .admin-sidebar-nav {
-  padding: 14px 10px;
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  min-height: 0;
+}
+.admin-sidebar-grupo {
   display: flex;
   flex-direction: column;
   gap: 1px;
+}
+.admin-sidebar-grupo-nome {
+  padding: 4px 12px 1px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .admin-sidebar-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 7px 12px;
   border-radius: 6px;
   color: var(--text-tertiary);
   font-size: 13.5px;
@@ -192,10 +207,15 @@ body {
 }
 
 .admin-sidebar-sair {
-  margin: auto 10px 14px;
+  margin: auto 10px 10px;
   border-top: 1px solid #f0f1f4;
-  padding-top: 14px;
+  padding-top: 10px;
   border-radius: 0;
+}
+
+/* Invólucro por ecrã (remonta ao navegar) — não afeta o layout. */
+.admin-ecra {
+  display: contents;
 }
 
 .admin-main {

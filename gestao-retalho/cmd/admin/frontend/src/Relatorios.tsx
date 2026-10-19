@@ -19,7 +19,7 @@ import {
 import { admin, api, domain, repository, usecase } from "../wailsjs/go/models";
 import Breadcrumb from "./Breadcrumb";
 
-type Relatorio =
+export type Relatorio =
   | "vendas"
   | "lucro"
   | "produtos"
@@ -122,19 +122,21 @@ type Consulta = { relatorio: Relatorio; desde: string; ate: string; armazemID: n
  */
 export default function RelatoriosScreen({
   tipoNegocio,
+  relatorioInicial = "vendas",
   onErro,
 }: {
   tipoNegocio?: string;
+  relatorioInicial?: Relatorio;
   onErro: (e: string) => void;
 }) {
   const temBar = tipoNegocio === "bottlestore" || tipoNegocio === "personalizado";
   const [armazens, setArmazens] = useState<domain.Armazem[]>([]);
-  const [relatorio, setRelatorio] = useState<Relatorio>("vendas");
+  const [relatorio, setRelatorio] = useState<Relatorio>(relatorioInicial);
   const [desde, setDesde] = useState(diasAtras(29));
   const [ate, setAte] = useState(diaLocal(new Date()));
   const [armazemID, setArmazemID] = useState<number | "">("");
   const [dia, setDia] = useState(diaLocal(new Date()));
-  const [consulta, setConsulta] = useState<Consulta>({ relatorio: "vendas", desde, ate, armazemID: "", dia, n: 0 });
+  const [consulta, setConsulta] = useState<Consulta>({ relatorio: relatorioInicial, desde, ate, armazemID: "", dia, n: 0 });
 
   useEffect(() => {
     ListarArmazens()

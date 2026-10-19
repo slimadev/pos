@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ExclamationTriangleIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
+import { BanknotesIcon, ExclamationTriangleIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
 import {
   ListarClientes,
   ObterFichaCliente,
@@ -13,6 +13,7 @@ import {
 import { admin, domain, usecase } from "../wailsjs/go/models";
 import Breadcrumb from "./Breadcrumb";
 import Modal from "./Modal";
+import type { Navegar } from "./App";
 
 const mt = (n: number) => `${n.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MT`;
 const data = (d: unknown) => new Date(String(d)).toLocaleDateString("pt-PT", { dateStyle: "short" });
@@ -38,8 +39,18 @@ type Vista = { tipo: "lista" } | { tipo: "ficha"; clienteID: number; nome: strin
  * de cada um (o cliente anónimo das vendas ao balcão não aparece); a ficha
  * mostra as dívidas, permite registar pagamentos e lista as compras.
  */
-export default function ClientesScreen({ onErro }: { onErro: (e: string) => void }) {
-  const [vista, setVista] = useState<Vista>({ tipo: "lista" });
+export default function ClientesScreen({
+  cliente,
+  onNavegar,
+  onErro,
+}: {
+  cliente?: { ID: number; Nome: string };
+  onNavegar: Navegar;
+  onErro: (e: string) => void;
+}) {
+  const [vista, setVista] = useState<Vista>(
+    cliente ? { tipo: "ficha", clienteID: cliente.ID, nome: cliente.Nome } : { tipo: "lista" },
+  );
 
   if (vista.tipo === "ficha") {
     return (
@@ -47,19 +58,31 @@ export default function ClientesScreen({ onErro }: { onErro: (e: string) => void
         <Breadcrumb
           itens={[{ rotulo: "Clientes e dívidas", onClick: () => setVista({ tipo: "lista" }) }, { rotulo: vista.nome }]}
         />
-        <Ficha clienteID={vista.clienteID} onErro={onErro} />
+        <Ficha clienteID={vista.clienteID} onNavegar={onNavegar} onErro={onErro} />
       </div>
     );
   }
   return (
     <div className="admin-lojas-screen">
       <Breadcrumb itens={[{ rotulo: "Clientes e dívidas" }]} />
-      <Lista onAbrir={(c) => setVista({ tipo: "ficha", clienteID: c.ID, nome: c.Nome })} onErro={onErro} />
+      <Lista
+        onAbrir={(c) => setVista({ tipo: "ficha", clienteID: c.ID, nome: c.Nome })}
+        onNavegar={onNavegar}
+        onErro={onErro}
+      />
     </div>
   );
 }
 
-function Lista({ onAbrir, onErro }: { onAbrir: (c: domain.Cliente) => void; onErro: (e: string) => void }) {
+function Lista({
+  onAbrir,
+  onNavegar,
+  onErro,
+}: {
+  onAbrir: (c: domain.Cliente) => void;
+  onNavegar: Navegar;
+  onErro: (e: string) => void;
+}) {
   const [clientes, setClientes] = useState<admin.ClienteResumo[] | null>(null);
   const [pesquisa, setPesquisa] = useState("");
   const [filtro, setFiltro] = useState<"ativos" | "com_divida" | "inativos">("ativos");
@@ -103,9 +126,18 @@ function Lista({ onAbrir, onErro }: { onAbrir: (c: domain.Cliente) => void; onEr
     <>
       <div className="admin-ecra-header">
         <h2 style={{ margin: 0 }}>Clientes e dívidas</h2>
-        <button className="admin-btn" onClick={() => setNovo(true)}>
-          + Novo cliente
-        </button>
+        <div className="admin-form">
+          <button
+            className="admin-btn-secundario"
+            title="Lista de dívidas em aberto, para exportar em Excel ou PDF"
+            onClick={() => onNavegar({ ecra: "relatorios", relatorio: "dividas" })}
+          >
+            Exportar dívidas
+          </button>
+          <button className="admin-btn" onClick={() => setNovo(true)}>
+            + Novo cliente
+          </button>
+        </div>
       </div>
 
       <div className="admin-inventario-resumo">
@@ -300,7 +332,15 @@ type ModalFicha =
   | { tipo: "pagar"; divida: domain.Divida }
   | { tipo: "pagamentos"; divida: domain.Divida };
 
-function Ficha({ clienteID, onErro }: { clienteID: number; onErro: (e: string) => void }) {
+function Ficha({
+  clienteID,
+  onNavegar,
+  onErro,
+}: {
+  clienteID: number;
+  onNavegar: Navegar;
+  onErro: (e: string) => void;
+}) {
   const [ficha, setFicha] = useState<admin.FichaCliente | null>(null);
   const [modal, setModal] = useState<ModalFicha>({ tipo: "nenhum" });
 
@@ -343,6 +383,15 @@ function Ficha({ clienteID, onErro }: { clienteID: number; onErro: (e: string) =
           </div>
         </div>
         <div className="admin-form">
+          {c.Ativo && (
+            <button
+              className="admin-btn"
+              onClick={() => onNavegar({ ecra: "credito", origem: "clientes", cliente: { ID: c.ID, Nome: c.Nome } })}
+            >
+              <BanknotesIcon className="admin-btn-icon-inline" aria-hidden="true" />
+              Vender a crédito
+            </button>
+          )}
           <button className="admin-btn-secundario" onClick={() => setModal({ tipo: "editar" })}>
             <PencilSquareIcon className="admin-btn-icon-inline" aria-hidden="true" />
             Editar

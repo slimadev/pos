@@ -25,6 +25,7 @@ import {
 } from "../wailsjs/go/admin/AdminApp";
 import { domain, usecase } from "../wailsjs/go/models";
 import Modal from "./Modal";
+import type { Navegar } from "./App";
 
 type IconeSvg = ComponentType<SVGProps<SVGSVGElement>>;
 type TipoMovimento = "entrada" | "entrada_com_lote" | "transferencia" | "perda" | "consumo_interno";
@@ -60,7 +61,7 @@ type ModalEstado =
  * modal com seletor de tipo. "Abaixo do mínimo" reaproveita o mesmo
  * StockMinimo que já alimenta o alerta do Dashboard.
  */
-export default function StockScreen({ onErro }: { onErro: (e: string) => void }) {
+export default function StockScreen({ onNavegar, onErro }: { onNavegar: Navegar; onErro: (e: string) => void }) {
   const [armazens, setArmazens] = useState<domain.Armazem[]>([]);
   const [armazemID, setArmazemID] = useState<number | "">("");
   const [produtos, setProdutos] = useState<domain.Produto[]>([]);
@@ -110,6 +111,13 @@ export default function StockScreen({ onErro }: { onErro: (e: string) => void })
             + Entrada em lote (vários produtos)
           </button>
         )}
+        <button
+          className="admin-btn-secundario"
+          title="Valor do stock ao custo, para exportar em Excel ou PDF"
+          onClick={() => onNavegar({ ecra: "relatorios", relatorio: "stock" })}
+        >
+          Valor do stock / exportar
+        </button>
       </div>
 
       {armazens.length === 0 ? (
