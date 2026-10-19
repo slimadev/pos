@@ -414,3 +414,8 @@
   min-height: 480px;
   box-sizing: border-box;
 }
+
+.bs-modal-falta--troco {
+  font-size: 18px;
+  font-weight: 700;
+}

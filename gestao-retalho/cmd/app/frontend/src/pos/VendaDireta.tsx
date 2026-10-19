@@ -19,6 +19,7 @@ import {
 } from "../../wailsjs/go/api/App";
 import { domain, usecase } from "../../wailsjs/go/models";
 import Catalogo, { type CatalogoHandle } from "./Catalogo";
+import { calcularTroco } from "./troco";
 import { METODOS, ROTULO_METODO, lerNumero, mt, qtd } from "./formato";
 import "./VendaDireta.css";
 
@@ -74,7 +75,9 @@ export default function VendaDireta({ tipoNegocio }: { tipoNegocio: string }) {
   const [descontoGlobal, setDescontoGlobal] = useState("");
   const [pagamentos, setPagamentos] = useState<LinhaPagamento[]>([{ metodo: "dinheiro", valor: "" }]);
 
-  const [ultimaVendaID, setUltimaVendaID] = useState<number | null>(null);
+  // A última venda e o troco a dar — fica à vista depois de o carrinho
+  // limpar, até começar a venda seguinte.
+  const [ultimaVenda, setUltimaVenda] = useState<{ id: number; troco: number } | null>(null);
   const [historicoDia, setHistoricoDia] = useState<domain.Venda[]>([]);
   const [erro, setErro] = useState<string | null>(null);
   const [aFinalizar, setAFinalizar] = useState(false);
@@ -110,7 +113,7 @@ export default function VendaDireta({ tipoNegocio }: { tipoNegocio: string }) {
     const produto = item.Produto;
     const granel = ehGranel(produto);
     const chave = `${produto.ID}-${unidade.ID}`;
-    setUltimaVendaID(null);
+    setUltimaVenda(null);
     setCarrinho((prev) => {
       if (prev.some((i) => i.chave === chave)) {
         return prev.map((i) => (i.chave === chave ? { ...i, quantidade: i.quantidade + (granel ? 0.1 : 1) } : i));
@@ -153,6 +156,10 @@ export default function VendaDireta({ tipoNegocio }: { tipoNegocio: string }) {
   const total = Math.max(0, subtotal - desconto);
   const somaPagamentos = pagamentos.reduce((acc, p) => acc + (lerNumero(p.valor || "0") || 0), 0);
   const faltaAtribuir = Math.round((total - somaPagamentos) * 100) / 100;
+  // Pago a mais em dinheiro é troco; pago a mais noutro método tem de se
+  // corrigir (não há troco de M-Pesa).
+  const { troco, excessoSemDinheiro, liquidos } = calcularTroco(total, pagamentos);
+  const pagamentoValido = faltaAtribuir <= 0.005 && excessoSemDinheiro === 0;
 
   function atualizarPagamento(i: number, campo: keyof LinhaPagamento, valor: string) {
     setPagamentos((prev) => prev.map((p, idx) => (idx === i ? { ...p, [campo]: valor } : p)));
@@ -166,7 +173,7 @@ export default function VendaDireta({ tipoNegocio }: { tipoNegocio: string }) {
   }
 
   function finalizar() {
-    if (carrinho.length === 0 || armazemId === "" || aFinalizar || Math.abs(faltaAtribuir) >= 0.01) return;
+    if (carrinho.length === 0 || armazemId === "" || aFinalizar || !pagamentoValido) return;
     setErro(null);
 
     const params = new usecase.VendaDiretaParams();
@@ -181,19 +188,18 @@ export default function VendaDireta({ tipoNegocio }: { tipoNegocio: string }) {
       item.Desconto = 0;
       return item;
     });
-    params.Pagamentos = pagamentos
-      .filter((p) => lerNumero(p.valor || "0") > 0)
-      .map((p) => {
-        const pag = new usecase.PagamentoVendaParams();
-        pag.Metodo = p.metodo;
-        pag.Valor = lerNumero(p.valor);
-        return pag;
-      });
+    params.Pagamentos = liquidos.map((p) => {
+      const pag = new usecase.PagamentoVendaParams();
+      pag.Metodo = p.metodo;
+      pag.Valor = p.valor;
+      return pag;
+    });
+    const trocoDaVenda = troco;
 
     setAFinalizar(true);
     RegistarVendaDireta(params)
       .then((resultado) => {
-        setUltimaVendaID(resultado.Venda.ID);
+        setUltimaVenda({ id: resultado.Venda.ID, troco: trocoDaVenda });
         setCarrinho([]);
         setDescontoGlobal("");
         setPagamentos([{ metodo: "dinheiro", valor: "" }]);
@@ -249,10 +255,13 @@ export default function VendaDireta({ tipoNegocio }: { tipoNegocio: string }) {
           </div>
         )}
 
-        {ultimaVendaID && (
+        {ultimaVenda && (
           <div className="pos-sucesso">
-            Venda #{ultimaVendaID} registada.{" "}
-            <button onClick={() => gerarRecibo(ultimaVendaID)}>Gerar recibo</button>
+            Venda #{ultimaVenda.id} registada.
+            {ultimaVenda.troco > 0 && (
+              <strong className="pos-sucesso-troco">Troco a dar: {mt(ultimaVenda.troco)}</strong>
+            )}
+            <button onClick={() => gerarRecibo(ultimaVenda.id)}>Gerar recibo</button>
           </div>
         )}
 
@@ -362,17 +371,24 @@ export default function VendaDireta({ tipoNegocio }: { tipoNegocio: string }) {
             </button>
           </div>
 
-          <div className={`pos-falta ${Math.abs(faltaAtribuir) < 0.01 ? "pos-falta--ok" : ""}`}>
-            {faltaAtribuir > 0.005
-              ? `Falta pagar: ${mt(faltaAtribuir)}`
-              : faltaAtribuir < -0.005
-                ? `Pago a mais: ${mt(-faltaAtribuir)}`
-                : "Pagamento certo"}
-          </div>
+          {troco > 0 ? (
+            <div className="pos-troco">
+              <span>Troco</span>
+              <span>{mt(troco)}</span>
+            </div>
+          ) : (
+            <div className={`pos-falta ${pagamentoValido ? "pos-falta--ok" : ""}`}>
+              {faltaAtribuir > 0.005
+                ? `Falta pagar: ${mt(faltaAtribuir)}`
+                : excessoSemDinheiro > 0
+                  ? `Pago a mais: ${mt(excessoSemDinheiro)} — só há troco de dinheiro, corrija o valor`
+                  : "Pagamento certo"}
+            </div>
+          )}
 
           <button
             className="pos-finalizar"
-            disabled={carrinho.length === 0 || Math.abs(faltaAtribuir) >= 0.01 || aFinalizar}
+            disabled={carrinho.length === 0 || !pagamentoValido || aFinalizar}
             onClick={finalizar}
           >
             <IconeFinalizar className="pos-finalizar-icon" aria-hidden="true" />

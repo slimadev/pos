@@ -22,6 +22,7 @@ import {
 import { api, domain, usecase } from "../../wailsjs/go/models";
 import Catalogo from "./Catalogo";
 import { METODOS, ROTULO_METODO, lerNumero, mt, qtd } from "./formato";
+import { calcularTroco } from "./troco";
 import "./Bottlestore.css";
 
 interface ContaComTotal {
@@ -352,6 +353,7 @@ function ModalFecho({
   const somaPagamentos = pagamentos.reduce((acc, p) => acc + (lerNumero(p.valor || "0") || 0), 0);
   const faltaAtribuir = Math.round((total - somaPagamentos) * 100) / 100;
   const iriaGerarDivida = faltaAtribuir > 0.01;
+  const { troco, excessoSemDinheiro, liquidos } = calcularTroco(total, pagamentos);
 
   function atualizar(i: number, campo: "metodo" | "valor", valor: string) {
     setPagamentos((prev) => prev.map((p, idx) => (idx === i ? { ...p, [campo]: valor } : p)));
@@ -366,14 +368,12 @@ function ModalFecho({
     p.ArmazemID = armazemId;
     p.DescontoTotal = 0;
     p.UtilizadorID = 0;
-    p.Pagamentos = pagamentos
-      .filter((pg) => lerNumero(pg.valor || "0") > 0)
-      .map((pg) => {
-        const pag = new usecase.PagamentoVendaParams();
-        pag.Metodo = pg.metodo;
-        pag.Valor = lerNumero(pg.valor);
-        return pag;
-      });
+    p.Pagamentos = liquidos.map((pg) => {
+      const pag = new usecase.PagamentoVendaParams();
+      pag.Metodo = pg.metodo;
+      pag.Valor = pg.valor;
+      return pag;
+    });
 
     setAFechar(true);
     FecharContaAberta(conta.ID, p)
@@ -415,21 +415,25 @@ function ModalFecho({
           </button>
         </div>
 
-        <div className={`bs-modal-falta ${iriaGerarDivida ? "bs-modal-falta--divida" : ""}`}>
+        <div
+          className={`bs-modal-falta ${iriaGerarDivida || excessoSemDinheiro > 0 ? "bs-modal-falta--divida" : ""}${troco > 0 ? " bs-modal-falta--troco" : ""}`}
+        >
           {iriaGerarDivida
             ? clienteAnonimo
               ? `Falta pagar ${mt(faltaAtribuir)} — cliente anónimo não pode ficar em dívida`
               : `Falta pagar ${mt(faltaAtribuir)} — fica em dívida do cliente`
-            : faltaAtribuir < -0.01
-              ? `Pago a mais: ${mt(-faltaAtribuir)}`
-              : "Pagamento certo"}
+            : excessoSemDinheiro > 0
+              ? `Pago a mais: ${mt(excessoSemDinheiro)} — só há troco de dinheiro, corrija o valor`
+              : troco > 0
+                ? `Troco a dar: ${mt(troco)}`
+                : "Pagamento certo"}
         </div>
 
         <div className="bs-modal-actions">
           <button onClick={onCancelar}>Cancelar</button>
           <button
             className="bs-modal-confirmar"
-            disabled={aFechar || somaPagamentos > total + 0.01 || (iriaGerarDivida && clienteAnonimo)}
+            disabled={aFechar || excessoSemDinheiro > 0 || (iriaGerarDivida && clienteAnonimo)}
             onClick={confirmar}
           >
             {aFechar ? "A confirmar…" : "Confirmar pagamento"}

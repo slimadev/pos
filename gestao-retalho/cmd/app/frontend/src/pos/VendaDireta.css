@@ -316,3 +316,22 @@
   font-size: 12px;
   cursor: pointer;
 }
+
+/* Troco a dar quando o cliente entrega mais dinheiro do que o total. */
+.pos-troco {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--color-success);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+}
+.pos-troco span:last-child {
+  font-size: 22px;
+}
+.pos-sucesso-troco {
+  font-size: 15px;
+}
