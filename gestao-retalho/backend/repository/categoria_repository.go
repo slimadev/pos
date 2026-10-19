@@ -9,11 +9,12 @@ import (
 )
 
 type CategoriaRepository struct {
-	q *sqlcgen.Queries
+	db *sql.DB
+	q  *sqlcgen.Queries
 }
 
 func NewCategoriaRepository(db *sql.DB) *CategoriaRepository {
-	return &CategoriaRepository{q: sqlcgen.New(db)}
+	return &CategoriaRepository{db: db, q: sqlcgen.New(db)}
 }
 
 func (r *CategoriaRepository) Listar(ctx context.Context, negocioID int64) ([]domain.Categoria, error) {
@@ -53,6 +54,31 @@ func (r *CategoriaRepository) DefinirAtiva(ctx context.Context, id int64, ativo 
 		Ativo: boolToInt64(ativo),
 		ID:    id,
 	})
+}
+
+// Juntar passa os produtos e as subcategorias de origem para destino e
+// desativa origem, numa só transação. Devolve quantos produtos mudaram.
+func (r *CategoriaRepository) Juntar(ctx context.Context, origemID, destinoID int64) (int64, error) {
+	var movidos int64
+	err := runInTx(ctx, r.db, func(tx *sql.Tx) error {
+		q := r.q.WithTx(tx)
+		n, err := q.MoverProdutosDeCategoria(ctx, sqlcgen.MoverProdutosDeCategoriaParams{
+			Destino: sql.NullInt64{Int64: destinoID, Valid: true},
+			Origem:  sql.NullInt64{Int64: origemID, Valid: true},
+		})
+		if err != nil {
+			return err
+		}
+		movidos = n
+		if err := q.MoverSubcategorias(ctx, sqlcgen.MoverSubcategoriasParams{
+			Destino: sql.NullInt64{Int64: destinoID, Valid: true},
+			Origem:  sql.NullInt64{Int64: origemID, Valid: true},
+		}); err != nil {
+			return err
+		}
+		return q.DefinirCategoriaAtiva(ctx, sqlcgen.DefinirCategoriaAtivaParams{Ativo: 0, ID: origemID})
+	})
+	return movidos, err
 }
 
 func categoriaFromRow(row sqlcgen.Categorias) domain.Categoria {

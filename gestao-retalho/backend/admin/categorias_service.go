@@ -63,6 +63,16 @@ func (s *CategoriasService) DefinirAtiva(ctx context.Context, categoriaID int64,
 	return app.DesativarCategoria(categoriaID)
 }
 
+func (s *CategoriasService) Juntar(ctx context.Context, origemID, destinoID int64) (int64, error) {
+	app, fechar, err := s.abrirLoja(ctx)
+	if err != nil {
+		return 0, err
+	}
+	defer fechar()
+
+	return app.JuntarCategorias(origemID, destinoID)
+}
+
 func (s *CategoriasService) abrirLoja(ctx context.Context) (*api.App, func(), error) {
 	return abrirLojaUnica(ctx, s.lojas)
 }

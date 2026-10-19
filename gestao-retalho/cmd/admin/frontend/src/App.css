@@ -1731,3 +1731,8 @@ body {
 .admin-ecra-header .admin-stock-armazem-seletor {
   margin-left: 16px;
 }
+.admin-etiqueta.aviso {
+  background: var(--warn-bg);
+  border-color: transparent;
+  color: var(--warn);
+}

@@ -6,12 +6,25 @@ import {
   AtualizarCategoria,
   AtivarCategoria,
   DesativarCategoria,
+  JuntarCategorias,
 } from "../wailsjs/go/admin/AdminApp";
 import { domain } from "../wailsjs/go/models";
 import Breadcrumb from "./Breadcrumb";
 import Modal from "./Modal";
 
-type ModalEstado = { aberto: false } | { aberto: true; categoria: domain.Categoria | null };
+type ModalEstado =
+  | { aberto: false }
+  | { aberto: true; categoria: domain.Categoria | null }
+  | { aberto: true; juntar: domain.Categoria };
+
+// Mesma regra do backend (mesmoNome): sem maiúsculas, acentos nem espaços a mais.
+const chaveNome = (nome: string) =>
+  nome
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
 
 /**
  * Registo de categorias da única loja que este cmd/admin serve — dado de
@@ -25,6 +38,7 @@ export default function CategoriasScreen({ onErro }: { onErro: (e: string) => vo
   const [produtos, setProdutos] = useState<domain.Produto[]>([]);
   const [aCarregar, setACarregar] = useState(true);
   const [modal, setModal] = useState<ModalEstado>({ aberto: false });
+  const [aviso, setAviso] = useState<string | null>(null);
 
   function carregar() {
     Promise.all([ListarCategorias(), ListarProdutos()])
@@ -51,6 +65,9 @@ export default function CategoriasScreen({ onErro }: { onErro: (e: string) => vo
   }
 
   const fechar = () => setModal({ aberto: false });
+  const ativas = categorias.filter((c) => c.Ativo);
+  const repetida = (c: domain.Categoria) =>
+    c.Ativo && ativas.some((o) => o.ID !== c.ID && chaveNome(o.Nome) === chaveNome(c.Nome));
 
   return (
     <div className="admin-lojas-screen">
@@ -61,6 +78,15 @@ export default function CategoriasScreen({ onErro }: { onErro: (e: string) => vo
           + Criar categoria
         </button>
       </div>
+
+      {aviso && (
+        <div className="admin-aviso-ok">
+          {aviso}
+          <button onClick={() => setAviso(null)} aria-label="Fechar">
+            ×
+          </button>
+        </div>
+      )}
 
       <table className="admin-tabela">
         <thead>
@@ -77,6 +103,7 @@ export default function CategoriasScreen({ onErro }: { onErro: (e: string) => vo
               <td>
                 {c.Nome}
                 {!c.Ativo && <span className="admin-etiqueta">inativa</span>}
+                {repetida(c) && <span className="admin-etiqueta aviso">repetida</span>}
               </td>
               <td>{c.CategoriaPaiID != null ? nomeCategoria(c.CategoriaPaiID) : "—"}</td>
               <td style={{ textAlign: "right" }}>{nProdutos(c.ID)}</td>
@@ -85,6 +112,11 @@ export default function CategoriasScreen({ onErro }: { onErro: (e: string) => vo
                   <button className="admin-btn-secundario" onClick={() => setModal({ aberto: true, categoria: c })}>
                     Editar
                   </button>
+                  {c.Ativo && ativas.length > 1 && (
+                    <button className="admin-btn-secundario" onClick={() => setModal({ aberto: true, juntar: c })}>
+                      Juntar com…
+                    </button>
+                  )}
                   <button className="admin-btn-secundario" onClick={() => alternarAtivo(c)}>
                     {c.Ativo ? "Desativar" : "Ativar"}
                   </button>
@@ -100,7 +132,28 @@ export default function CategoriasScreen({ onErro }: { onErro: (e: string) => vo
         </tbody>
       </table>
 
-      {modal.aberto && (
+      {modal.aberto && "juntar" in modal && (
+        <Modal titulo={`Juntar ${modal.juntar.Nome}`} onFechar={fechar}>
+          <JuntarForm
+            origem={modal.juntar}
+            nProdutos={nProdutos(modal.juntar.ID)}
+            destinos={ativas.filter((c) => c.ID !== modal.juntar.ID)}
+            nomeDe={nomeCategoria}
+            nProdutosDe={nProdutos}
+            onJuntada={(movidos, destino) => {
+              fechar();
+              carregar();
+              setAviso(
+                `${movidos} produto(s) passaram para "${destino}" e a categoria repetida foi desativada.`,
+              );
+            }}
+            onCancelar={fechar}
+            onErro={onErro}
+          />
+        </Modal>
+      )}
+
+      {modal.aberto && "categoria" in modal && (
         <Modal titulo={modal.categoria ? `Editar ${modal.categoria.Nome}` : "Criar categoria"} onFechar={fechar}>
           <CategoriaForm
             categoria={modal.categoria}
@@ -179,6 +232,78 @@ function CategoriaForm({
       <div className="admin-form">
         <button className="admin-btn" disabled={!nome.trim() || aGuardar} onClick={guardar}>
           {aGuardar ? "A guardar…" : categoria ? "Guardar alterações" : "+ Criar categoria"}
+        </button>
+        <button className="admin-btn-secundario" onClick={onCancelar}>
+          Cancelar
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function JuntarForm({
+  origem,
+  nProdutos,
+  destinos,
+  nomeDe,
+  nProdutosDe,
+  onJuntada,
+  onCancelar,
+  onErro,
+}: {
+  origem: domain.Categoria;
+  nProdutos: number;
+  destinos: domain.Categoria[];
+  nomeDe: (id: number) => string;
+  nProdutosDe: (id: number) => number;
+  onJuntada: (movidos: number, destino: string) => void;
+  onCancelar: () => void;
+  onErro: (e: string) => void;
+}) {
+  // As de nome igual primeiro (é para elas que isto existe), já escolhida.
+  const ordenados = [...destinos].sort(
+    (a, b) =>
+      Number(chaveNome(b.Nome) === chaveNome(origem.Nome)) - Number(chaveNome(a.Nome) === chaveNome(origem.Nome)) ||
+      a.Nome.localeCompare(b.Nome, "pt"),
+  );
+  const [destinoID, setDestinoID] = useState<number | "">(
+    ordenados.length > 0 && chaveNome(ordenados[0].Nome) === chaveNome(origem.Nome) ? ordenados[0].ID : "",
+  );
+  const [aJuntar, setAJuntar] = useState(false);
+  const destino = destinos.find((c) => c.ID === destinoID);
+
+  function juntar() {
+    if (destinoID === "" || aJuntar) return;
+    setAJuntar(true);
+    JuntarCategorias(origem.ID, destinoID)
+      .then((n) => onJuntada(n, destino?.Nome ?? ""))
+      .catch((e) => onErro(String(e)))
+      .finally(() => setAJuntar(false));
+  }
+
+  const rotulo = (c: domain.Categoria) =>
+    `${c.Nome}${c.CategoriaPaiID != null ? ` (em ${nomeDe(c.CategoriaPaiID)})` : ""} — ${nProdutosDe(c.ID)} produto(s)`;
+
+  return (
+    <div className="admin-produto-form">
+      <p style={{ margin: 0 }}>
+        Os {nProdutos} produto(s) de <strong>{origem.Nome}</strong> e as suas subcategorias passam para a categoria
+        escolhida, e <strong>{origem.Nome}</strong> fica desativada.
+      </p>
+      <label className="admin-campo">
+        Juntar com
+        <select value={destinoID} onChange={(e) => setDestinoID(e.target.value ? Number(e.target.value) : "")}>
+          <option value="">Escolha a categoria…</option>
+          {ordenados.map((c) => (
+            <option key={c.ID} value={c.ID}>
+              {rotulo(c)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <div className="admin-form">
+        <button className="admin-btn" disabled={destinoID === "" || aJuntar} onClick={juntar}>
+          {aJuntar ? "A juntar…" : "Juntar"}
         </button>
         <button className="admin-btn-secundario" onClick={onCancelar}>
           Cancelar

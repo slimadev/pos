@@ -66,10 +66,64 @@ func (s *CategoriaService) nomeLivre(ctx context.Context, nome string, excetoID 
 	return nil
 }
 
+// Ativar recusa reativar uma categoria cujo nome já está noutra ativa —
+// senão desfazia um "Juntar" e voltava a haver duas iguais no PDV.
 func (s *CategoriaService) Ativar(ctx context.Context, id int64) error {
+	todas, err := s.repo.Listar(ctx, domain.NegocioID)
+	if err != nil {
+		return err
+	}
+	for _, c := range todas {
+		if c.ID != id {
+			continue
+		}
+		for _, o := range todas {
+			if o.ID != id && o.Ativo && mesmoNome(o.Nome, c.Nome) {
+				return fmt.Errorf("já existe a categoria %q ativa — mude o nome antes de ativar esta", o.Nome)
+			}
+		}
+	}
 	return s.repo.DefinirAtiva(ctx, id, true)
 }
 
 func (s *CategoriaService) Desativar(ctx context.Context, id int64) error {
 	return s.repo.DefinirAtiva(ctx, id, false)
+}
+
+// Juntar acaba com uma categoria repetida (ex: duas "Elétrico" criadas
+// antes de os nomes repetidos serem recusados): os produtos e as
+// subcategorias de origem passam para destino, e origem fica desativada.
+// Devolve quantos produtos mudaram de categoria.
+func (s *CategoriaService) Juntar(ctx context.Context, origemID, destinoID int64) (int64, error) {
+	if origemID == destinoID {
+		return 0, fmt.Errorf("escolha outra categoria para juntar")
+	}
+	todas, err := s.repo.Listar(ctx, domain.NegocioID)
+	if err != nil {
+		return 0, err
+	}
+	var origem, destino *domain.Categoria
+	for i := range todas {
+		switch todas[i].ID {
+		case origemID:
+			origem = &todas[i]
+		case destinoID:
+			destino = &todas[i]
+		}
+	}
+	if origem == nil || destino == nil {
+		return 0, fmt.Errorf("categoria não encontrada")
+	}
+	if !destino.Ativo {
+		return 0, fmt.Errorf("a categoria %q está desativada — ative-a antes de juntar", destino.Nome)
+	}
+	// Se destino era subcategoria de origem, sobe para o lugar de origem;
+	// senão ficaria pendurada numa categoria desativada.
+	if destino.CategoriaPaiID != nil && *destino.CategoriaPaiID == origem.ID {
+		destino.CategoriaPaiID = origem.CategoriaPaiID
+		if err := s.repo.Atualizar(ctx, *destino); err != nil {
+			return 0, err
+		}
+	}
+	return s.repo.Juntar(ctx, origemID, destinoID)
 }

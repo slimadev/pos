@@ -82,6 +82,8 @@ type Querier interface {
 	ListarVendasPorCliente(ctx context.Context, clienteID int64) ([]Vendas, error)
 	ListarVendasPorPeriodo(ctx context.Context, arg ListarVendasPorPeriodoParams) ([]Vendas, error)
 	MarcarInventarioItemAjustado(ctx context.Context, id int64) error
+	MoverProdutosDeCategoria(ctx context.Context, arg MoverProdutosDeCategoriaParams) (int64, error)
+	MoverSubcategorias(ctx context.Context, arg MoverSubcategoriasParams) error
 	ObterArmazem(ctx context.Context, id int64) (Armazens, error)
 	ObterCliente(ctx context.Context, id int64) (Clientes, error)
 	ObterConfiguracao(ctx context.Context, arg ObterConfiguracaoParams) (ObterConfiguracaoRow, error)

@@ -213,6 +213,15 @@ func (a *AdminApp) DesativarCategoria(categoriaID int64) error {
 	return a.Categorias.DefinirAtiva(a.ctx, categoriaID, false)
 }
 
+// JuntarCategorias acaba com uma categoria repetida: os produtos de origem
+// passam para destino e origem fica desativada.
+func (a *AdminApp) JuntarCategorias(origemID, destinoID int64) (int64, error) {
+	if err := a.exigirSessao(); err != nil {
+		return 0, err
+	}
+	return a.Categorias.Juntar(a.ctx, origemID, destinoID)
+}
+
 // --- Produtos ----------------------------------------------------------------
 //
 // Produtos (e as suas unidades de venda/compra — "variações ou grupos" do

@@ -281,6 +281,12 @@ func (a *App) DesativarCategoria(id int64) error {
 	return a.CategoriaService.Desativar(a.ctx, id)
 }
 
+// JuntarCategorias passa os produtos de origem para destino e desativa
+// origem; devolve quantos produtos mudaram.
+func (a *App) JuntarCategorias(origemID, destinoID int64) (int64, error) {
+	return a.CategoriaService.Juntar(a.ctx, origemID, destinoID)
+}
+
 // --- Armazéns (SDD 4.3) ----------------------------------------------------
 
 func (a *App) ListarArmazens() ([]domain.Armazem, error) {

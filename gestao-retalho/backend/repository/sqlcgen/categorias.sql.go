@@ -99,3 +99,35 @@ func (q *Queries) ListarCategorias(ctx context.Context, negocioID int64) ([]Cate
 	}
 	return items, nil
 }
+
+const moverProdutosDeCategoria = `-- name: MoverProdutosDeCategoria :execrows
+UPDATE produtos SET categoria_id = ?1 WHERE categoria_id = ?2
+`
+
+type MoverProdutosDeCategoriaParams struct {
+	Destino sql.NullInt64 `json:"destino"`
+	Origem  sql.NullInt64 `json:"origem"`
+}
+
+func (q *Queries) MoverProdutosDeCategoria(ctx context.Context, arg MoverProdutosDeCategoriaParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, moverProdutosDeCategoria, arg.Destino, arg.Origem)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+const moverSubcategorias = `-- name: MoverSubcategorias :exec
+UPDATE categorias SET categoria_pai_id = ?1
+WHERE categoria_pai_id = ?2 AND id != ?1
+`
+
+type MoverSubcategoriasParams struct {
+	Destino sql.NullInt64 `json:"destino"`
+	Origem  sql.NullInt64 `json:"origem"`
+}
+
+func (q *Queries) MoverSubcategorias(ctx context.Context, arg MoverSubcategoriasParams) error {
+	_, err := q.db.ExecContext(ctx, moverSubcategorias, arg.Destino, arg.Origem)
+	return err
+}
