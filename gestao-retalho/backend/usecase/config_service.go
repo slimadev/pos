@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -196,4 +197,36 @@ func resolverModulosETema(tipo domain.TipoNegocio, modulosPersonalizados []domai
 		}
 	}
 	return nil, "", fmt.Errorf("tipo de negócio desconhecido: %q", tipo)
+}
+
+// tamanhoMaximoLogo limita o data URL do logótipo (~1,5 MB de imagem em
+// base64) — vive numa linha de configuracoes e é lido a cada arranque.
+const tamanhoMaximoLogo = 2_200_000
+
+// AtualizarIdentidade muda o nome do negócio e o logótipo depois do
+// assistente inicial; o tipo de negócio (e com ele módulos e tema) não
+// muda aqui. logo "" remove o logótipo.
+func (s *ConfigService) AtualizarIdentidade(ctx context.Context, nome, logo string) (domain.Negocio, error) {
+	nome = strings.TrimSpace(nome)
+	if nome == "" {
+		return domain.Negocio{}, fmt.Errorf("nome do negócio é obrigatório")
+	}
+	if logo != "" && !strings.HasPrefix(logo, "data:image/") {
+		return domain.Negocio{}, fmt.Errorf("o logótipo tem de ser uma imagem")
+	}
+	if len(logo) > tamanhoMaximoLogo {
+		return domain.Negocio{}, fmt.Errorf("logótipo demasiado grande — escolha uma imagem até 1,5 MB")
+	}
+	atual, err := s.negocios.Obter(ctx)
+	if err != nil {
+		return domain.Negocio{}, err
+	}
+	negocio, err := s.negocios.Atualizar(ctx, nome, atual.TipoNegocio)
+	if err != nil {
+		return domain.Negocio{}, fmt.Errorf("gravar negócio: %w", err)
+	}
+	if err := s.configs.Definir(ctx, "logo", logo); err != nil {
+		return domain.Negocio{}, fmt.Errorf("gravar logótipo: %w", err)
+	}
+	return negocio, nil
 }

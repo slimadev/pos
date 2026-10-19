@@ -89,6 +89,7 @@ type LojaAtual struct {
 	Nome        string
 	TipoNegocio string
 	Tema        string
+	Logo        string // data URL, "" = sem logótipo
 }
 
 func (s *LojasService) ObterAtual(ctx context.Context) (LojaAtual, error) {
@@ -106,5 +107,31 @@ func (s *LojasService) ObterAtual(ctx context.Context) (LojaAtual, error) {
 		Nome:        estado.Negocio.Nome,
 		TipoNegocio: string(estado.Negocio.TipoNegocio),
 		Tema:        string(estado.Tema),
+		Logo:        estado.Logo,
 	}, nil
+}
+
+// AtualizarIdentidade muda o nome e o logótipo da loja (dentro da base da
+// loja) e o nome no registo do admin, e devolve a loja já atualizada.
+func (s *LojasService) AtualizarIdentidade(ctx context.Context, nome, logo string) (LojaAtual, error) {
+	loja, existe, err := s.repo.ObterUnica(ctx)
+	if err != nil {
+		return LojaAtual{}, err
+	}
+	if !existe {
+		return LojaAtual{}, fmt.Errorf("nenhuma loja configurada")
+	}
+	app, fechar, err := abrirLojaUnica(ctx, s.repo)
+	if err != nil {
+		return LojaAtual{}, err
+	}
+	negocio, err := app.AtualizarIdentidadeLoja(nome, logo)
+	fechar()
+	if err != nil {
+		return LojaAtual{}, err
+	}
+	if err := s.repo.AtualizarNome(ctx, loja.ID, negocio.Nome); err != nil {
+		return LojaAtual{}, err
+	}
+	return s.ObterAtual(ctx)
 }

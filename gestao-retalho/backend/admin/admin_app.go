@@ -159,6 +159,15 @@ func (a *AdminApp) ObterLojaAtual() (LojaAtual, error) {
 	return a.Lojas.ObterAtual(a.ctx)
 }
 
+// AtualizarIdentidadeLoja muda o nome e o logótipo da loja (logo "" remove
+// o logótipo — volta o quadrado com a cor do tipo de negócio).
+func (a *AdminApp) AtualizarIdentidadeLoja(nome, logo string) (LojaAtual, error) {
+	if err := a.exigirSessao(); err != nil {
+		return LojaAtual{}, err
+	}
+	return a.Lojas.AtualizarIdentidade(a.ctx, nome, logo)
+}
+
 // --- Dashboard ---------------------------------------------------------------
 //
 // Ao contrário do cmd/app (onde utilizador_id só serve para atribuição em

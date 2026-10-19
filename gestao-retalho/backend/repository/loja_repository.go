@@ -55,6 +55,13 @@ func (r *LojaRepository) Criar(ctx context.Context, nome, caminhoDB string) (Loj
 	return scanLoja(row)
 }
 
+// AtualizarNome acompanha a mudança de nome do negócio dentro da loja —
+// o registo do admin mostra o mesmo nome.
+func (r *LojaRepository) AtualizarNome(ctx context.Context, id int64, nome string) error {
+	_, err := r.db.ExecContext(ctx, `UPDATE lojas SET nome = ? WHERE id = ?`, nome, id)
+	return err
+}
+
 // scanner cobre tanto *sql.Rows como *sql.Row — ambos implementam Scan.
 type scanner interface {
 	Scan(dest ...any) error

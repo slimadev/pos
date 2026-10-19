@@ -1736,3 +1736,74 @@ body {
   border-color: transparent;
   color: var(--warn);
 }
+
+/* Logótipo da loja (quando existe) no lugar do quadrado de cor, e o botão
+   de configurações no canto do bloco da marca. */
+.admin-sidebar-brand {
+  position: relative;
+}
+.admin-sidebar-brand-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  object-fit: contain;
+  background: var(--surface);
+  flex: none;
+}
+.admin-sidebar-brand-texto {
+  min-width: 0;
+  flex: 1;
+}
+.admin-sidebar-brand-nome {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.admin-sidebar-config {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  margin-right: -8px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.admin-sidebar-config:hover {
+  background: var(--bg);
+  color: var(--text);
+}
+.admin-sidebar-config-icon {
+  width: 18px;
+  height: 18px;
+}
+.login-logo-imagem {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  background: none;
+}
+.admin-config-logo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.admin-config-logo-preview {
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
+  object-fit: contain;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  flex: none;
+}
+.admin-config-logo-preview.vazio {
+  background: var(--accent);
+  border: none;
+}

@@ -15,8 +15,10 @@ import {
   ComputerDesktopIcon,
   BeakerIcon,
   ArrowRightStartOnRectangleIcon,
+  Cog6ToothIcon,
 } from "@heroicons/react/24/outline";
 import { PrecisaConfigurarAdmin, Logout, ObterLojaAtual, AbrirPDV } from "../wailsjs/go/admin/AdminApp";
+import { admin } from "../wailsjs/go/models";
 import Configurar from "./Configurar";
 import Login from "./Login";
 import Dashboard from "./Dashboard";
@@ -33,6 +35,8 @@ import ClientesScreen from "./Clientes";
 import VendaCreditoScreen from "./VendaCredito";
 import FichasScreen from "./Fichas";
 import UtilizadoresScreen from "./Utilizadores";
+import ConfiguracoesLoja from "./ConfiguracoesLoja";
+import Modal from "./Modal";
 
 type Ecra = "dashboard" | "produtos" | "categorias" | "armazens" | "stock" | "inventario" | "vendas" | "relatorios" | "clientes" | "credito" | "fichas" | "utilizadores" | "farmacia" | "stub";
 type IconeSvg = ComponentType<SVGProps<SVGSVGElement>>;
@@ -90,7 +94,7 @@ const NAV: { grupo?: string; itens: ItemNav[] }[] = [
 ];
 
 type Estado = { tipo: "a-carregar" } | { tipo: "configurar" } | { tipo: "login" } | { tipo: "pronto" };
-type LojaAtual = { Nome: string; TipoNegocio: string };
+type LojaAtual = admin.LojaAtual;
 
 /**
  * Arranque do cmd/admin: admin.db vazio (primeiro arranque de sempre)
@@ -150,7 +154,7 @@ export default function App() {
   if (estado.tipo === "login") {
     return <Login loja={loja} onEntrar={() => setEstado({ tipo: "pronto" })} />;
   }
-  return <AdminPrincipal loja={loja} onSair={() => Logout().finally(verificar)} />;
+  return <AdminPrincipal loja={loja} onLojaAtualizada={setLoja} onSair={() => Logout().finally(verificar)} />;
 }
 
 /**
@@ -165,7 +169,16 @@ export default function App() {
  * maximizado, apontado à mesma base desta loja (decisão pós-Fase 10, a
  * pedido explícito: cmd/app deixou de abrir sozinho).
  */
-function AdminPrincipal({ loja, onSair }: { loja: LojaAtual | null; onSair: () => void }) {
+function AdminPrincipal({
+  loja,
+  onLojaAtualizada,
+  onSair,
+}: {
+  loja: LojaAtual | null;
+  onLojaAtualizada: (l: LojaAtual) => void;
+  onSair: () => void;
+}) {
+  const [configAberta, setConfigAberta] = useState(false);
   const [destino, setDestino] = useState<Destino & { n: number }>({ ecra: "dashboard", n: 0 });
   const ecra = destino.ecra;
   const navegar: Navegar = (d) => setDestino((atual) => ({ ...d, n: atual.n + 1 }));
@@ -185,11 +198,27 @@ function AdminPrincipal({ loja, onSair }: { loja: LojaAtual | null; onSair: () =
     <div className="admin-shell">
       <aside className="admin-sidebar">
         <div className="admin-sidebar-brand">
-          <div className="admin-sidebar-brand-mark" />
-          <div>
-            <div className="admin-sidebar-brand-nome">{loja?.Nome ?? "Administração"}</div>
+          {loja?.Logo ? (
+            <img src={loja.Logo} alt="" className="admin-sidebar-brand-logo" />
+          ) : (
+            <div className="admin-sidebar-brand-mark" />
+          )}
+          <div className="admin-sidebar-brand-texto">
+            <div className="admin-sidebar-brand-nome" title={loja?.Nome}>
+              {loja?.Nome ?? "Administração"}
+            </div>
             {loja && <div className="admin-sidebar-brand-tag">{loja.TipoNegocio}</div>}
           </div>
+          {loja && (
+            <button
+              className="admin-sidebar-config"
+              title="Configurações da loja"
+              aria-label="Configurações da loja"
+              onClick={() => setConfigAberta(true)}
+            >
+              <Cog6ToothIcon className="admin-sidebar-config-icon" aria-hidden="true" />
+            </button>
+          )}
         </div>
         <button className="admin-sidebar-pdv" disabled={aAbrirPDV} onClick={abrirPDV}>
           <ComputerDesktopIcon className="admin-sidebar-icon" aria-hidden="true" />
@@ -265,6 +294,20 @@ function AdminPrincipal({ loja, onSair }: { loja: LojaAtual | null; onSair: () =
           </div>
         )}
       </div>
+
+      {configAberta && loja && (
+        <Modal titulo="Configurações da loja" onFechar={() => setConfigAberta(false)}>
+          <ConfiguracoesLoja
+            loja={loja}
+            onGuardada={(l) => {
+              onLojaAtualizada(l);
+              setConfigAberta(false);
+            }}
+            onCancelar={() => setConfigAberta(false)}
+            onErro={setErro}
+          />
+        </Modal>
+      )}
     </div>
   );
 }

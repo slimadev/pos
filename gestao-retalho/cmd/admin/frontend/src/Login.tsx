@@ -14,7 +14,7 @@ export default function Login({
   loja,
   onEntrar,
 }: {
-  loja: { Nome: string; TipoNegocio: string } | null;
+  loja: { Nome: string; TipoNegocio: string; Logo?: string } | null;
   onEntrar: () => void;
 }) {
   const [username, setUsername] = useState("");
@@ -36,7 +36,7 @@ export default function Login({
   return (
     <div className="login-shell">
       <form className="login-card" onSubmit={entrar}>
-        <div className="login-logo" />
+        {loja?.Logo ? <img src={loja.Logo} alt="" className="login-logo login-logo-imagem" /> : <div className="login-logo" />}
         <h1 className="login-titulo">{loja?.Nome ?? "Administração"}</h1>
         {loja && <div className="login-tipo">{loja.TipoNegocio}</div>}
         <p className="login-sub">Inicie sessão para continuar</p>
