@@ -125,18 +125,28 @@ export default function Dashboard({ onErro }: { onErro: (e: string) => void }) {
             <div className="admin-chart-header">
               <div className="admin-chart-titulo">Vendas, últimos 14 dias</div>
             </div>
-            {d.SerieVendas14Dias.length === 0 ? (
+            {d.SerieVendas14Dias.every((p) => p.Total === 0) ? (
               <div className="admin-chart-vazio">Sem vendas nos últimos 14 dias.</div>
             ) : (
               <div className="admin-chart">
-                {d.SerieVendas14Dias.map((ponto) => (
-                  <div key={ponto.Dia} className="admin-chart-col" title={formatarDia(ponto.Dia)}>
+                {d.SerieVendas14Dias.map((ponto, i) => {
+                  const hoje = i === d.SerieVendas14Dias.length - 1;
+                  return (
                     <div
-                      className="admin-chart-seg"
-                      style={{ height: `${(ponto.Total / maxDiaTotal) * 150}px`, background: "var(--accent)" }}
-                    />
-                  </div>
-                ))}
+                      key={ponto.Dia}
+                      className={`admin-chart-col${hoje ? " hoje" : ""}`}
+                      title={`${formatarDia(ponto.Dia)}: ${mt(ponto.Total)}`}
+                    >
+                      <div className="admin-chart-area">
+                        <div
+                          className="admin-chart-seg"
+                          style={{ height: `${ponto.Total > 0 ? Math.max(2, (ponto.Total / maxDiaTotal) * 100) : 0}%` }}
+                        />
+                      </div>
+                      <div className="admin-chart-dia">{hoje ? "Hoje" : formatarDia(ponto.Dia)}</div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

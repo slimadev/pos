@@ -3,6 +3,7 @@ package admin_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"gestao-retalho/backend/admin"
 	"gestao-retalho/backend/domain"
@@ -69,10 +70,21 @@ func TestDashboardService_AgregaDadosDaLoja(t *testing.T) {
 	if d.VendasHoje != 600 {
 		t.Errorf("vendas hoje = %v, want 600", d.VendasHoje)
 	}
-	if len(d.SerieVendas14Dias) == 0 {
-		t.Fatal("série de 14 dias vazia")
+	// Os 14 dias seguidos até hoje, mesmo os sem vendas (com zero).
+	if len(d.SerieVendas14Dias) != 14 {
+		t.Fatalf("série com %d dias, want 14", len(d.SerieVendas14Dias))
 	}
-	ultimoDia := d.SerieVendas14Dias[len(d.SerieVendas14Dias)-1]
+	hoje := time.Now()
+	for i, p := range d.SerieVendas14Dias {
+		want := hoje.AddDate(0, 0, i-13).Format("2006-01-02")
+		if p.Dia != want {
+			t.Errorf("série[%d].Dia = %q, want %q", i, p.Dia, want)
+		}
+	}
+	if d.SerieVendas14Dias[0].Total != 0 {
+		t.Errorf("total de há 13 dias = %v, want 0", d.SerieVendas14Dias[0].Total)
+	}
+	ultimoDia := d.SerieVendas14Dias[13]
 	if ultimoDia.Total != 600 {
 		t.Errorf("total do último dia = %v, want 600", ultimoDia.Total)
 	}

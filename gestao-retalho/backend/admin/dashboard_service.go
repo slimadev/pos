@@ -123,12 +123,10 @@ func (s *DashboardService) ObterDashboard(ctx context.Context) (Dashboard, error
 		for _, linha := range r.PorDia {
 			porDia[linha.Dia] = linha.TotalVendido
 		}
-		dias := make([]string, 0, len(porDia))
-		for dia := range porDia {
-			dias = append(dias, dia)
-		}
-		sort.Strings(dias)
-		for _, dia := range dias {
+		// Os 14 dias seguidos, com zero nos dias sem vendas — senão o gráfico
+		// só mostrava os dias com vendas e uma barra ocupava a largura toda.
+		for i := 0; i < 14; i++ {
+			dia := inicio14Dias.AddDate(0, 0, i).Format("2006-01-02")
 			d.SerieVendas14Dias = append(d.SerieVendas14Dias, PontoSerieDia{Dia: dia, Total: porDia[dia]})
 		}
 	}
