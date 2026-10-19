@@ -20,3 +20,6 @@ cmd/*/frontend/dist/
 
 # Instalador Windows: o bootstrapper do WebView2 que o Wails descarrega
 cmd/*/build/windows/installer/tmp/
+
+# Instaladores e pacotes gerados para entregar
+/dist/
