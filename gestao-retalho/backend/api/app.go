@@ -54,6 +54,7 @@ type App struct {
 	DividaService       *usecase.DividaService
 	RelatorioService    *usecase.RelatorioService
 	OperadorService     *usecase.OperadorService
+	CatalogoService     *usecase.CatalogoService
 }
 
 func NewApp(
@@ -72,6 +73,7 @@ func NewApp(
 	dividas *usecase.DividaService,
 	relatorios *usecase.RelatorioService,
 	operadores *usecase.OperadorService,
+	catalogo *usecase.CatalogoService,
 ) *App {
 	return &App{
 		db:                  db,
@@ -89,6 +91,7 @@ func NewApp(
 		DividaService:       dividas,
 		RelatorioService:    relatorios,
 		OperadorService:     operadores,
+		CatalogoService:     catalogo,
 	}
 }
 
@@ -177,6 +180,13 @@ func (a *App) Ping() (string, error) {
 }
 
 // --- Produtos (SDD 4.1) ---------------------------------------------------
+
+// CatalogoPDV devolve, num só pedido, o que os ecrãs de venda mostram:
+// produtos ativos com unidades (preço, código de barras), o disponível no
+// armazém e os vendidos nos últimos 30 dias.
+func (a *App) CatalogoPDV(armazemID int64) ([]usecase.ItemCatalogo, error) {
+	return a.CatalogoService.CatalogoPDV(a.ctx, armazemID)
+}
 
 func (a *App) ListarProdutos() ([]domain.Produto, error) {
 	return a.ProdutoService.Listar(a.ctx, domain.NegocioID)

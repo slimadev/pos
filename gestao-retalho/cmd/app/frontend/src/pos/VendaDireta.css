@@ -1,6 +1,9 @@
+/* Ocupa a altura da janela: a grelha de produtos faz scroll por dentro e o
+   carrinho fica sempre visível. */
 .pos {
   display: flex;
-  min-height: 70vh;
+  height: calc(100vh - 150px);
+  min-height: 480px;
   background: var(--color-bg);
   color: var(--color-text);
   border-radius: 10px;
@@ -15,46 +18,6 @@
   padding: 18px 22px;
   gap: 14px;
   min-width: 0;
-}
-
-.pos-toolbar {
-  display: flex;
-  gap: 10px;
-}
-
-.pos-busca-wrap {
-  position: relative;
-  flex: 1;
-  display: flex;
-  align-items: center;
-}
-
-.pos-busca-icon {
-  position: absolute;
-  left: 14px;
-  width: 18px;
-  height: 18px;
-  color: var(--color-text-muted);
-  pointer-events: none;
-}
-
-.pos-busca {
-  width: 100%;
-  padding: 12px 14px 12px 40px;
-  font-size: 14px;
-  border: 2px solid var(--color-accent);
-  border-radius: 6px;
-  background: var(--color-surface);
-  color: var(--color-text);
-}
-
-.pos-toolbar select {
-  padding: 10px 12px;
-  font-size: 13px;
-  border-radius: 6px;
-  border: 1px solid var(--color-surface-border);
-  background: var(--color-surface);
-  color: var(--color-text);
 }
 
 .pos-erro {
@@ -83,73 +46,6 @@
   padding: 4px 10px;
   border-radius: 4px;
   cursor: pointer;
-}
-
-.pos-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 10px;
-  overflow-y: auto;
-  flex: 1;
-}
-
-.pos-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-surface-border);
-  border-radius: 6px;
-  padding: 12px 13px;
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-  cursor: pointer;
-  min-height: 90px;
-}
-
-.pos-card:hover {
-  border-color: var(--color-accent);
-}
-
-.pos-card-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.pos-card-nome {
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.3;
-}
-
-.pos-card-stock {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 10.5px;
-  padding: 2px 6px;
-  border-radius: 3px;
-  color: var(--color-text-muted);
-  white-space: nowrap;
-}
-
-.pos-card-stock--zero {
-  color: var(--color-error);
-}
-
-.pos-card-bottom {
-  margin-top: auto;
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-}
-
-.pos-card-preco {
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.pos-card-unidade {
-  font-size: 10.5px;
-  color: var(--color-text-muted);
 }
 
 .pos-historico {
@@ -409,4 +305,14 @@
 .pos-finalizar:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+.pos-tudo {
+  padding: 0 10px;
+  border: 1px solid var(--color-surface-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
 }

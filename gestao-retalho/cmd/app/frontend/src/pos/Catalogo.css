@@ -1,0 +1,185 @@
+.cat {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+.cat-toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.cat-toolbar select {
+  padding: 10px 12px;
+  border: 1px solid var(--color-surface-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.cat-busca-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.cat-busca-icon {
+  position: absolute;
+  left: 14px;
+  width: 18px;
+  height: 18px;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.cat-busca {
+  width: 100%;
+  padding: 12px 40px;
+  font-size: 15px;
+  border: 2px solid var(--color-accent);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.cat-limpar {
+  position: absolute;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.cat-aviso {
+  font-size: 13px;
+  color: var(--color-warning);
+}
+
+.cat-separadores {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.cat-separador {
+  flex: none;
+  padding: 8px 16px;
+  border: 1px solid var(--color-surface-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.cat-separador.ativo {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-accent-contrast);
+  font-weight: 600;
+}
+
+/* Cartões de tamanho fixo: com poucos produtos já não esticam à altura do
+   ecrã, e com muitos a grelha faz scroll por dentro. */
+.cat-grelha {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-auto-rows: 104px;
+  gap: 10px;
+  align-content: start;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.cat-cartao {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  padding: 10px 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-border);
+  border-radius: 8px;
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.cat-cartao:hover {
+  border-color: var(--color-accent);
+}
+
+.cat-cartao:active {
+  transform: scale(0.98);
+}
+
+.cat-cartao.esgotado {
+  opacity: 0.5;
+}
+
+.cat-cartao-nome {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cat-cartao-rodape {
+  margin-top: auto;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.cat-cartao-preco {
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.cat-cartao-unidade {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cat-cartao-stock {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  min-height: 1.2em;
+}
+
+.cat-cartao-stock.zero {
+  color: var(--color-error);
+  font-weight: 600;
+}
+
+.cat-vazio {
+  grid-column: 1 / -1;
+  padding: 24px;
+  text-align: center;
+  color: var(--color-text-muted);
+}

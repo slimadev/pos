@@ -49,6 +49,16 @@ func (r *ProdutoRepository) ListarUnidades(ctx context.Context, produtoID int64)
 	return unidadesFromRows(rows), nil
 }
 
+// ListarUnidadesDoNegocio devolve as unidades de todos os produtos numa só
+// consulta — o catálogo do PDV não pode pedir as unidades produto a produto.
+func (r *ProdutoRepository) ListarUnidadesDoNegocio(ctx context.Context, negocioID int64) ([]domain.UnidadeProduto, error) {
+	rows, err := r.q.ListarUnidadesDoNegocio(ctx, negocioID)
+	if err != nil {
+		return nil, err
+	}
+	return unidadesFromRows(rows), nil
+}
+
 func (r *ProdutoRepository) ObterUnidade(ctx context.Context, id int64) (domain.UnidadeProduto, error) {
 	row, err := r.q.ObterUnidadeProduto(ctx, id)
 	if err != nil {

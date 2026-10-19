@@ -74,6 +74,7 @@ type Querier interface {
 	ListarReceitasPorVenda(ctx context.Context, vendaID int64) ([]ReceitasMedicas, error)
 	ListarStockParaInventario(ctx context.Context, arg ListarStockParaInventarioParams) ([]ListarStockParaInventarioRow, error)
 	ListarStockPorArmazem(ctx context.Context, armazemID sql.NullInt64) ([]StockAtual, error)
+	ListarUnidadesDoNegocio(ctx context.Context, negocioID int64) ([]UnidadesProduto, error)
 	ListarUnidadesPorProduto(ctx context.Context, produtoID int64) ([]UnidadesProduto, error)
 	ListarUtilizadores(ctx context.Context) ([]Utilizadores, error)
 	ListarVendasPorCliente(ctx context.Context, clienteID int64) ([]Vendas, error)

@@ -209,39 +209,6 @@
   min-height: 0;
 }
 
-.bs-produtos {
-  flex: 1;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 10px;
-  align-content: flex-start;
-  overflow-y: auto;
-}
-
-.bs-produto-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-surface-border);
-  border-radius: 8px;
-  padding: 12px;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.bs-produto-card:hover {
-  border-color: var(--color-accent);
-}
-
-.bs-produto-nome {
-  font-size: 12.5px;
-}
-
-.bs-produto-preco {
-  font-weight: 600;
-  color: var(--color-accent);
-}
-
 .bs-comanda {
   width: 320px;
   flex-shrink: 0;
@@ -439,4 +406,11 @@
 .bs-modal-confirmar:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+/* A conta ocupa a altura da janela: o catálogo faz scroll por dentro e a
+   comanda fica sempre visível. */
+.bs-detalhe {
+  height: calc(100vh - 150px);
+  min-height: 480px;
+  box-sizing: border-box;
 }

@@ -1,5 +1,8 @@
 /* SDD secção 7.1 — Bottlestore, tema "noite / bar". */
 :root[data-theme="bottlestore"] {
+  /* Tema escuro: sem isto os controlos nativos (select, input) desenham-se
+     claros, com texto claro por cima — ilegíveis. */
+  color-scheme: dark;
   --color-bg: #14121a;
   --color-surface: #1f1b29;
   --color-surface-border: #2a2536;

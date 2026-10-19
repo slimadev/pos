@@ -4,6 +4,7 @@ import {
   ArrowLeftIcon,
   XCircleIcon,
   CheckCircleIcon,
+  MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import {
   ListarContasAbertas,
@@ -14,15 +15,14 @@ import {
   CancelarConta,
   FecharContaAberta,
   ListarProdutos,
-  ListarUnidadesProduto,
   ListarArmazens,
   ListarClientes,
   GerarRecibo,
 } from "../../wailsjs/go/api/App";
 import { api, domain, usecase } from "../../wailsjs/go/models";
+import Catalogo from "./Catalogo";
+import { METODOS, ROTULO_METODO, lerNumero, mt, qtd } from "./formato";
 import "./Bottlestore.css";
-
-const METODOS = ["dinheiro", "mpesa", "emola", "cartao", "transferencia"];
 
 interface ContaComTotal {
   conta: domain.Conta;
@@ -111,7 +111,7 @@ export default function Bottlestore() {
           <span className="bs-kpi-label">contas abertas</span>
         </div>
         <div>
-          <span className="bs-kpi-valor">{totalEmConsumo.toFixed(0)} MT</span>
+          <span className="bs-kpi-valor">{mt(totalEmConsumo)}</span>
           <span className="bs-kpi-label">em consumo</span>
         </div>
       </div>
@@ -121,6 +121,9 @@ export default function Bottlestore() {
           placeholder="Identificador (ex: Mesa 3, Grupo do João)"
           value={novoIdentificador}
           onChange={(e) => setNovoIdentificador(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") abrirConta();
+          }}
         />
         <select value={novoClienteId} onChange={(e) => setNovoClienteId(e.target.value ? Number(e.target.value) : "")}>
           <option value="">Cliente: Anónimo</option>
@@ -144,7 +147,7 @@ export default function Bottlestore() {
               <div className="bs-card-cliente">{clientes.find((c) => c.ID === conta.ClienteID)?.Nome ?? "Anónimo"}</div>
             </div>
             <div className="bs-card-bottom">
-              <div className="bs-card-total">{total.toFixed(0)} MT</div>
+              <div className="bs-card-total">{mt(total)}</div>
               <div className="bs-card-itens">{itens.length} itens</div>
             </div>
           </div>
@@ -172,36 +175,25 @@ function ContaDetalhe({
 }) {
   const { conta, itens } = contaComTotal;
   const [produtos, setProdutos] = useState<domain.Produto[]>([]);
-  const [unidadesPadrao, setUnidadesPadrao] = useState<Map<number, domain.UnidadeProduto>>(new Map());
   const [armazens, setArmazens] = useState<domain.Armazem[]>([]);
   const [armazemId, setArmazemId] = useState<number | "">("");
   const [itensAtual, setItensAtual] = useState(itens);
   const [mostrarFecho, setMostrarFecho] = useState(false);
 
   useEffect(() => {
-    ListarProdutos().then(async (lista) => {
-      setProdutos(lista);
-      const entries = await Promise.all(
-        lista.map(async (p) => {
-          const unidades = await ListarUnidadesProduto(p.ID);
-          const padrao = unidades.find((u) => u.IsPadraoVenda) ?? unidades[0];
-          return [p.ID, padrao] as const;
-        }),
-      );
-      setUnidadesPadrao(new Map(entries.filter(([, u]) => u)));
-    });
+    // Só para o nome dos itens já lançados na comanda.
+    ListarProdutos().then(setProdutos);
     ListarArmazens().then((lista) => {
-      setArmazens(lista);
-      if (lista.length > 0) setArmazemId(lista[0].ID);
+      const ativos = lista.filter((a) => a.Ativo);
+      setArmazens(ativos);
+      if (ativos.length > 0) setArmazemId(ativos[0].ID);
     });
   }, []);
 
-  function adicionar(produto: domain.Produto) {
-    const unidade = unidadesPadrao.get(produto.ID);
-    if (!unidade) return;
+  function adicionar(item: usecase.ItemCatalogo, unidade: domain.UnidadeProduto) {
     const p = new usecase.AdicionarItemContaParams();
     p.ContaID = conta.ID;
-    p.ProdutoID = produto.ID;
+    p.ProdutoID = item.Produto.ID;
     p.UnidadeProdutoID = unidade.ID;
     p.Quantidade = 1;
     p.Desconto = 0;
@@ -238,7 +230,7 @@ function ContaDetalhe({
   const total = itensAtual.reduce((acc, i) => acc + i.Quantidade * i.PrecoUnitarioAplicado - i.Desconto, 0);
 
   return (
-    <div className="bs">
+    <div className="bs bs-detalhe">
       <div className="bs-detalhe-header">
         <button className="bs-voltar" onClick={onVoltar}>
           <ArrowLeftIcon className="bs-icon" aria-hidden="true" />
@@ -262,17 +254,9 @@ function ContaDetalhe({
       </div>
 
       <div className="bs-detalhe-body">
-        <div className="bs-produtos">
-          {produtos.map((p) => {
-            const unidade = unidadesPadrao.get(p.ID);
-            return (
-              <div key={p.ID} className="bs-produto-card" onClick={() => adicionar(p)}>
-                <div className="bs-produto-nome">{p.Nome}</div>
-                <div className="bs-produto-preco">{unidade ? `${unidade.PrecoVenda} MT` : "—"}</div>
-              </div>
-            );
-          })}
-        </div>
+        {armazemId !== "" && (
+          <Catalogo key={armazemId} armazemID={armazemId} IconeBusca={MagnifyingGlassIcon} onEscolher={adicionar} onErro={onErro} />
+        )}
 
         <div className="bs-comanda">
           <div className="bs-comanda-header">
@@ -283,9 +267,9 @@ function ContaDetalhe({
             {itensAtual.map((i) => (
               <div key={i.ID} className="bs-comanda-item">
                 <div className="bs-comanda-item-nome">
-                  {i.Quantidade}x {nomeProduto(i.ProdutoID)}
+                  {qtd(i.Quantidade)}× {nomeProduto(i.ProdutoID)}
                 </div>
-                <div className="bs-comanda-item-total">{(i.Quantidade * i.PrecoUnitarioAplicado - i.Desconto).toFixed(2)}</div>
+                <div className="bs-comanda-item-total">{mt(i.Quantidade * i.PrecoUnitarioAplicado - i.Desconto)}</div>
                 {outrasContasAbertas.length > 0 && (
                   <select
                     className="bs-transferir"
@@ -307,7 +291,7 @@ function ContaDetalhe({
           <div className="bs-comanda-footer">
             <div className="bs-comanda-total">
               <span>Total</span>
-              <span>{total.toFixed(2)} MT</span>
+              <span>{mt(total)}</span>
             </div>
             <button
               className="bs-fechar"
@@ -360,10 +344,10 @@ function ModalFecho({
   onCancelar: () => void;
   onErro: (e: string) => void;
 }) {
-  const [pagamentos, setPagamentos] = useState([{ metodo: "dinheiro", valor: String(total) }]);
+  const [pagamentos, setPagamentos] = useState([{ metodo: "dinheiro", valor: total.toFixed(2).replace(".", ",") }]);
   const [aFechar, setAFechar] = useState(false);
 
-  const somaPagamentos = pagamentos.reduce((acc, p) => acc + Number(p.valor || 0), 0);
+  const somaPagamentos = pagamentos.reduce((acc, p) => acc + (lerNumero(p.valor || "0") || 0), 0);
   const faltaAtribuir = Math.round((total - somaPagamentos) * 100) / 100;
   const iriaGerarDivida = faltaAtribuir > 0.01;
 
@@ -381,11 +365,11 @@ function ModalFecho({
     p.DescontoTotal = 0;
     p.UtilizadorID = 0;
     p.Pagamentos = pagamentos
-      .filter((pg) => Number(pg.valor) > 0)
+      .filter((pg) => lerNumero(pg.valor || "0") > 0)
       .map((pg) => {
         const pag = new usecase.PagamentoVendaParams();
         pag.Metodo = pg.metodo;
-        pag.Valor = Number(pg.valor);
+        pag.Valor = lerNumero(pg.valor);
         return pag;
       });
 
@@ -394,7 +378,7 @@ function ModalFecho({
       .then((resultado) => {
         if (resultado.Alerta?.Excedido) {
           window.alert(
-            `Aviso: cliente ultrapassa o limite de crédito (${resultado.Alerta.LimiteCredito.toFixed(2)} MT) — total em dívida agora ${resultado.Alerta.TotalEmAberto.toFixed(2)} MT.`,
+            `Aviso: o cliente passou o limite de crédito (${mt(resultado.Alerta.LimiteCredito)}) — deve agora ${mt(resultado.Alerta.TotalEmAberto)}.`,
           );
         }
         onFechar(resultado.Venda.Venda.ID);
@@ -408,7 +392,7 @@ function ModalFecho({
       <div className="bs-modal">
         <div className="bs-modal-header">
           <div>Fechar conta — {conta.Identificador}</div>
-          <div className="bs-modal-total">{total.toFixed(2)} MT</div>
+          <div className="bs-modal-total">{mt(total)}</div>
         </div>
 
         <div className="bs-modal-pagamentos">
@@ -417,14 +401,14 @@ function ModalFecho({
               <select value={p.metodo} onChange={(e) => atualizar(i, "metodo", e.target.value)}>
                 {METODOS.map((m) => (
                   <option key={m} value={m}>
-                    {m}
+                    {ROTULO_METODO[m]}
                   </option>
                 ))}
               </select>
-              <input type="number" value={p.valor} onChange={(e) => atualizar(i, "valor", e.target.value)} />
+              <input inputMode="decimal" value={p.valor} onChange={(e) => atualizar(i, "valor", e.target.value)} />
             </div>
           ))}
-          <button onClick={() => setPagamentos((prev) => [...prev, { metodo: "dinheiro", valor: "" }])}>
+          <button onClick={() => setPagamentos((prev) => [...prev, { metodo: "mpesa", valor: "" }])}>
             + forma de pagamento
           </button>
         </div>
@@ -432,9 +416,11 @@ function ModalFecho({
         <div className={`bs-modal-falta ${iriaGerarDivida ? "bs-modal-falta--divida" : ""}`}>
           {iriaGerarDivida
             ? clienteAnonimo
-              ? `Falta atribuir ${faltaAtribuir.toFixed(2)} MT — cliente anónimo não pode ficar em dívida`
-              : `Falta atribuir ${faltaAtribuir.toFixed(2)} MT — vai gerar dívida para o cliente`
-            : "Falta atribuir 0.00 MT"}
+              ? `Falta pagar ${mt(faltaAtribuir)} — cliente anónimo não pode ficar em dívida`
+              : `Falta pagar ${mt(faltaAtribuir)} — fica em dívida do cliente`
+            : faltaAtribuir < -0.01
+              ? `Pago a mais: ${mt(-faltaAtribuir)}`
+              : "Pagamento certo"}
         </div>
 
         <div className="bs-modal-actions">

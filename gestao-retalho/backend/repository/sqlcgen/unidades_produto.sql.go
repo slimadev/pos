@@ -86,6 +86,48 @@ func (q *Queries) CriarUnidadeProduto(ctx context.Context, arg CriarUnidadeProdu
 	return i, err
 }
 
+const listarUnidadesDoNegocio = `-- name: ListarUnidadesDoNegocio :many
+SELECT u.id, u.produto_id, u.nome_unidade, u.qtd_em_unidade_base, u.preco_custo, u.preco_venda,
+       u.codigo_barras, u.is_padrao_venda, u.is_padrao_compra
+FROM unidades_produto u
+JOIN produtos p ON p.id = u.produto_id
+WHERE p.negocio_id = ?
+ORDER BY u.produto_id, u.id
+`
+
+func (q *Queries) ListarUnidadesDoNegocio(ctx context.Context, negocioID int64) ([]UnidadesProduto, error) {
+	rows, err := q.db.QueryContext(ctx, listarUnidadesDoNegocio, negocioID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []UnidadesProduto
+	for rows.Next() {
+		var i UnidadesProduto
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProdutoID,
+			&i.NomeUnidade,
+			&i.QtdEmUnidadeBase,
+			&i.PrecoCusto,
+			&i.PrecoVenda,
+			&i.CodigoBarras,
+			&i.IsPadraoVenda,
+			&i.IsPadraoCompra,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listarUnidadesPorProduto = `-- name: ListarUnidadesPorProduto :many
 SELECT id, produto_id, nome_unidade, qtd_em_unidade_base, preco_custo, preco_venda,
        codigo_barras, is_padrao_venda, is_padrao_compra
