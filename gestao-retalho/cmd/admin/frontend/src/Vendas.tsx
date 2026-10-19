@@ -5,9 +5,9 @@ import { admin } from "../wailsjs/go/models";
 import Breadcrumb from "./Breadcrumb";
 import Modal from "./Modal";
 import type { Navegar } from "./App";
+import { mt, num } from "./formato";
 
-const mt = (n: number) => `${n.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MT`;
-const qtd = (n: number) => n.toLocaleString("pt-PT", { maximumFractionDigits: 3 });
+const qtd = num;
 const dataHora = (d: unknown) => new Date(String(d)).toLocaleString("pt-PT", { dateStyle: "short", timeStyle: "short" });
 
 // "AAAA-MM-DD" no fuso local — toISOString() daria o dia em UTC e trocaria a

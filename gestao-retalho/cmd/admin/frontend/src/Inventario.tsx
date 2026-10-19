@@ -11,8 +11,8 @@ import {
 import { domain } from "../wailsjs/go/models";
 import Breadcrumb from "./Breadcrumb";
 import Modal from "./Modal";
+import { num } from "./formato";
 
-const mt = (n: number) => `${n.toLocaleString("pt-PT", { maximumFractionDigits: 3 })}`;
 const dataHora = (d: unknown) => new Date(String(d)).toLocaleString("pt-PT", { dateStyle: "short", timeStyle: "short" });
 
 type Vista = { tipo: "lista" } | { tipo: "contagem"; inventario: domain.Inventario };
@@ -327,13 +327,13 @@ function Contagem({
                   {produto?.LoteControlado && <span className="admin-inventario-tag">lotes</span>}
                 </td>
                 <td>
-                  {mt(item.QuantidadeSistema)} {produto?.UnidadeBase}
+                  {num(item.QuantidadeSistema)} {produto?.UnidadeBase}
                 </td>
                 <td>
                   {aberto ? (
                     <CampoContagem item={item} onGuardado={atualizarItem} onErro={onErro} />
                   ) : item.QuantidadeContada != null ? (
-                    mt(item.QuantidadeContada)
+                    num(item.QuantidadeContada)
                   ) : (
                     <span style={{ color: "var(--text-secondary)" }}>não contado</span>
                   )}
@@ -427,7 +427,7 @@ function Diferenca({ valor }: { valor?: number }) {
   return (
     <span className={`admin-inventario-dif ${valor > 0 ? "sobra" : "falta"}`}>
       {valor > 0 ? "+" : ""}
-      {mt(valor)}
+      {num(valor)}
     </span>
   );
 }

@@ -10,8 +10,8 @@ import {
 } from "../wailsjs/go/admin/AdminApp";
 import { domain, usecase } from "../wailsjs/go/models";
 import Modal from "./Modal";
+import { mt, num } from "./formato";
 
-const mt = (n: number) => `${n.toLocaleString("pt-PT", { maximumFractionDigits: 2 })}`;
 const dia = (d: unknown) => String(d).slice(0, 10);
 
 /**
@@ -127,7 +127,7 @@ function LotesAVencer({
                     </span>
                   )}
                 </td>
-                <td>{mt(l.Quantidade)}</td>
+                <td>{num(l.Quantidade)}</td>
               </tr>
             );
           })}
@@ -179,7 +179,7 @@ function ReceitasDoDia({ onErro }: { onErro: (e: string) => void }) {
             <tr key={v.ID}>
               <td>#{v.ID}</td>
               <td>{new Date(v.CriadoEm).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })}</td>
-              <td>{mt(v.Total)} MT</td>
+              <td>{mt(v.Total)}</td>
               <td className="admin-form">
                 <button className="admin-btn-secundario" onClick={() => setVendaAberta(v)}>
                   Receitas

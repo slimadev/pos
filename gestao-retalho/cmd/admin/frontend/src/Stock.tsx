@@ -28,6 +28,7 @@ import { domain, usecase } from "../wailsjs/go/models";
 import Modal from "./Modal";
 import Rececao from "./Rececao";
 import type { Navegar } from "./App";
+import { mt, num } from "./formato";
 
 type IconeSvg = ComponentType<SVGProps<SVGSVGElement>>;
 type TipoMovimento = "entrada" | "entrada_com_lote" | "transferencia" | "perda" | "consumo_interno";
@@ -48,7 +49,6 @@ const ROTULO_OUTROS_MOVIMENTOS: Record<string, string> = {
   producao: "Produção",
 };
 
-const mt = (n: number) => `${n.toLocaleString("pt-PT", { maximumFractionDigits: 2 })}`;
 
 type ModalEstado =
   | { aberto: false }
@@ -307,11 +307,11 @@ function TabelaStock({
                   )}
                 </td>
                 <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-                  {mt(quantidade)} {produto.UnidadeBase}
+                  {num(quantidade)} {produto.UnidadeBase}
                 </td>
-                <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>{mt(item?.CustoMedioPonderado ?? 0)} MT</td>
+                <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>{mt(item?.CustoMedioPonderado ?? 0)}</td>
                 <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-                  {mt(quantidade * (item?.CustoMedioPonderado ?? 0))} MT
+                  {mt(quantidade * (item?.CustoMedioPonderado ?? 0))}
                 </td>
                 <td className="admin-acoes">
                   <button className="admin-btn-secundario" onClick={() => onAbrirMovimento(produto)}>
@@ -334,7 +334,7 @@ function TabelaStock({
               <strong>Valor em stock neste armazém</strong>
             </td>
             <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-              <strong>{mt(valorTotal)} MT</strong>
+              <strong>{mt(valorTotal)}</strong>
             </td>
             <td></td>
           </tr>
@@ -512,7 +512,7 @@ function MovimentoForm({
             <option value="">Lote…</option>
             {(lotes ?? []).map((l) => (
               <option key={l.ID} value={l.ID}>
-                {l.NumeroLote} — validade {String(l.DataValidade).slice(0, 10)} — {mt(l.Quantidade)} disponível
+                {l.NumeroLote} — validade {String(l.DataValidade).slice(0, 10)} — {num(l.Quantidade)} disponível
               </option>
             ))}
           </select>
@@ -603,7 +603,7 @@ function TabelaLotes({ lotes }: { lotes: domain.Lote[] }) {
           <tr key={l.ID}>
             <td>{l.NumeroLote}</td>
             <td>{String(l.DataValidade).slice(0, 10)}</td>
-            <td>{mt(l.Quantidade)}</td>
+            <td>{num(l.Quantidade)}</td>
           </tr>
         ))}
       </tbody>
@@ -827,7 +827,7 @@ function HistoricoMovimentos({
         {(movimentos ?? []).map((m) => (
           <tr key={m.ID}>
             <td>{TIPO_MOVIMENTO_INFO[m.Tipo as TipoMovimento]?.rotulo ?? ROTULO_OUTROS_MOVIMENTOS[m.Tipo] ?? m.Tipo}</td>
-            <td>{mt(m.QuantidadeUnidadeBase)}</td>
+            <td>{num(m.QuantidadeUnidadeBase)}</td>
             <td>{nomeArmazem(m.ArmazemOrigemID)}</td>
             <td>{nomeArmazem(m.ArmazemDestinoID)}</td>
             <td>{new Date(m.CriadoEm).toLocaleString("pt-PT")}</td>

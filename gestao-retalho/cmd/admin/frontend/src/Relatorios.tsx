@@ -18,6 +18,7 @@ import {
 } from "../wailsjs/go/admin/AdminApp";
 import { admin, api, domain, repository, usecase } from "../wailsjs/go/models";
 import Breadcrumb from "./Breadcrumb";
+import { mt, num } from "./formato";
 
 export type Relatorio =
   | "vendas"
@@ -94,8 +95,6 @@ const ROTULO_ESTADO: Record<string, string> = {
   paga: "Paga",
 };
 
-const mt = (n: number) => `${n.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MT`;
-const num = (n: number, casas = 3) => n.toLocaleString("pt-PT", { maximumFractionDigits: casas });
 const pct = (n: number) => `${n.toLocaleString("pt-PT", { maximumFractionDigits: 1 })}%`;
 const dataHora = (d: unknown) => new Date(String(d)).toLocaleString("pt-PT", { dateStyle: "short", timeStyle: "short" });
 

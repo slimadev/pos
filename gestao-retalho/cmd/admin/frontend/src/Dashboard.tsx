@@ -8,8 +8,9 @@ import {
 } from "@heroicons/react/24/outline";
 import { ObterDashboard } from "../wailsjs/go/admin/AdminApp";
 import { admin } from "../wailsjs/go/models";
+import { mtInteiro, pct } from "./formato";
 
-const mt = (n: number) => `${Math.round(n).toLocaleString("pt-PT")} MT`;
+const mt = mtInteiro;
 
 function formatarDia(dia: string): string {
   const d = new Date(dia + "T00:00:00Z");
@@ -89,7 +90,7 @@ export default function Dashboard({ onErro }: { onErro: (e: string) => void }) {
               {d.VendasHojeVariacaoPct != null && (
                 <div className={`admin-kpi-nota ${d.VendasHojeVariacaoPct >= 0 ? "ok" : "danger"}`}>
                   {d.VendasHojeVariacaoPct >= 0 ? "+" : ""}
-                  {d.VendasHojeVariacaoPct.toFixed(1)}% vs ontem
+                  {pct(d.VendasHojeVariacaoPct)} vs ontem
                 </div>
               )}
             </div>
@@ -99,7 +100,7 @@ export default function Dashboard({ onErro }: { onErro: (e: string) => void }) {
                 Lucro estimado
               </div>
               <div className="admin-kpi-valor">{mt(d.LucroEstimadoHoje)}</div>
-              <div className="admin-kpi-nota">margem {d.MargemHojePct.toFixed(1)}%</div>
+              <div className="admin-kpi-nota">margem {pct(d.MargemHojePct)}</div>
             </div>
             <div className="admin-card admin-kpi">
               <div className="admin-kpi-label">

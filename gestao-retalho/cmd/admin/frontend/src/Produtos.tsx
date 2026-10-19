@@ -16,6 +16,7 @@ import {
 import { api, domain } from "../wailsjs/go/models";
 import Breadcrumb from "./Breadcrumb";
 import Modal from "./Modal";
+import { mt, num } from "./formato";
 
 type TipoProduto = "simples" | "composto" | "semi_elaborado";
 
@@ -34,7 +35,6 @@ const AJUDA_TIPO: Record<TipoProduto, string> = {
   semi_elaborado: "Preparado antes a partir de outros produtos e guardado em stock.",
 };
 
-const mt = (n: number) => `${n.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MT`;
 const lerNumero = (s: string) => Number(s.trim().replace(",", "."));
 const numeroValido = (s: string) => s.trim() !== "" && Number.isFinite(lerNumero(s));
 
@@ -180,7 +180,7 @@ export default function ProdutosScreen({ onErro }: { onErro: (e: string) => void
                   )}
                 </td>
                 <td style={{ textAlign: "right" }}>
-                  {p.StockMinimo != null ? `${p.StockMinimo.toLocaleString("pt-PT")} ${p.UnidadeBase}` : "—"}
+                  {p.StockMinimo != null ? `${num(p.StockMinimo)} ${p.UnidadeBase}` : "—"}
                 </td>
                 <td>
                   <div className="admin-acoes">

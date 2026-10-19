@@ -10,9 +10,8 @@ import {
 import { admin, domain, usecase } from "../wailsjs/go/models";
 import Breadcrumb from "./Breadcrumb";
 import type { Navegar } from "./App";
+import { mt, num } from "./formato";
 
-const mt = (n: number) => `${n.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MT`;
-const num = (n: number) => n.toLocaleString("pt-PT", { maximumFractionDigits: 3 });
 const lerNumero = (s: string) => Number(s.replace(",", "."));
 
 const ROTULO_METODO: Record<string, string> = {

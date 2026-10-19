@@ -12,9 +12,8 @@ import {
 import { admin, domain, usecase } from "../wailsjs/go/models";
 import Breadcrumb from "./Breadcrumb";
 import Modal from "./Modal";
+import { mt, num } from "./formato";
 
-const mt = (n: number) => `${n.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MT`;
-const num = (n: number) => n.toLocaleString("pt-PT", { maximumFractionDigits: 3 });
 const pct = (n: number) => `${n.toLocaleString("pt-PT", { maximumFractionDigits: 1 })}%`;
 const lerNumero = (s: string) => Number(s.replace(",", "."));
 const consumoReal = (quantidade: number, perda: number) => (perda > 0 && perda < 100 ? quantidade / (1 - perda / 100) : quantidade);

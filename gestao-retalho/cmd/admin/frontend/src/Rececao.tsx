@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { MagnifyingGlassIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { ListarTodasUnidades, RegistarRececaoMercadoria } from "../wailsjs/go/admin/AdminApp";
 import { domain, usecase } from "../wailsjs/go/models";
+import { mt, num } from "./formato";
 
-const mt = (n: number) => `${n.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MT`;
 const lerNumero = (s: string) => Number(s.trim().replace(",", "."));
 
 type Linha = { chave: number; produto: domain.Produto; unidadeID: number; quantidade: string; custo: string };
@@ -187,7 +187,7 @@ export default function Rececao({
                   {l.produto.Nome}
                   {qBase != null && u && u.QtdEmUnidadeBase !== 1 && (
                     <div className="admin-texto-fraco">
-                      = {qBase.toLocaleString("pt-PT")} {l.produto.UnidadeBase}
+                      = {num(qBase)} {l.produto.UnidadeBase}
                     </div>
                   )}
                 </td>

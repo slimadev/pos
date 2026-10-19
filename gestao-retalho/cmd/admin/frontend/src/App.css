@@ -285,7 +285,8 @@ body {
 
 .admin-kpis {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  /* 4 lado a lado em ecrãs largos, 2×2 quando o valor já não cabia. */
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: 12px;
 }
 

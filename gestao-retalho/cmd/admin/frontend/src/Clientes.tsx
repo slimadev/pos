@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BanknotesIcon, ExclamationTriangleIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
+import { BanknotesIcon, ExclamationTriangleIcon, MagnifyingGlassIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
 import {
   ListarClientes,
   ObterFichaCliente,
@@ -14,8 +14,8 @@ import { admin, domain, usecase } from "../wailsjs/go/models";
 import Breadcrumb from "./Breadcrumb";
 import Modal from "./Modal";
 import type { Navegar } from "./App";
+import { mt } from "./formato";
 
-const mt = (n: number) => `${n.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MT`;
 const data = (d: unknown) => new Date(String(d)).toLocaleDateString("pt-PT", { dateStyle: "short" });
 const dataHora = (d: unknown) => new Date(String(d)).toLocaleString("pt-PT", { dateStyle: "short", timeStyle: "short" });
 const diasDesde = (d: unknown) => Math.floor((Date.now() - new Date(String(d)).getTime()) / 86_400_000);
@@ -160,7 +160,10 @@ function Lista({
       </div>
 
       <div className="admin-form">
-        <input placeholder="Pesquisar nome ou telefone…" value={pesquisa} onChange={(e) => setPesquisa(e.target.value)} />
+        <label className="admin-pesquisa">
+          <MagnifyingGlassIcon className="admin-pesquisa-icone" aria-hidden="true" />
+          <input placeholder="Pesquisar nome ou telefone" value={pesquisa} onChange={(e) => setPesquisa(e.target.value)} />
+        </label>
         <select value={filtro} onChange={(e) => setFiltro(e.target.value as typeof filtro)}>
           <option value="ativos">Todos os ativos</option>
           <option value="com_divida">Só com dívida</option>
