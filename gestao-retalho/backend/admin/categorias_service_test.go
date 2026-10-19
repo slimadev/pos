@@ -83,12 +83,13 @@ func TestCategoriasService_AtualizarEDefinirAtiva(t *testing.T) {
 		t.Fatalf("registar loja: %v", err)
 	}
 
-	criada, err := svc.Criar(ctx, domain.Categoria{Nome: "Ferramentas"})
+	// "Ferramentas" já vem no preset de ferragem — nomes repetidos são recusados.
+	criada, err := svc.Criar(ctx, domain.Categoria{Nome: "Jardinagem"})
 	if err != nil {
 		t.Fatalf("criar categoria: %v", err)
 	}
 
-	if err := svc.Atualizar(ctx, domain.Categoria{ID: criada.ID, Nome: "Ferramentas manuais"}); err != nil {
+	if err := svc.Atualizar(ctx, domain.Categoria{ID: criada.ID, Nome: "Jardinagem e rega"}); err != nil {
 		t.Fatalf("atualizar categoria: %v", err)
 	}
 	if err := svc.DefinirAtiva(ctx, criada.ID, false); err != nil {
@@ -108,7 +109,7 @@ func TestCategoriasService_AtualizarEDefinirAtiva(t *testing.T) {
 	if achada == nil {
 		t.Fatal("categoria criada não encontrada após listar")
 	}
-	if achada.Nome != "Ferramentas manuais" {
+	if achada.Nome != "Jardinagem e rega" {
 		t.Errorf("nome = %q, want Ferramentas manuais", achada.Nome)
 	}
 	if achada.Ativo {
