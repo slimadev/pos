@@ -72,6 +72,11 @@ func TestVendaACredito_SemPagamentoFicaTudoEmDivida(t *testing.T) {
 	if venda.Venda.Status != domain.StatusVendaDivida || venda.Venda.Total != 2000 {
 		t.Fatalf("venda = %+v, want 2000 em dívida", venda.Venda)
 	}
+	// Sem entrada não há pagamentos — mas a lista vem vazia, não nil (nil
+	// chega ao ecrã do admin como null e rebentava o resumo da venda).
+	if venda.Pagamentos == nil {
+		t.Error("Pagamentos = nil, want lista vazia")
+	}
 	dividas, _ := s.dividas.ListarPorCliente(ctx, cliente.ID)
 	if len(dividas) != 1 || dividas[0].ValorEmAberto != 2000 || dividas[0].Status != domain.StatusDividaAberta {
 		t.Fatalf("dívidas = %+v, want uma de 2000 em aberto", dividas)

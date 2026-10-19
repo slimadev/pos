@@ -150,7 +150,9 @@ func (s *VendaService) registarVenda(ctx context.Context, p VendaDiretaParams, c
 		identificadorConta = "Venda a crédito"
 	}
 
-	var resultado VendaCompleta
+	// Pagamentos nunca nil: uma venda a crédito sem entrada não tem nenhum,
+	// e nil chega ao frontend como null.
+	resultado := VendaCompleta{Pagamentos: []domain.Pagamento{}}
 
 	err = s.vendas.WithTx(ctx, func(tx *repository.VendaRepository) error {
 		conta, err := tx.CriarConta(ctx, domain.NegocioID, clienteID, identificadorConta, p.UtilizadorID)
