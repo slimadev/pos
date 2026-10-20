@@ -6,6 +6,7 @@ package export
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/go-pdf/fpdf"
@@ -27,9 +28,14 @@ type PagamentoRecibo struct {
 
 type DadosRecibo struct {
 	NegocioNome   string
+	LojaNUIT      string
+	LojaEndereco  string
+	LojaTelefone  string
+	LojaEmail     string
 	VendaID       int64
 	CriadoEm      time.Time
 	ClienteNome   string
+	ClienteNUIT   string
 	Itens         []ItemRecibo
 	Subtotal      float64
 	DescontoTotal float64
@@ -61,11 +67,18 @@ func GerarReciboPDF(d DadosRecibo) ([]byte, error) {
 	pdf.SetFont("Helvetica", "B", 14)
 	pdf.CellFormat(0, 8, tr(d.NegocioNome), "", 1, "C", false, 0, "")
 
+	pdf.SetFont("Helvetica", "", 9)
+	for _, l := range d.LinhasLoja() {
+		pdf.CellFormat(0, 4.5, tr(l), "", 1, "C", false, 0, "")
+	}
 	pdf.SetFont("Helvetica", "", 10)
 	pdf.CellFormat(0, 6, fmt.Sprintf("Recibo #%d", d.VendaID), "", 1, "C", false, 0, "")
 	pdf.CellFormat(0, 6, d.CriadoEm.Local().Format("02/01/2006 15:04"), "", 1, "C", false, 0, "")
 	pdf.Ln(4)
 	pdf.CellFormat(0, 6, tr("Cliente: "+d.ClienteNome), "", 1, "L", false, 0, "")
+	if d.ClienteNUIT != "" {
+		pdf.CellFormat(0, 6, "NUIT do cliente: "+d.ClienteNUIT, "", 1, "L", false, 0, "")
+	}
 	pdf.Ln(2)
 
 	pdf.SetFont("Helvetica", "B", 9)
@@ -111,4 +124,27 @@ func GerarReciboPDF(d DadosRecibo) ([]byte, error) {
 		return nil, fmt.Errorf("gerar recibo PDF: %w", err)
 	}
 	return buf.Bytes(), nil
+}
+
+// LinhasLoja são as linhas de identificação da loja por baixo do nome
+// (NUIT, endereço, contactos), só as que estão preenchidas.
+func (d DadosRecibo) LinhasLoja() []string {
+	var linhas []string
+	if d.LojaNUIT != "" {
+		linhas = append(linhas, "NUIT "+d.LojaNUIT)
+	}
+	if d.LojaEndereco != "" {
+		linhas = append(linhas, d.LojaEndereco)
+	}
+	var contactos []string
+	if d.LojaTelefone != "" {
+		contactos = append(contactos, "Tel. "+d.LojaTelefone)
+	}
+	if d.LojaEmail != "" {
+		contactos = append(contactos, d.LojaEmail)
+	}
+	if len(contactos) > 0 {
+		linhas = append(linhas, strings.Join(contactos, " · "))
+	}
+	return linhas
 }

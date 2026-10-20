@@ -104,6 +104,12 @@
 .recibo-centro {
   text-align: center;
 }
+.recibo-contacto {
+  font-size: 0.9em;
+}
+.recibo-contacto:last-of-type {
+  margin-bottom: 1.5mm;
+}
 .recibo-papel hr {
   border: none;
   border-top: 1px dashed #555;

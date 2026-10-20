@@ -73,11 +73,17 @@ export default function ReciboModal({
             <div className={`recibo-papel papel-${papel}`}>
               {d.Logo && <img className="recibo-logo" src={d.Logo} alt="" />}
               <div className="recibo-loja">{d.NegocioNome}</div>
+              {d.LinhasLoja.map((l) => (
+                <div key={l} className="recibo-centro recibo-contacto">
+                  {l}
+                </div>
+              ))}
               <div className="recibo-centro">Recibo #{d.VendaID}</div>
               <div className="recibo-centro">
                 {new Date(String(d.CriadoEm)).toLocaleString("pt-PT", { dateStyle: "short", timeStyle: "short" })}
               </div>
               <div>Cliente: {d.ClienteNome}</div>
+              {d.ClienteNUIT && <div>NUIT: {d.ClienteNUIT}</div>}
               <hr />
               {d.Itens.map((item, i) => (
                 <div key={i} className="recibo-item">

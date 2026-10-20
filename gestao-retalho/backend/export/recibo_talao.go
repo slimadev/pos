@@ -34,6 +34,14 @@ func GerarReciboTalao(d DadosRecibo, larguraMM float64) ([]byte, error) {
 	tr := medir.UnicodeTranslatorFromDescriptor("")
 	medir.SetFont("Helvetica", "B", tamanho+3)
 	linhasLoja := len(partirTexto(medir, tr, d.NegocioNome, util))
+	medir.SetFont("Helvetica", "", tamanho-1)
+	linhasContactos := 0
+	for _, l := range d.LinhasLoja() {
+		linhasContactos += len(partirTexto(medir, tr, l, util))
+	}
+	if d.ClienteNUIT != "" {
+		linhasContactos++
+	}
 	medir.SetFont("Helvetica", "B", tamanho)
 	linhasNome := func(p *fpdf.Fpdf, nome string) []string {
 		return partirTexto(p, tr, nome, util)
@@ -46,7 +54,7 @@ func GerarReciboTalao(d DadosRecibo, larguraMM float64) ([]byte, error) {
 		linhas++
 	}
 	linhas += len(d.Pagamentos)
-	altura := 2*margem + float64(linhasLoja)*5 + 1 + 3*linha /* recibo, data, cliente */ + 6 + /* separadores e totais */
+	altura := 2*margem + float64(linhasLoja)*5 + 1 + float64(linhasContactos)*linha + 3*linha /* recibo, data, cliente */ + 6 + /* separadores e totais */
 		float64(linhas)*linha + 3*linha + 7 /* total */ + 10 /* rodapé */
 
 	pdf := fpdf.NewCustom(&fpdf.InitType{
@@ -76,11 +84,20 @@ func GerarReciboTalao(d DadosRecibo, larguraMM float64) ([]byte, error) {
 	for _, parte := range partirTexto(pdf, tr, d.NegocioNome, util) {
 		pdf.CellFormat(util, 5, parte, "", 1, "C", false, 0, "")
 	}
+	pdf.SetFont("Helvetica", "", tamanho-1)
+	for _, l := range d.LinhasLoja() {
+		for _, parte := range partirTexto(pdf, tr, l, util) {
+			pdf.CellFormat(util, linha, parte, "", 1, "C", false, 0, "")
+		}
+	}
 	pdf.Ln(1)
 	pdf.SetFont("Helvetica", "", tamanho)
 	pdf.CellFormat(util, linha, fmt.Sprintf("Recibo #%d", d.VendaID), "", 1, "C", false, 0, "")
 	pdf.CellFormat(util, linha, d.CriadoEm.Local().Format("02/01/2006 15:04"), "", 1, "C", false, 0, "")
 	pdf.CellFormat(util, linha, tr("Cliente: "+d.ClienteNome), "", 1, "L", false, 0, "")
+	if d.ClienteNUIT != "" {
+		pdf.CellFormat(util, linha, "NUIT: "+d.ClienteNUIT, "", 1, "L", false, 0, "")
+	}
 	separador()
 
 	for _, item := range d.Itens {

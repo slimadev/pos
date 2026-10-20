@@ -10,10 +10,15 @@ import (
 
 func dadosTalaoTeste() DadosRecibo {
 	return DadosRecibo{
-		NegocioNome: "Ferragem Cossa & Filhos — Matola",
-		VendaID:     128,
-		CriadoEm:    time.Date(2026, 10, 19, 15, 4, 0, 0, time.Local),
-		ClienteNome: "Anónimo",
+		NegocioNome:  "Ferragem Cossa & Filhos — Matola",
+		LojaNUIT:     "400123456",
+		LojaEndereco: "Av. Eduardo Mondlane 123, Bairro da Liberdade, Matola",
+		LojaTelefone: "84 123 4567",
+		LojaEmail:    "geral@cossa.co.mz",
+		ClienteNUIT:  "400555666",
+		VendaID:      128,
+		CriadoEm:     time.Date(2026, 10, 19, 15, 4, 0, 0, time.Local),
+		ClienteNome:  "Anónimo",
 		Itens: []ItemRecibo{
 			{NomeProduto: "Martelo de unha 500g", NomeUnidade: "unidade", Quantidade: 1, PrecoUnitario: 450, Subtotal: 450},
 			{NomeProduto: "Parafuso 4x40 zincado cabeça chata para madeira", NomeUnidade: "caixa 100", Quantidade: 2, PrecoUnitario: 250, Desconto: 20, Subtotal: 480},

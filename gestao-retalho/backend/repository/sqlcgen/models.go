@@ -35,6 +35,7 @@ type Clientes struct {
 	LimiteCredito sql.NullFloat64 `json:"limite_credito"`
 	IsAnonimo     int64           `json:"is_anonimo"`
 	Ativo         int64           `json:"ativo"`
+	Email         sql.NullString  `json:"email"`
 }
 
 type Configuracoes struct {

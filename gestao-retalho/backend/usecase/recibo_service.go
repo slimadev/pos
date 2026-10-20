@@ -46,6 +46,8 @@ func NewReciboService(
 // TypeScript com o nome do pacote, e "export" é palavra reservada.
 type ReciboEcra struct {
 	NegocioNome   string
+	LinhasLoja    []string // NUIT, endereço, contactos (só os preenchidos)
+	ClienteNUIT   string
 	VendaID       int64
 	CriadoEm      time.Time
 	ClienteNome   string
@@ -86,7 +88,8 @@ func (s *ReciboService) ObterParaEcra(ctx context.Context, vendaID int64) (Recib
 		return ReciboEcra{}, err
 	}
 	r := ReciboEcra{
-		NegocioNome: d.NegocioNome, VendaID: d.VendaID, CriadoEm: d.CriadoEm, ClienteNome: d.ClienteNome,
+		NegocioNome: d.NegocioNome, LinhasLoja: append([]string{}, d.LinhasLoja()...), ClienteNUIT: d.ClienteNUIT,
+		VendaID: d.VendaID, CriadoEm: d.CriadoEm, ClienteNome: d.ClienteNome,
 		Itens:    make([]ItemReciboEcra, 0, len(d.Itens)),
 		Subtotal: d.Subtotal, DescontoTotal: d.DescontoTotal, Total: d.Total,
 		Pagamentos: make([]PagamentoReciboEcra, 0, len(d.Pagamentos)),
@@ -170,8 +173,21 @@ func (s *ReciboService) dados(ctx context.Context, vendaID int64) (export.DadosR
 		pagamentos = append(pagamentos, export.PagamentoRecibo{Metodo: rotuloMetodo(p.Metodo), Valor: p.Valor})
 	}
 
+	todas, err := s.configs.Listar(ctx)
+	if err != nil {
+		return export.DadosRecibo{}, err
+	}
+	clienteNUIT := ""
+	if cliente.NIF != nil {
+		clienteNUIT = *cliente.NIF
+	}
 	return export.DadosRecibo{
 		NegocioNome:   negocio.Nome,
+		LojaNUIT:      todas["loja_nuit"],
+		LojaEndereco:  todas["loja_endereco"],
+		LojaTelefone:  todas["loja_telefone"],
+		LojaEmail:     todas["loja_email"],
+		ClienteNUIT:   clienteNUIT,
 		VendaID:       completa.Venda.ID,
 		CriadoEm:      completa.Venda.CriadoEm,
 		ClienteNome:   cliente.Nome,

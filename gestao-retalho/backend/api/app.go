@@ -401,10 +401,10 @@ func (a *App) ObterTodosModulos() []domain.Modulo {
 	return domain.TodosModulos
 }
 
-// AtualizarIdentidadeLoja muda o nome, o logótipo ("" remove-o) e o papel
-// da impressora de recibos ("80", "58" ou "a5").
-func (a *App) AtualizarIdentidadeLoja(nome, logo, papelRecibo string) (domain.Negocio, error) {
-	return a.ConfigService.AtualizarIdentidade(a.ctx, nome, logo, papelRecibo)
+// AtualizarIdentidadeLoja grava os dados da loja: nome, logótipo ("" remove-o),
+// papel do recibo, NUIT, contactos e taxa de IVA.
+func (a *App) AtualizarIdentidadeLoja(d usecase.DadosLoja) (domain.Negocio, error) {
+	return a.ConfigService.AtualizarIdentidade(a.ctx, d)
 }
 
 func (a *App) FinalizarWizard(p usecase.FinalizarWizardParams) error {

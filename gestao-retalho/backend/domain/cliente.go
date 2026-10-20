@@ -12,6 +12,7 @@ type Cliente struct {
 	Telefone      *string
 	NIF           *string
 	Morada        *string
+	Email         *string
 	LimiteCredito *float64
 	IsAnonimo     bool
 	Ativo         bool

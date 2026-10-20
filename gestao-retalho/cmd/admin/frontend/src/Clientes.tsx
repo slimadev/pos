@@ -260,6 +260,7 @@ function ClienteForm({
   const [telefone, setTelefone] = useState(cliente?.Telefone ?? "");
   const [nif, setNif] = useState(cliente?.NIF ?? "");
   const [morada, setMorada] = useState(cliente?.Morada ?? "");
+  const [email, setEmail] = useState(cliente?.Email ?? "");
   const [limite, setLimite] = useState(cliente?.LimiteCredito != null ? String(cliente.LimiteCredito) : "");
   const [aGuardar, setAGuardar] = useState(false);
 
@@ -275,6 +276,7 @@ function ClienteForm({
     c.Telefone = telefone.trim() || undefined;
     c.NIF = nif.trim() || undefined;
     c.Morada = morada.trim() || undefined;
+    c.Email = email.trim() || undefined;
     c.LimiteCredito = limiteNum;
 
     setAGuardar(true);
@@ -298,9 +300,13 @@ function ClienteForm({
         </label>
         <label className="admin-campo">
           NUIT
-          <input value={nif} onChange={(e) => setNif(e.target.value)} />
+          <input inputMode="numeric" placeholder="9 algarismos" value={nif} onChange={(e) => setNif(e.target.value)} />
         </label>
       </div>
+      <label className="admin-campo">
+        Email
+        <input inputMode="email" placeholder="para enviar cotações e faturas" value={email} onChange={(e) => setEmail(e.target.value)} />
+      </label>
       <label className="admin-campo">
         Morada
         <input value={morada} onChange={(e) => setMorada(e.target.value)} />
@@ -382,7 +388,7 @@ function Ficha({
             {!c.Ativo && <span className="admin-venda-estado cancelada" style={{ marginLeft: 8 }}>inativo</span>}
           </h2>
           <div style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-            {[c.Telefone, c.NIF && `NUIT ${c.NIF}`, c.Morada].filter(Boolean).join(" · ") || "Sem contactos registados"}
+            {[c.Telefone, c.Email, c.NIF && `NUIT ${c.NIF}`, c.Morada].filter(Boolean).join(" · ") || "Sem contactos registados"}
           </div>
         </div>
         <div className="admin-form">

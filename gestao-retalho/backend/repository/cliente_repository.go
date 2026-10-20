@@ -45,6 +45,7 @@ func (r *ClienteRepository) Criar(ctx context.Context, c domain.Cliente) (domain
 		Telefone:      ptrToNullString(c.Telefone),
 		Nif:           ptrToNullString(c.NIF),
 		Morada:        ptrToNullString(c.Morada),
+		Email:         ptrToNullString(c.Email),
 		LimiteCredito: ptrToNullFloat64(c.LimiteCredito),
 	})
 	if err != nil {
@@ -59,6 +60,7 @@ func (r *ClienteRepository) Atualizar(ctx context.Context, c domain.Cliente) err
 		Telefone:      ptrToNullString(c.Telefone),
 		Nif:           ptrToNullString(c.NIF),
 		Morada:        ptrToNullString(c.Morada),
+		Email:         ptrToNullString(c.Email),
 		LimiteCredito: ptrToNullFloat64(c.LimiteCredito),
 		ID:            c.ID,
 	})
@@ -79,6 +81,7 @@ func clienteFromRow(row sqlcgen.Clientes) domain.Cliente {
 		Telefone:      nullStringToPtr(row.Telefone),
 		NIF:           nullStringToPtr(row.Nif),
 		Morada:        nullStringToPtr(row.Morada),
+		Email:         nullStringToPtr(row.Email),
 		LimiteCredito: nullFloat64ToPtr(row.LimiteCredito),
 		IsAnonimo:     int64ToBool(row.IsAnonimo),
 		Ativo:         int64ToBool(row.Ativo),

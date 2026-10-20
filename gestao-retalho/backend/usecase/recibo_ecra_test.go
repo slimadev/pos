@@ -57,8 +57,16 @@ func TestReciboService_ObterParaEcraTrazDadosPapelELogo(t *testing.T) {
 		t.Errorf("pagamentos = %+v, want M-Pesa", d.Pagamentos)
 	}
 
+	if len(r.LinhasLoja) != 0 {
+		t.Errorf("linhas da loja = %v, want nenhuma (nada preenchido)", r.LinhasLoja)
+	}
 	if err := configRepo.Definir(ctx, "recibo_papel", "58"); err != nil {
 		t.Fatal(err)
+	}
+	_ = configRepo.Definir(ctx, "loja_nuit", "400123456")
+	_ = configRepo.Definir(ctx, "loja_telefone", "84 123 4567")
+	if r, _ := recibos.ObterParaEcra(ctx, venda.Venda.ID); len(r.LinhasLoja) != 2 || r.LinhasLoja[0] != "NUIT 400123456" {
+		t.Errorf("linhas da loja = %v, want NUIT e telefone", r.LinhasLoja)
 	}
 	if r, _ := recibos.ObterParaEcra(ctx, venda.Venda.ID); r.Papel != "58" {
 		t.Errorf("papel = %q, want 58", r.Papel)

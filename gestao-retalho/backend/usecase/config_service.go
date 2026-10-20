@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -63,6 +64,11 @@ type EstadoConfig struct {
 	Tema          domain.Tema
 	Logo          string // "" = sem logótipo (ver FinalizarWizardParams.Logo)
 	PapelRecibo   string // "80", "58" ou "a5" (ver ReciboService)
+	NUIT          string
+	Endereco      string
+	Telefone      string
+	Email         string
+	TaxaIVA       float64 // em %, 0 = isento
 }
 
 func (s *ConfigService) ObterEstado(ctx context.Context) (EstadoConfig, error) {
@@ -94,7 +100,11 @@ func (s *ConfigService) ObterEstado(ctx context.Context) (EstadoConfig, error) {
 	if papel == "" {
 		papel = PapelRecibo80
 	}
-	return EstadoConfig{Negocio: negocio, ModulosAtivos: modulos, Tema: tema, Logo: todas["logo"], PapelRecibo: papel}, nil
+	return EstadoConfig{
+		Negocio: negocio, ModulosAtivos: modulos, Tema: tema, Logo: todas["logo"], PapelRecibo: papel,
+		NUIT: todas["loja_nuit"], Endereco: todas["loja_endereco"], Telefone: todas["loja_telefone"],
+		Email: todas["loja_email"], TaxaIVA: taxaIVA(todas["iva_taxa"]),
+	}, nil
 }
 
 // FinalizarWizardParams junta os quatro passos do wizard (SDD 9.2) numa só
@@ -208,27 +218,56 @@ func resolverModulosETema(tipo domain.TipoNegocio, modulosPersonalizados []domai
 // base64) — vive numa linha de configuracoes e é lido a cada arranque.
 const tamanhoMaximoLogo = 2_200_000
 
-// AtualizarIdentidade muda o nome do negócio, o logótipo e o papel da
-// impressora de recibos depois do assistente inicial; o tipo de negócio (e
-// com ele módulos e tema) não muda aqui. logo "" remove o logótipo.
-func (s *ConfigService) AtualizarIdentidade(ctx context.Context, nome, logo, papelRecibo string) (domain.Negocio, error) {
-	switch papelRecibo {
+// DadosLoja é o que se muda nas configurações da loja depois do
+// assistente inicial. O tipo de negócio (e com ele módulos e tema) não
+// muda aqui.
+type DadosLoja struct {
+	Nome        string
+	Logo        string // data URL, "" remove o logótipo
+	PapelRecibo string // "80", "58" ou "a5"
+	NUIT        string // 9 algarismos, "" = por preencher
+	Endereco    string
+	Telefone    string
+	Email       string
+	TaxaIVA     float64 // em %, 0 = isento
+}
+
+// TaxaIVAPorOmissao é a taxa normal de IVA em Moçambique, usada enquanto a
+// loja não define a sua.
+const TaxaIVAPorOmissao = 16.0
+
+// AtualizarIdentidade grava os dados da loja (nome, logótipo, papel do
+// recibo, NUIT, contactos e taxa de IVA).
+func (s *ConfigService) AtualizarIdentidade(ctx context.Context, d DadosLoja) (domain.Negocio, error) {
+	switch d.PapelRecibo {
 	case "":
-		papelRecibo = PapelRecibo80
+		d.PapelRecibo = PapelRecibo80
 	case PapelRecibo80, PapelRecibo58, PapelReciboA5:
 	default:
-		return domain.Negocio{}, fmt.Errorf("papel do recibo inválido: %q", papelRecibo)
+		return domain.Negocio{}, fmt.Errorf("papel do recibo inválido: %q", d.PapelRecibo)
 	}
-	nome = strings.TrimSpace(nome)
+	nome := strings.TrimSpace(d.Nome)
 	if nome == "" {
 		return domain.Negocio{}, fmt.Errorf("nome do negócio é obrigatório")
 	}
-	if logo != "" && !strings.HasPrefix(logo, "data:image/") {
+	if d.Logo != "" && !strings.HasPrefix(d.Logo, "data:image/") {
 		return domain.Negocio{}, fmt.Errorf("o logótipo tem de ser uma imagem")
 	}
-	if len(logo) > tamanhoMaximoLogo {
+	if len(d.Logo) > tamanhoMaximoLogo {
 		return domain.Negocio{}, fmt.Errorf("logótipo demasiado grande — escolha uma imagem até 1,5 MB")
 	}
+	nuit := strings.ReplaceAll(strings.TrimSpace(d.NUIT), " ", "")
+	if nuit != "" && !nuitValido(nuit) {
+		return domain.Negocio{}, fmt.Errorf("o NUIT tem de ter 9 algarismos")
+	}
+	email := strings.TrimSpace(d.Email)
+	if email != "" && !emailValido(email) {
+		return domain.Negocio{}, fmt.Errorf("email inválido: %q", email)
+	}
+	if d.TaxaIVA < 0 || d.TaxaIVA > 100 {
+		return domain.Negocio{}, fmt.Errorf("a taxa de IVA tem de estar entre 0 e 100%%")
+	}
+
 	atual, err := s.negocios.Obter(ctx)
 	if err != nil {
 		return domain.Negocio{}, err
@@ -237,11 +276,51 @@ func (s *ConfigService) AtualizarIdentidade(ctx context.Context, nome, logo, pap
 	if err != nil {
 		return domain.Negocio{}, fmt.Errorf("gravar negócio: %w", err)
 	}
-	if err := s.configs.Definir(ctx, "logo", logo); err != nil {
-		return domain.Negocio{}, fmt.Errorf("gravar logótipo: %w", err)
+	valores := map[string]string{
+		"logo":          d.Logo,
+		"recibo_papel":  d.PapelRecibo,
+		"loja_nuit":     nuit,
+		"loja_endereco": strings.TrimSpace(d.Endereco),
+		"loja_telefone": strings.TrimSpace(d.Telefone),
+		"loja_email":    email,
+		"iva_taxa":      strconv.FormatFloat(d.TaxaIVA, 'f', -1, 64),
 	}
-	if err := s.configs.Definir(ctx, "recibo_papel", papelRecibo); err != nil {
-		return domain.Negocio{}, fmt.Errorf("gravar papel do recibo: %w", err)
+	for chave, valor := range valores {
+		if err := s.configs.Definir(ctx, chave, valor); err != nil {
+			return domain.Negocio{}, fmt.Errorf("gravar %s: %w", chave, err)
+		}
 	}
 	return negocio, nil
+}
+
+func nuitValido(nuit string) bool {
+	if len(nuit) != 9 {
+		return false
+	}
+	for _, c := range nuit {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+// emailValido só apanha enganos óbvios (falta de @ ou de domínio) — não
+// tenta validar o endereço por completo.
+func emailValido(email string) bool {
+	arroba := strings.LastIndex(email, "@")
+	return arroba > 0 && !strings.ContainsAny(email, " ,;") &&
+		strings.Contains(email[arroba+1:], ".") && !strings.HasSuffix(email, ".")
+}
+
+// taxaIVA lê a taxa gravada; sem nada gravado, a taxa normal.
+func taxaIVA(valor string) float64 {
+	if valor == "" {
+		return TaxaIVAPorOmissao
+	}
+	t, err := strconv.ParseFloat(valor, 64)
+	if err != nil {
+		return TaxaIVAPorOmissao
+	}
+	return t
 }

@@ -12,7 +12,7 @@ import (
 
 const atualizarCliente = `-- name: AtualizarCliente :exec
 UPDATE clientes
-SET nome = ?, telefone = ?, nif = ?, morada = ?, limite_credito = ?
+SET nome = ?, telefone = ?, nif = ?, morada = ?, email = ?, limite_credito = ?
 WHERE id = ?
 `
 
@@ -21,6 +21,7 @@ type AtualizarClienteParams struct {
 	Telefone      sql.NullString  `json:"telefone"`
 	Nif           sql.NullString  `json:"nif"`
 	Morada        sql.NullString  `json:"morada"`
+	Email         sql.NullString  `json:"email"`
 	LimiteCredito sql.NullFloat64 `json:"limite_credito"`
 	ID            int64           `json:"id"`
 }
@@ -31,6 +32,7 @@ func (q *Queries) AtualizarCliente(ctx context.Context, arg AtualizarClientePara
 		arg.Telefone,
 		arg.Nif,
 		arg.Morada,
+		arg.Email,
 		arg.LimiteCredito,
 		arg.ID,
 	)
@@ -38,9 +40,9 @@ func (q *Queries) AtualizarCliente(ctx context.Context, arg AtualizarClientePara
 }
 
 const criarCliente = `-- name: CriarCliente :one
-INSERT INTO clientes (negocio_id, nome, telefone, nif, morada, limite_credito, ativo)
-VALUES (?, ?, ?, ?, ?, ?, 1)
-RETURNING id, negocio_id, nome, telefone, nif, morada, limite_credito, is_anonimo, ativo
+INSERT INTO clientes (negocio_id, nome, telefone, nif, morada, email, limite_credito, ativo)
+VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+RETURNING id, negocio_id, nome, telefone, nif, morada, limite_credito, is_anonimo, ativo, email
 `
 
 type CriarClienteParams struct {
@@ -49,6 +51,7 @@ type CriarClienteParams struct {
 	Telefone      sql.NullString  `json:"telefone"`
 	Nif           sql.NullString  `json:"nif"`
 	Morada        sql.NullString  `json:"morada"`
+	Email         sql.NullString  `json:"email"`
 	LimiteCredito sql.NullFloat64 `json:"limite_credito"`
 }
 
@@ -59,6 +62,7 @@ func (q *Queries) CriarCliente(ctx context.Context, arg CriarClienteParams) (Cli
 		arg.Telefone,
 		arg.Nif,
 		arg.Morada,
+		arg.Email,
 		arg.LimiteCredito,
 	)
 	var i Clientes
@@ -72,6 +76,7 @@ func (q *Queries) CriarCliente(ctx context.Context, arg CriarClienteParams) (Cli
 		&i.LimiteCredito,
 		&i.IsAnonimo,
 		&i.Ativo,
+		&i.Email,
 	)
 	return i, err
 }
@@ -91,7 +96,7 @@ func (q *Queries) DefinirClienteAtivo(ctx context.Context, arg DefinirClienteAti
 }
 
 const listarClientes = `-- name: ListarClientes :many
-SELECT id, negocio_id, nome, telefone, nif, morada, limite_credito, is_anonimo, ativo
+SELECT id, negocio_id, nome, telefone, nif, morada, limite_credito, is_anonimo, ativo, email
 FROM clientes
 WHERE negocio_id = ? AND is_anonimo = 0
 ORDER BY nome
@@ -116,6 +121,7 @@ func (q *Queries) ListarClientes(ctx context.Context, negocioID int64) ([]Client
 			&i.LimiteCredito,
 			&i.IsAnonimo,
 			&i.Ativo,
+			&i.Email,
 		); err != nil {
 			return nil, err
 		}
@@ -131,7 +137,7 @@ func (q *Queries) ListarClientes(ctx context.Context, negocioID int64) ([]Client
 }
 
 const obterCliente = `-- name: ObterCliente :one
-SELECT id, negocio_id, nome, telefone, nif, morada, limite_credito, is_anonimo, ativo
+SELECT id, negocio_id, nome, telefone, nif, morada, limite_credito, is_anonimo, ativo, email
 FROM clientes
 WHERE id = ?
 `
@@ -149,6 +155,7 @@ func (q *Queries) ObterCliente(ctx context.Context, id int64) (Clientes, error) 
 		&i.LimiteCredito,
 		&i.IsAnonimo,
 		&i.Ativo,
+		&i.Email,
 	)
 	return i, err
 }
