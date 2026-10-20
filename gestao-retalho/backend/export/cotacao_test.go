@@ -15,9 +15,8 @@ func TestGerarCotacaoPDF_UmaPaginaA4ComLogo(t *testing.T) {
 		logo = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
 	}
 	d := DadosCotacaoPDF{
-		Codigo:    "COT 2026/0007",
-		CriadoEm:  time.Date(2026, 10, 20, 10, 0, 0, 0, time.Local),
-		ValidaAte: time.Date(2026, 11, 4, 0, 0, 0, 0, time.Local),
+		Codigo:   "COT 2026/0007",
+		CriadoEm: time.Date(2026, 10, 20, 10, 0, 0, 0, time.Local),
 		Loja: DadosRecibo{NegocioNome: "Ferragem Cossa", LojaNUIT: "400123456", LojaEndereco: "Av. Eduardo Mondlane 123, Matola",
 			LojaTelefone: "84 123 4567", LojaEmail: "geral@cossa.co.mz"},
 		Logo:            logo,
@@ -31,7 +30,7 @@ func TestGerarCotacaoPDF_UmaPaginaA4ComLogo(t *testing.T) {
 		Subtotal: 47050, DescontoTotal: 400, Total: 46650, TaxaIVA: 16, ValorIVA: 6434.48,
 		Observacoes: "Entrega na obra incluída. Pagamento 50% na encomenda.",
 	}
-	pdf, err := GerarCotacaoPDF(d)
+	pdf, err := GerarCotacaoPDF(d, time.Date(2026, 11, 4, 0, 0, 0, 0, time.Local))
 	if err != nil {
 		t.Fatalf("gerar: %v", err)
 	}

@@ -10,6 +10,7 @@ import (
 	"github.com/go-pdf/fpdf"
 )
 
+// ItemCotacaoPDF é uma linha de um documento A4 (cotação ou documento fiscal).
 type ItemCotacaoPDF struct {
 	Descricao     string
 	NomeUnidade   string
@@ -19,10 +20,15 @@ type ItemCotacaoPDF struct {
 	Subtotal      float64
 }
 
-type DadosCotacaoPDF struct {
-	Codigo          string // "COT 2026/0007"
+// DadosDocumentoA4 é o que se desenha num documento A4: cotação, fatura,
+// fatura-recibo, recibo ou nota de crédito.
+type DadosDocumentoA4 struct {
+	Titulo          string // "COTAÇÃO", "FATURA-RECIBO"…
+	Codigo          string // "COT 2026/0007", "FR 2026/0012"
 	CriadoEm        time.Time
-	ValidaAte       time.Time
+	Cabecalho       []string // linhas por baixo da data (validade, documento de origem)
+	DiscriminarIVA  bool     // documentos fiscais: base tributável + IVA + total
+	Rodape          string
 	Loja            DadosRecibo // só os campos da loja (nome, NUIT, endereço, contactos)
 	Logo            string      // data URL PNG/JPEG, "" = sem logótipo
 	ClienteNome     string
@@ -37,10 +43,20 @@ type DadosCotacaoPDF struct {
 	Observacoes     string
 }
 
-// GerarCotacaoPDF produz a cotação em A4: loja e logótipo no topo,
-// número e validade, cliente, tabela de produtos, totais com o IVA
-// incluído e a nota de que não é fatura.
-func GerarCotacaoPDF(d DadosCotacaoPDF) ([]byte, error) {
+// DadosCotacaoPDF mantém o nome antigo para as cotações.
+type DadosCotacaoPDF = DadosDocumentoA4
+
+// GerarCotacaoPDF produz a cotação em A4, com a nota de que não é fatura.
+func GerarCotacaoPDF(d DadosCotacaoPDF, validaAte time.Time) ([]byte, error) {
+	d.Titulo = "COTAÇÃO"
+	d.Cabecalho = append([]string{"Válida até: " + validaAte.Format("02/01/2006")}, d.Cabecalho...)
+	d.Rodape = "Cotação — documento sem valor fiscal, não é fatura. Preços com IVA incluído."
+	return GerarDocumentoA4(d)
+}
+
+// GerarDocumentoA4 produz o documento em A4: loja e logótipo no topo,
+// título, número e datas, cliente, tabela de produtos e totais com o IVA.
+func GerarDocumentoA4(d DadosDocumentoA4) ([]byte, error) {
 	pdf := fpdf.New("P", "mm", "A4", "")
 	pdf.SetMargins(15, 15, 15)
 	pdf.SetAutoPageBreak(true, 18)
@@ -49,7 +65,7 @@ func GerarCotacaoPDF(d DadosCotacaoPDF) ([]byte, error) {
 		pdf.SetY(-13)
 		pdf.SetFont("Helvetica", "I", 8)
 		pdf.SetTextColor(110, 110, 110)
-		pdf.CellFormat(0, 5, tr("Cotação — documento sem valor fiscal, não é fatura. Preços com IVA incluído."), "", 0, "C", false, 0, "")
+		pdf.CellFormat(0, 5, tr(d.Rodape), "", 0, "C", false, 0, "")
 		pdf.SetTextColor(0, 0, 0)
 	})
 	pdf.AddPage()
@@ -78,12 +94,14 @@ func GerarCotacaoPDF(d DadosCotacaoPDF) ([]byte, error) {
 
 	pdf.SetXY(x0+largura-70, y0)
 	pdf.SetFont("Helvetica", "B", 18)
-	pdf.CellFormat(70, 9, tr("COTAÇÃO"), "", 2, "R", false, 0, "")
+	pdf.CellFormat(70, 9, tr(d.Titulo), "", 2, "R", false, 0, "")
 	pdf.SetFont("Helvetica", "B", 11)
 	pdf.CellFormat(70, 6, d.Codigo, "", 2, "R", false, 0, "")
 	pdf.SetFont("Helvetica", "", 9)
 	pdf.CellFormat(70, 5, "Data: "+d.CriadoEm.Local().Format("02/01/2006"), "", 2, "R", false, 0, "")
-	pdf.CellFormat(70, 5, tr("Válida até: ")+d.ValidaAte.Format("02/01/2006"), "", 2, "R", false, 0, "")
+	for _, l := range d.Cabecalho {
+		pdf.CellFormat(70, 5, tr(l), "", 2, "R", false, 0, "")
+	}
 
 	y := maxF(yLoja, pdf.GetY(), y0+24) + 6
 
@@ -151,12 +169,23 @@ func GerarCotacaoPDF(d DadosCotacaoPDF) ([]byte, error) {
 	if d.DescontoTotal > 0 {
 		linhaTotal("Desconto", "-"+formatarValor(d.DescontoTotal)+" MT", false)
 	}
+	if d.DiscriminarIVA {
+		linhaTotal("Base tributável", formatarValor(d.Total-d.ValorIVA)+" MT", false)
+		if d.TaxaIVA > 0 {
+			linhaTotal(fmt.Sprintf("IVA (%s%%)", formatarQtd(d.TaxaIVA)), formatarValor(d.ValorIVA)+" MT", false)
+		} else {
+			linhaTotal("IVA (isento)", formatarValor(0)+" MT", false)
+		}
+	}
 	linhaTotal("TOTAL", formatarValor(d.Total)+" MT", true)
 	pdf.SetFont("Helvetica", "", 9)
 	pdf.SetX(x0 + largura - 80)
-	if d.TaxaIVA > 0 {
+	// Sem discriminação (cotação), uma nota com o IVA que o total inclui.
+	switch {
+	case d.DiscriminarIVA:
+	case d.TaxaIVA > 0:
 		pdf.CellFormat(80, 5, tr(fmt.Sprintf("Inclui IVA (%s%%): %s MT", formatarQtd(d.TaxaIVA), formatarValor(d.ValorIVA))), "", 1, "R", false, 0, "")
-	} else {
+	default:
 		pdf.CellFormat(80, 5, tr("Isento de IVA"), "", 1, "R", false, 0, "")
 	}
 
@@ -170,7 +199,7 @@ func GerarCotacaoPDF(d DadosCotacaoPDF) ([]byte, error) {
 
 	var buf bytes.Buffer
 	if err := pdf.Output(&buf); err != nil {
-		return nil, fmt.Errorf("gerar cotação PDF: %w", err)
+		return nil, fmt.Errorf("gerar documento PDF: %w", err)
 	}
 	return buf.Bytes(), nil
 }

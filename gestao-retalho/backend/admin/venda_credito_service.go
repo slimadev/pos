@@ -5,6 +5,7 @@ import (
 
 	"gestao-retalho/backend/api"
 	"gestao-retalho/backend/domain"
+	"gestao-retalho/backend/repository"
 	"gestao-retalho/backend/usecase"
 )
 
@@ -109,4 +110,34 @@ func (s *VendasService) ConverterCotacao(ctx context.Context, p usecase.Converte
 
 func (s *VendasService) AbrirCotacaoPDF(ctx context.Context, id int64) (string, error) {
 	return comLoja(ctx, s.lojas, func(a *api.App) (string, error) { return a.AbrirCotacaoPDF(id) })
+}
+
+// --- Documentos fiscais -------------------------------------------------------
+
+func (s *VendasService) EstadoFaturacao(ctx context.Context) (usecase.EstadoFaturacao, error) {
+	return comLoja(ctx, s.lojas, func(a *api.App) (usecase.EstadoFaturacao, error) { return a.EstadoFaturacao() })
+}
+
+func (s *VendasService) DefinirFaturacaoAtiva(ctx context.Context, ativa bool) (usecase.EstadoFaturacao, error) {
+	return comLoja(ctx, s.lojas, func(a *api.App) (usecase.EstadoFaturacao, error) { return a.DefinirFaturacaoAtiva(ativa) })
+}
+
+func (s *VendasService) ListarDocumentosMes(ctx context.Context, ano, mes int) ([]usecase.DocumentoCompleto, error) {
+	return comLoja(ctx, s.lojas, func(a *api.App) ([]usecase.DocumentoCompleto, error) { return a.ListarDocumentosMes(ano, mes) })
+}
+
+func (s *VendasService) VendasSemDocumento(ctx context.Context) ([]repository.VendaSemFatura, error) {
+	return comLoja(ctx, s.lojas, func(a *api.App) ([]repository.VendaSemFatura, error) { return a.VendasSemDocumento() })
+}
+
+func (s *VendasService) EmitirDocumentoEmFalta(ctx context.Context, vendaID int64) (usecase.DocumentoCompleto, error) {
+	return comLoja(ctx, s.lojas, func(a *api.App) (usecase.DocumentoCompleto, error) { return a.EmitirDocumentoEmFalta(vendaID) })
+}
+
+func (s *VendasService) AbrirDocumentoPDF(ctx context.Context, id int64) (string, error) {
+	return comLoja(ctx, s.lojas, func(a *api.App) (string, error) { return a.AbrirDocumentoPDF(id) })
+}
+
+func (s *VendasService) ExportarDocumentosMes(ctx context.Context, ano, mes int) (string, error) {
+	return comLoja(ctx, s.lojas, func(a *api.App) (string, error) { return a.ExportarDocumentosMes(ano, mes) })
 }

@@ -58,6 +58,12 @@ type ReciboEcra struct {
 	Pagamentos    []PagamentoReciboEcra
 	Papel         string // "80", "58" ou "a5"
 	Logo          string // data URL, "" = sem logótipo
+	// Documento fiscal da venda (com a faturação ligada): o talão passa a
+	// dizer "Fatura-Recibo FR 2026/0001" e a discriminar o IVA.
+	DocumentoNome   string
+	DocumentoCodigo string
+	TaxaIVA         float64
+	ValorIVA        float64
 }
 
 type ItemReciboEcra struct {

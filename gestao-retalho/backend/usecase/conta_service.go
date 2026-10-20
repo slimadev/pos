@@ -20,7 +20,11 @@ type ContaService struct {
 	armazem *repository.ArmazemRepository
 	fichas  *repository.FichaTecnicaRepository
 	dividas *DividaService
+	emissor EmissorDocumentos // nil = sem documentos fiscais
 }
+
+// DefinirEmissor liga a emissão de documentos fiscais ao fecho de contas.
+func (s *ContaService) DefinirEmissor(e EmissorDocumentos) { s.emissor = e }
 
 func NewContaService(
 	vendas *repository.VendaRepository,
@@ -334,6 +338,7 @@ func (s *ContaService) FecharConta(ctx context.Context, contaID int64, p FecharC
 	if err != nil {
 		return VendaCompleta{}, AlertaLimiteCredito{}, err
 	}
+	emitir(s.emissor, func(e EmissorDocumentos) error { return e.AposVenda(ctx, resultado.Venda.ID) })
 
 	var alerta AlertaLimiteCredito
 	if temDivida {

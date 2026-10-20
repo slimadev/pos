@@ -15,7 +15,11 @@ import (
 type DividaService struct {
 	dividas *repository.DividaRepository
 	cliente *repository.ClienteRepository
+	emissor EmissorDocumentos // nil = sem documentos fiscais
 }
+
+// DefinirEmissor liga a emissão de recibos aos pagamentos de dívida.
+func (s *DividaService) DefinirEmissor(e EmissorDocumentos) { s.emissor = e }
 
 func NewDividaService(dividas *repository.DividaRepository, cliente *repository.ClienteRepository) *DividaService {
 	return &DividaService{dividas: dividas, cliente: cliente}
@@ -122,6 +126,7 @@ func (s *DividaService) RegistarPagamento(ctx context.Context, p RegistarPagamen
 	if err != nil {
 		return domain.Divida{}, domain.PagamentoDivida{}, err
 	}
+	emitir(s.emissor, func(e EmissorDocumentos) error { return e.AposPagamentoDivida(ctx, pagamento) })
 	return dividaAtualizada, pagamento, nil
 }
 

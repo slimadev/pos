@@ -867,3 +867,57 @@ func (a *AdminApp) AbrirCotacaoPDF(id int64) (string, error) {
 	}
 	return a.Vendas.AbrirCotacaoPDF(a.ctx, id)
 }
+
+// --- Documentos fiscais -------------------------------------------------------
+//
+// Faturas, faturas-recibo, recibos e notas de crédito. A emissão fica
+// desligada até o software estar aprovado pela AT (ver FaturacaoService).
+
+func (a *AdminApp) EstadoFaturacao() (usecase.EstadoFaturacao, error) {
+	if err := a.exigirSessao(); err != nil {
+		return usecase.EstadoFaturacao{}, err
+	}
+	return a.Vendas.EstadoFaturacao(a.ctx)
+}
+
+func (a *AdminApp) DefinirFaturacaoAtiva(ativa bool) (usecase.EstadoFaturacao, error) {
+	if err := a.exigirSessao(); err != nil {
+		return usecase.EstadoFaturacao{}, err
+	}
+	return a.Vendas.DefinirFaturacaoAtiva(a.ctx, ativa)
+}
+
+func (a *AdminApp) ListarDocumentosMes(ano, mes int) ([]usecase.DocumentoCompleto, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Vendas.ListarDocumentosMes(a.ctx, ano, mes)
+}
+
+func (a *AdminApp) VendasSemDocumento() ([]repository.VendaSemFatura, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Vendas.VendasSemDocumento(a.ctx)
+}
+
+func (a *AdminApp) EmitirDocumentoEmFalta(vendaID int64) (usecase.DocumentoCompleto, error) {
+	if err := a.exigirSessao(); err != nil {
+		return usecase.DocumentoCompleto{}, err
+	}
+	return a.Vendas.EmitirDocumentoEmFalta(a.ctx, vendaID)
+}
+
+func (a *AdminApp) AbrirDocumentoPDF(id int64) (string, error) {
+	if err := a.exigirSessao(); err != nil {
+		return "", err
+	}
+	return a.Vendas.AbrirDocumentoPDF(a.ctx, id)
+}
+
+func (a *AdminApp) ExportarDocumentosMes(ano, mes int) (string, error) {
+	if err := a.exigirSessao(); err != nil {
+		return "", err
+	}
+	return a.Vendas.ExportarDocumentosMes(a.ctx, ano, mes)
+}

@@ -339,9 +339,8 @@ func (s *CotacaoService) GerarPDF(ctx context.Context, id int64) ([]byte, string
 	}
 	c := cc.Cotacao
 	d := export.DadosCotacaoPDF{
-		Codigo:    cc.Codigo,
-		CriadoEm:  c.CriadoEm,
-		ValidaAte: cc.ValidaAte,
+		Codigo:   cc.Codigo,
+		CriadoEm: c.CriadoEm,
 		Loja: export.DadosRecibo{
 			NegocioNome:  negocio.Nome,
 			LojaNUIT:     todas["loja_nuit"],
@@ -372,7 +371,7 @@ func (s *CotacaoService) GerarPDF(ctx context.Context, id int64) ([]byte, string
 			PrecoUnitario: i.PrecoUnitario, Desconto: i.Desconto, Subtotal: i.Subtotal,
 		})
 	}
-	pdf, err := export.GerarCotacaoPDF(d)
+	pdf, err := export.GerarCotacaoPDF(d, cc.ValidaAte)
 	if err != nil {
 		return nil, "", err
 	}

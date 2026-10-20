@@ -104,6 +104,14 @@
 .recibo-centro {
   text-align: center;
 }
+.recibo-documento {
+  font-weight: 700;
+  font-size: 1.1em;
+}
+.recibo-rodape {
+  font-size: 0.85em;
+  margin-top: 1mm;
+}
 .recibo-contacto {
   font-size: 0.9em;
 }

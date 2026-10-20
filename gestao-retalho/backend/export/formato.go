@@ -31,3 +31,7 @@ func formatarValor(v float64) string {
 func formatarQtd(v float64) string {
 	return strings.Replace(strconv.FormatFloat(v, 'f', -1, 64), ".", ",", 1)
 }
+
+// FormatarValor é formatarValor para quem monta tabelas fora deste pacote
+// ("1 234,56").
+func FormatarValor(v float64) string { return formatarValor(v) }

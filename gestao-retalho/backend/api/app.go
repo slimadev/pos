@@ -54,6 +54,7 @@ type App struct {
 	OperadorService     *usecase.OperadorService
 	CatalogoService     *usecase.CatalogoService
 	CotacaoService      *usecase.CotacaoService
+	FaturacaoService    *usecase.FaturacaoService
 }
 
 func NewApp(
@@ -74,6 +75,7 @@ func NewApp(
 	operadores *usecase.OperadorService,
 	catalogo *usecase.CatalogoService,
 	cotacoes *usecase.CotacaoService,
+	faturacao *usecase.FaturacaoService,
 ) *App {
 	return &App{
 		db:                  db,
@@ -93,6 +95,7 @@ func NewApp(
 		OperadorService:     operadores,
 		CatalogoService:     catalogo,
 		CotacaoService:      cotacoes,
+		FaturacaoService:    faturacao,
 	}
 }
 
@@ -480,7 +483,22 @@ func (a *App) ListarVendasEntreDatas(desde, ate string) ([]domain.Venda, error) 
 // ObterRecibo devolve o recibo para o PDV o mostrar num modal e imprimir
 // pela própria janela (sem abrir o PDF noutro programa).
 func (a *App) ObterRecibo(vendaID int64) (usecase.ReciboEcra, error) {
-	return a.ReciboService.ObterParaEcra(a.ctx, vendaID)
+	r, err := a.ReciboService.ObterParaEcra(a.ctx, vendaID)
+	if err != nil {
+		return r, err
+	}
+	if doc, ok, err := a.FaturacaoService.FaturaDaVenda(a.ctx, vendaID); err != nil {
+		return r, err
+	} else if ok {
+		r.DocumentoNome, r.DocumentoCodigo = doc.NomeTipo, doc.Codigo
+		// O adquirente como ficou no documento ("Consumidor final", não "Anónimo").
+		r.ClienteNome = doc.Documento.ClienteNome
+		if doc.Documento.ClienteNUIT != nil {
+			r.ClienteNUIT = *doc.Documento.ClienteNUIT
+		}
+		r.TaxaIVA, r.ValorIVA = doc.Documento.TaxaIVA, doc.Documento.ValorIVA
+	}
+	return r, nil
 }
 
 func (a *App) GerarRecibo(vendaID int64) (string, error) {
@@ -847,4 +865,55 @@ func (a *App) AbrirCotacaoPDF(id int64) (string, error) {
 		return path, err
 	}
 	return path, nil
+}
+
+// --- Documentos fiscais -----------------------------------------------------
+
+func (a *App) EstadoFaturacao() (usecase.EstadoFaturacao, error) {
+	return a.FaturacaoService.Estado(a.ctx)
+}
+
+func (a *App) DefinirFaturacaoAtiva(ativa bool) (usecase.EstadoFaturacao, error) {
+	return a.FaturacaoService.DefinirAtiva(a.ctx, ativa)
+}
+
+func (a *App) ListarDocumentosMes(ano, mes int) ([]usecase.DocumentoCompleto, error) {
+	return a.FaturacaoService.ListarMes(a.ctx, ano, mes)
+}
+
+func (a *App) VendasSemDocumento() ([]repository.VendaSemFatura, error) {
+	return a.FaturacaoService.VendasSemDocumento(a.ctx)
+}
+
+func (a *App) EmitirDocumentoEmFalta(vendaID int64) (usecase.DocumentoCompleto, error) {
+	return a.FaturacaoService.EmitirEmFalta(a.ctx, vendaID)
+}
+
+// AbrirDocumentoPDF grava o documento fiscal em PDF A4 e abre-o.
+func (a *App) AbrirDocumentoPDF(id int64) (string, error) {
+	pdf, nome, err := a.FaturacaoService.GerarPDF(a.ctx, id)
+	if err != nil {
+		return "", err
+	}
+	dir, err := config.ResolveRecibosDir()
+	if err != nil {
+		return "", err
+	}
+	path := filepath.Join(dir, nome)
+	if err := os.WriteFile(path, pdf, 0o644); err != nil {
+		return "", fmt.Errorf("gravar documento: %w", err)
+	}
+	if err := export.AbrirFicheiro(path); err != nil {
+		return path, err
+	}
+	return path, nil
+}
+
+// ExportarDocumentosMes grava o ficheiro mensal (Excel) e abre-o.
+func (a *App) ExportarDocumentosMes(ano, mes int) (string, error) {
+	t, err := a.FaturacaoService.TabelaMes(a.ctx, ano, mes)
+	if err != nil {
+		return "", err
+	}
+	return a.exportarTabela(t, "xlsx")
 }

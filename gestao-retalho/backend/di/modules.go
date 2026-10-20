@@ -40,6 +40,7 @@ var CoreModule = fx.Options(
 	fx.Provide(repository.NewDividaRepository),
 	fx.Provide(repository.NewRelatorioRepository),
 	fx.Provide(repository.NewCotacaoRepository),
+	fx.Provide(repository.NewDocumentoFiscalRepository),
 
 	fx.Provide(usecase.NewProdutoService),
 	fx.Provide(usecase.NewCategoriaService),
@@ -57,6 +58,14 @@ var CoreModule = fx.Options(
 	fx.Provide(usecase.NewOperadorService),
 	fx.Provide(usecase.NewCatalogoService),
 	fx.Provide(usecase.NewCotacaoService),
+	fx.Provide(usecase.NewFaturacaoService),
+	// A emissão de documentos fiscais entra por setter: o FaturacaoService
+	// lê vendas através do VendaService, por isso não pode ir no construtor.
+	fx.Invoke(func(v *usecase.VendaService, c *usecase.ContaService, d *usecase.DividaService, f *usecase.FaturacaoService) {
+		v.DefinirEmissor(f)
+		c.DefinirEmissor(f)
+		d.DefinirEmissor(f)
+	}),
 
 	fx.Provide(api.NewApp),
 )

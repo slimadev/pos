@@ -60,7 +60,7 @@ export default function ReciboModal({
     <div className="recibo-overlay">
       <div className="recibo-janela" role="dialog" aria-label={`Recibo da venda ${vendaId}`}>
         <div className="recibo-barra">
-          <span>Recibo #{vendaId}</span>
+          <span>{d?.DocumentoCodigo ? `${d.DocumentoNome} ${d.DocumentoCodigo}` : `Recibo #${vendaId}`}</span>
           <button className="recibo-fechar" onClick={onFechar} aria-label="Fechar">
             ×
           </button>
@@ -78,7 +78,13 @@ export default function ReciboModal({
                   {l}
                 </div>
               ))}
-              <div className="recibo-centro">Recibo #{d.VendaID}</div>
+              {d.DocumentoCodigo ? (
+                <div className="recibo-centro recibo-documento">
+                  {d.DocumentoNome} {d.DocumentoCodigo}
+                </div>
+              ) : (
+                <div className="recibo-centro">Recibo #{d.VendaID}</div>
+              )}
               <div className="recibo-centro">
                 {new Date(String(d.CriadoEm)).toLocaleString("pt-PT", { dateStyle: "short", timeStyle: "short" })}
               </div>
@@ -108,6 +114,18 @@ export default function ReciboModal({
                   <span>−{mt(d.DescontoTotal)}</span>
                 </div>
               )}
+              {d.DocumentoCodigo && (
+                <>
+                  <div className="recibo-linha">
+                    <span>Base tributável</span>
+                    <span>{mt(d.Total - d.ValorIVA)}</span>
+                  </div>
+                  <div className="recibo-linha">
+                    <span>{d.TaxaIVA > 0 ? `IVA (${d.TaxaIVA.toLocaleString("pt-PT")}%)` : "IVA (isento)"}</span>
+                    <span>{mt(d.ValorIVA)}</span>
+                  </div>
+                </>
+              )}
               <div className="recibo-linha recibo-total">
                 <span>TOTAL</span>
                 <span>{mt(d.Total)}</span>
@@ -126,6 +144,11 @@ export default function ReciboModal({
               )}
               <hr />
               <div className="recibo-centro">Obrigado pela preferência!</div>
+              {d.DocumentoCodigo ? (
+                <div className="recibo-centro recibo-rodape">Processado por computador — Gestão de Retalho</div>
+              ) : (
+                <div className="recibo-centro recibo-rodape">Recibo interno — não serve de fatura</div>
+              )}
             </div>
           )}
         </div>

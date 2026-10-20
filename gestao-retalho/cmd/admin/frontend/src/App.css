@@ -1900,3 +1900,36 @@ body {
   font-size: 13px;
   text-decoration: underline;
 }
+
+/* Faturas.tsx */
+.admin-faturacao-estado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+.admin-faturacao-estado.desligada {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+.admin-faturacao-estado.ligada {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+.admin-faturacao-estado strong {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 14px;
+}
+.admin-faturas-falta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+}
+.admin-form input[type="month"] {
+  padding: 7px 10px;
+}

@@ -23,7 +23,11 @@ type VendaService struct {
 	armazem  *repository.ArmazemRepository
 	fichas   *repository.FichaTecnicaRepository
 	clientes *repository.ClienteRepository
+	emissor  EmissorDocumentos // nil = sem documentos fiscais (ver FaturacaoService)
 }
+
+// DefinirEmissor liga a emissão de documentos fiscais às vendas.
+func (s *VendaService) DefinirEmissor(e EmissorDocumentos) { s.emissor = e }
 
 func NewVendaService(
 	vendas *repository.VendaRepository,
@@ -239,6 +243,7 @@ func (s *VendaService) registarVenda(ctx context.Context, p VendaDiretaParams, c
 	if err != nil {
 		return VendaCompleta{}, err
 	}
+	emitir(s.emissor, func(e EmissorDocumentos) error { return e.AposVenda(ctx, resultado.Venda.ID) })
 	return resultado, nil
 }
 

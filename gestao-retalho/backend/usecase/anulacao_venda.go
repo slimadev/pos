@@ -36,7 +36,7 @@ func (s *VendaService) AnularVenda(ctx context.Context, vendaID int64, motivo st
 		return fmt.Errorf("só se anula uma venda no próprio dia — a #%d é de %s", vendaID, venda.CriadoEm.Local().Format("02/01/2006"))
 	}
 
-	return s.vendas.WithTx(ctx, func(tx *repository.VendaRepository) error {
+	err = s.vendas.WithTx(ctx, func(tx *repository.VendaRepository) error {
 		divida, temDivida, err := tx.ObterDividaPorVenda(ctx, vendaID)
 		if err != nil {
 			return err
@@ -121,6 +121,11 @@ func (s *VendaService) AnularVenda(ctx context.Context, vendaID int64, motivo st
 
 		return tx.AtualizarStatusVenda(ctx, vendaID, domain.StatusVendaCancelada)
 	})
+	if err != nil {
+		return err
+	}
+	emitir(s.emissor, func(e EmissorDocumentos) error { return e.AposAnulacao(ctx, vendaID, motivo) })
+	return nil
 }
 
 // loteDaReferencia lê o lote de "<vendaID>;lote:<id>".
