@@ -77,7 +77,7 @@ export default function VendaDireta({ tipoNegocio }: { tipoNegocio: string }) {
 
   // A última venda e o troco a dar — fica à vista depois de o carrinho
   // limpar, até começar a venda seguinte.
-  const [ultimaVenda, setUltimaVenda] = useState<{ id: number; troco: number } | null>(null);
+  const [ultimaVenda, setUltimaVenda] = useState<{ id: number; total: number; troco: number } | null>(null);
   const [historicoDia, setHistoricoDia] = useState<domain.Venda[]>([]);
   const [erro, setErro] = useState<string | null>(null);
   const [aFinalizar, setAFinalizar] = useState(false);
@@ -199,7 +199,7 @@ export default function VendaDireta({ tipoNegocio }: { tipoNegocio: string }) {
     setAFinalizar(true);
     RegistarVendaDireta(params)
       .then((resultado) => {
-        setUltimaVenda({ id: resultado.Venda.ID, troco: trocoDaVenda });
+        setUltimaVenda({ id: resultado.Venda.ID, total: resultado.Venda.Total, troco: trocoDaVenda });
         setCarrinho([]);
         setDescontoGlobal("");
         setPagamentos([{ metodo: "dinheiro", valor: "" }]);
@@ -211,6 +211,21 @@ export default function VendaDireta({ tipoNegocio }: { tipoNegocio: string }) {
       })
       .catch((e) => setErro(String(e).replace(/^Error:\s*/, "")))
       .finally(() => setAFinalizar(false));
+  }
+
+  // Recomeça do zero: limpa o carrinho (e o ecrã de venda concluída).
+  function novaVenda() {
+    setUltimaVenda(null);
+    setCarrinho([]);
+    setDescontoGlobal("");
+    setPagamentos([{ metodo: "dinheiro", valor: "" }]);
+    setErro(null);
+    catalogoRef.current?.focarPesquisa();
+  }
+
+  function cancelarVendaAtual() {
+    if (carrinho.length > 0 && !window.confirm("Limpar o carrinho e começar uma nova venda?")) return;
+    novaVenda();
   }
 
   function gerarRecibo(vendaId: number) {
@@ -255,16 +270,6 @@ export default function VendaDireta({ tipoNegocio }: { tipoNegocio: string }) {
           </div>
         )}
 
-        {ultimaVenda && (
-          <div className="pos-sucesso">
-            Venda #{ultimaVenda.id} registada.
-            {ultimaVenda.troco > 0 && (
-              <strong className="pos-sucesso-troco">Troco a dar: {mt(ultimaVenda.troco)}</strong>
-            )}
-            <button onClick={() => gerarRecibo(ultimaVenda.id)}>Gerar recibo</button>
-          </div>
-        )}
-
         {historicoDia.length > 0 && (
           <div className="pos-historico">
             <div className="pos-historico-titulo">Vendas de hoje ({historicoDia.length})</div>
@@ -286,115 +291,146 @@ export default function VendaDireta({ tipoNegocio }: { tipoNegocio: string }) {
             <IconeCarrinho className="pos-carrinho-icon" aria-hidden="true" />
             Venda
           </span>
-          <span className="pos-carrinho-count">{carrinho.length} itens</span>
-        </div>
-
-        <div className="pos-carrinho-itens">
-          {carrinho.map((i) => (
-            <div key={i.chave} className="pos-carrinho-item">
-              {i.granel ? (
-                <input
-                  className="pos-peso-granel"
-                  inputMode="decimal"
-                  value={String(i.quantidade).replace(".", ",")}
-                  onChange={(e) => definirQuantidade(i.chave, e.target.value)}
-                  title="Peso em kg — escrito à mão até haver balança integrada"
-                />
-              ) : (
-                <div className="pos-qtd-stepper">
-                  <button onClick={() => alterarQuantidade(i.chave, -1)} aria-label="Menos um">
-                    −
-                  </button>
-                  <span>{qtd(i.quantidade)}</span>
-                  <button onClick={() => alterarQuantidade(i.chave, 1)} aria-label="Mais um">
-                    +
-                  </button>
-                </div>
-              )}
-              <div className="pos-carrinho-item-nome">
-                <div>{i.produtoNome}</div>
-                <div className="pos-carrinho-item-detalhe">
-                  {mt(i.precoVenda)} · {i.unidadeNome}
-                </div>
-              </div>
-              <div className="pos-carrinho-item-total">{mt(i.precoVenda * i.quantidade)}</div>
-            </div>
-          ))}
-          {carrinho.length === 0 && (
-            <div className="pos-carrinho-vazio">Carrinho vazio — toque num produto ou leia o código de barras.</div>
+          {carrinho.length > 0 ? (
+            <button className="pos-nova-venda-topo" onClick={cancelarVendaAtual} title="Limpar o carrinho">
+              Nova venda
+            </button>
+          ) : (
+            <span className="pos-carrinho-count">{carrinho.length} itens</span>
           )}
         </div>
 
-        <div className="pos-carrinho-footer">
-          <label className="pos-desconto">
-            Desconto (MT)
-            <input inputMode="decimal" placeholder="0" value={descontoGlobal} onChange={(e) => setDescontoGlobal(e.target.value)} />
-          </label>
-
-          <div className="pos-totais">
-            <div>
-              <span>Subtotal</span>
-              <span>{mt(subtotal)}</span>
-            </div>
-            <div className="pos-total-final">
-              <span>Total</span>
-              <span>{mt(total)}</span>
-            </div>
+        {ultimaVenda && carrinho.length === 0 ? (
+          // Ecrã de venda concluída: o que dizer ao cliente (troco) e como
+          // seguir — "Nova venda" ou tocar logo noutro produto.
+          <div className="pos-concluida">
+            <IconeFinalizar className="pos-concluida-icone" aria-hidden="true" />
+            <div className="pos-concluida-titulo">Venda #{ultimaVenda.id} concluída</div>
+            <div className="pos-concluida-total">Total {mt(ultimaVenda.total)}</div>
+            {ultimaVenda.troco > 0 && (
+              <div className="pos-concluida-troco">
+                <span>Troco a dar</span>
+                <strong>{mt(ultimaVenda.troco)}</strong>
+              </div>
+            )}
+            <button className="pos-concluida-recibo" onClick={() => gerarRecibo(ultimaVenda.id)}>
+              Imprimir recibo
+            </button>
+            <button className="pos-concluida-nova" onClick={novaVenda}>
+              Nova venda
+            </button>
+            <div className="pos-concluida-dica">Ou toque já num produto para começar a próxima.</div>
           </div>
-
-          <div className="pos-pagamentos">
-            {pagamentos.map((p, i) => (
-              <div key={i} className="pos-pagamento-linha">
-                <select value={p.metodo} onChange={(e) => atualizarPagamento(i, "metodo", e.target.value)}>
-                  {METODOS.map((m) => (
-                    <option key={m} value={m}>
-                      {ROTULO_METODO[m]}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  inputMode="decimal"
-                  placeholder="valor"
-                  value={p.valor}
-                  onChange={(e) => atualizarPagamento(i, "valor", e.target.value)}
-                />
-                <button className="pos-tudo" onClick={() => preencherTotal(i)} title="Preencher com o que falta">
-                  Tudo
-                </button>
+        ) : (
+          <>
+          <div className="pos-carrinho-itens">
+            {carrinho.map((i) => (
+              <div key={i.chave} className="pos-carrinho-item">
+                {i.granel ? (
+                  <input
+                    className="pos-peso-granel"
+                    inputMode="decimal"
+                    value={String(i.quantidade).replace(".", ",")}
+                    onChange={(e) => definirQuantidade(i.chave, e.target.value)}
+                    title="Peso em kg — escrito à mão até haver balança integrada"
+                  />
+                ) : (
+                  <div className="pos-qtd-stepper">
+                    <button onClick={() => alterarQuantidade(i.chave, -1)} aria-label="Menos um">
+                      −
+                    </button>
+                    <span>{qtd(i.quantidade)}</span>
+                    <button onClick={() => alterarQuantidade(i.chave, 1)} aria-label="Mais um">
+                      +
+                    </button>
+                  </div>
+                )}
+                <div className="pos-carrinho-item-nome">
+                  <div>{i.produtoNome}</div>
+                  <div className="pos-carrinho-item-detalhe">
+                    {mt(i.precoVenda)} · {i.unidadeNome}
+                  </div>
+                </div>
+                <div className="pos-carrinho-item-total">{mt(i.precoVenda * i.quantidade)}</div>
               </div>
             ))}
-            <button
-              className="pos-add-pagamento"
-              onClick={() => setPagamentos((prev) => [...prev, { metodo: "mpesa", valor: "" }])}
-            >
-              + forma de pagamento
-            </button>
+            {carrinho.length === 0 && (
+              <div className="pos-carrinho-vazio">Carrinho vazio — toque num produto ou leia o código de barras.</div>
+            )}
           </div>
 
-          {troco > 0 ? (
-            <div className="pos-troco">
-              <span>Troco</span>
-              <span>{mt(troco)}</span>
-            </div>
-          ) : (
-            <div className={`pos-falta ${pagamentoValido ? "pos-falta--ok" : ""}`}>
-              {faltaAtribuir > 0.005
-                ? `Falta pagar: ${mt(faltaAtribuir)}`
-                : excessoSemDinheiro > 0
-                  ? `Pago a mais: ${mt(excessoSemDinheiro)} — só há troco de dinheiro, corrija o valor`
-                  : "Pagamento certo"}
-            </div>
-          )}
+          <div className="pos-carrinho-footer">
+            <label className="pos-desconto">
+              Desconto (MT)
+              <input inputMode="decimal" placeholder="0" value={descontoGlobal} onChange={(e) => setDescontoGlobal(e.target.value)} />
+            </label>
 
-          <button
-            className="pos-finalizar"
-            disabled={carrinho.length === 0 || !pagamentoValido || aFinalizar}
-            onClick={finalizar}
-          >
-            <IconeFinalizar className="pos-finalizar-icon" aria-hidden="true" />
-            {aFinalizar ? "A finalizar…" : "Finalizar venda (F12)"}
-          </button>
-        </div>
+            <div className="pos-totais">
+              <div>
+                <span>Subtotal</span>
+                <span>{mt(subtotal)}</span>
+              </div>
+              <div className="pos-total-final">
+                <span>Total</span>
+                <span>{mt(total)}</span>
+              </div>
+            </div>
+
+            <div className="pos-pagamentos">
+              {pagamentos.map((p, i) => (
+                <div key={i} className="pos-pagamento-linha">
+                  <select value={p.metodo} onChange={(e) => atualizarPagamento(i, "metodo", e.target.value)}>
+                    {METODOS.map((m) => (
+                      <option key={m} value={m}>
+                        {ROTULO_METODO[m]}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    inputMode="decimal"
+                    placeholder="valor"
+                    value={p.valor}
+                    onChange={(e) => atualizarPagamento(i, "valor", e.target.value)}
+                  />
+                  <button className="pos-tudo" onClick={() => preencherTotal(i)} title="Preencher com o que falta">
+                    Tudo
+                  </button>
+                </div>
+              ))}
+              <button
+                className="pos-add-pagamento"
+                onClick={() => setPagamentos((prev) => [...prev, { metodo: "mpesa", valor: "" }])}
+              >
+                + forma de pagamento
+              </button>
+            </div>
+
+            {troco > 0 ? (
+              <div className="pos-troco">
+                <span>Troco</span>
+                <span>{mt(troco)}</span>
+              </div>
+            ) : (
+              <div className={`pos-falta ${pagamentoValido ? "pos-falta--ok" : ""}`}>
+                {faltaAtribuir > 0.005
+                  ? `Falta pagar: ${mt(faltaAtribuir)}`
+                  : excessoSemDinheiro > 0
+                    ? `Pago a mais: ${mt(excessoSemDinheiro)} — só há troco de dinheiro, corrija o valor`
+                    : "Pagamento certo"}
+              </div>
+            )}
+
+            <button
+              className="pos-finalizar"
+              disabled={carrinho.length === 0 || !pagamentoValido || aFinalizar}
+              onClick={finalizar}
+            >
+              <IconeFinalizar className="pos-finalizar-icon" aria-hidden="true" />
+              {aFinalizar ? "A finalizar…" : "Finalizar venda (F12)"}
+            </button>
+          </div>
+          </>
+        )}
       </aside>
     </div>
   );

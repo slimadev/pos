@@ -335,3 +335,80 @@
 .pos-sucesso-troco {
   font-size: 15px;
 }
+
+/* Depois de finalizar: o painel da venda mostra o resultado e como
+   começar a próxima (num terminal de toque não basta o carrinho vazio). */
+.pos-concluida {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px 20px;
+  text-align: center;
+}
+.pos-concluida-icone {
+  width: 56px;
+  height: 56px;
+  color: var(--color-success);
+}
+.pos-concluida-titulo {
+  font-size: 18px;
+  font-weight: 700;
+}
+.pos-concluida-total {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+.pos-concluida-troco {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px;
+  border-radius: 8px;
+  background: var(--color-success);
+  color: #fff;
+  font-size: 14px;
+}
+.pos-concluida-troco strong {
+  font-size: 28px;
+}
+.pos-concluida-recibo,
+.pos-concluida-nova {
+  width: 100%;
+  padding: 16px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+.pos-concluida-recibo {
+  border: 1px solid var(--color-surface-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.pos-concluida-nova {
+  border: none;
+  background: var(--color-accent);
+  color: #fff;
+  font-size: 18px;
+  padding: 20px;
+}
+.pos-concluida-dica {
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+.pos-nova-venda-topo {
+  border: 1px solid var(--color-surface-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
