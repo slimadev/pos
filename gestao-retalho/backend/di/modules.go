@@ -39,6 +39,7 @@ var CoreModule = fx.Options(
 	fx.Provide(repository.NewFichaTecnicaRepository),
 	fx.Provide(repository.NewDividaRepository),
 	fx.Provide(repository.NewRelatorioRepository),
+	fx.Provide(repository.NewCotacaoRepository),
 
 	fx.Provide(usecase.NewProdutoService),
 	fx.Provide(usecase.NewCategoriaService),
@@ -55,6 +56,7 @@ var CoreModule = fx.Options(
 	fx.Provide(usecase.NewRelatorioService),
 	fx.Provide(usecase.NewOperadorService),
 	fx.Provide(usecase.NewCatalogoService),
+	fx.Provide(usecase.NewCotacaoService),
 
 	fx.Provide(api.NewApp),
 )

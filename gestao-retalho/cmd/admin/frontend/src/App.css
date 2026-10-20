@@ -1843,3 +1843,60 @@ body {
   color: var(--danger);
   font-size: 12px;
 }
+
+/* Cotacoes.tsx */
+.admin-cotacao-rodape {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 24px;
+  align-items: start;
+}
+.admin-cotacao-rodape textarea {
+  padding: 8px 11px;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+}
+.admin-cotacao-totais {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13.5px;
+}
+.admin-cotacao-totais > div,
+.admin-cotacao-totais > label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.admin-cotacao-totais input {
+  width: 110px;
+  padding: 6px 9px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  font-family: inherit;
+  text-align: right;
+}
+.admin-cotacao-total {
+  font-size: 17px;
+  font-weight: 700;
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+}
+.admin-cotacao-cliente {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 13.5px;
+}
+.admin-aviso-ok button {
+  font-size: 13px;
+  text-decoration: underline;
+}

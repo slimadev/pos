@@ -77,3 +77,36 @@ func (s *VendasService) RegistarVendaACredito(ctx context.Context, p usecase.Ven
 		return ResultadoVendaCredito{Venda: venda, Alerta: alerta}, nil
 	})
 }
+
+// --- Cotações (feitas no admin, em nome do administrador) --------------------
+
+func (s *VendasService) ListarCotacoes(ctx context.Context) ([]usecase.CotacaoCompleta, error) {
+	return comLoja(ctx, s.lojas, func(a *api.App) ([]usecase.CotacaoCompleta, error) { return a.ListarCotacoes() })
+}
+
+func (s *VendasService) ObterCotacao(ctx context.Context, id int64) (usecase.CotacaoCompleta, error) {
+	return comLoja(ctx, s.lojas, func(a *api.App) (usecase.CotacaoCompleta, error) { return a.ObterCotacao(id) })
+}
+
+func (s *VendasService) CriarCotacao(ctx context.Context, p usecase.NovaCotacao) (usecase.CotacaoCompleta, error) {
+	return comLoja(ctx, s.lojas, func(a *api.App) (usecase.CotacaoCompleta, error) {
+		p.UtilizadorID = api.UtilizadorAdminID
+		return a.CotacaoService.Criar(ctx, p)
+	})
+}
+
+func (s *VendasService) CancelarCotacao(ctx context.Context, id int64) error {
+	_, err := comLoja(ctx, s.lojas, func(a *api.App) (struct{}, error) { return struct{}{}, a.CancelarCotacao(id) })
+	return err
+}
+
+func (s *VendasService) ConverterCotacao(ctx context.Context, p usecase.ConverterCotacaoParams) (usecase.VendaCompleta, error) {
+	return comLoja(ctx, s.lojas, func(a *api.App) (usecase.VendaCompleta, error) {
+		p.UtilizadorID = api.UtilizadorAdminID
+		return a.CotacaoService.Converter(ctx, p)
+	})
+}
+
+func (s *VendasService) AbrirCotacaoPDF(ctx context.Context, id int64) (string, error) {
+	return comLoja(ctx, s.lojas, func(a *api.App) (string, error) { return a.AbrirCotacaoPDF(id) })
+}

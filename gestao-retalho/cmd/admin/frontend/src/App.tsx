@@ -16,6 +16,7 @@ import {
   BeakerIcon,
   ArrowRightStartOnRectangleIcon,
   Cog6ToothIcon,
+  DocumentTextIcon,
 } from "@heroicons/react/24/outline";
 import { PrecisaConfigurarAdmin, Logout, ObterLojaAtual, AbrirPDV } from "../wailsjs/go/admin/AdminApp";
 import { admin } from "../wailsjs/go/models";
@@ -33,12 +34,13 @@ import RelatoriosScreen from "./Relatorios";
 import type { Relatorio } from "./Relatorios";
 import ClientesScreen from "./Clientes";
 import VendaCreditoScreen from "./VendaCredito";
+import CotacoesScreen from "./Cotacoes";
 import FichasScreen from "./Fichas";
 import UtilizadoresScreen from "./Utilizadores";
 import ConfiguracoesLoja from "./ConfiguracoesLoja";
 import Modal from "./Modal";
 
-type Ecra = "dashboard" | "produtos" | "categorias" | "armazens" | "stock" | "inventario" | "vendas" | "relatorios" | "clientes" | "credito" | "fichas" | "utilizadores" | "farmacia" | "stub";
+type Ecra = "dashboard" | "produtos" | "categorias" | "armazens" | "stock" | "inventario" | "vendas" | "cotacoes" | "relatorios" | "clientes" | "credito" | "fichas" | "utilizadores" | "farmacia" | "stub";
 type IconeSvg = ComponentType<SVGProps<SVGSVGElement>>;
 
 /** Destino de navegação entre ecrãs (ex: "Vendas" → "Fecho de caixa"). */
@@ -64,6 +66,7 @@ const NAV: { grupo?: string; itens: ItemNav[] }[] = [
     grupo: "Vendas",
     itens: [
       { chave: "vendas", nome: "Vendas", Icone: ShoppingCartIcon },
+      { chave: "cotacoes", nome: "Cotações", Icone: DocumentTextIcon },
       { chave: "clientes", nome: "Clientes e dívidas", Icone: UserGroupIcon },
     ],
   },
@@ -268,6 +271,7 @@ function AdminPrincipal({
           {ecra === "stock" && <StockScreen onNavegar={navegar} onErro={setErro} />}
           {ecra === "inventario" && <InventarioScreen onErro={setErro} />}
           {ecra === "vendas" && <VendasScreen onNavegar={navegar} onErro={setErro} />}
+          {ecra === "cotacoes" && <CotacoesScreen onNavegar={navegar} onErro={setErro} />}
           {ecra === "clientes" && <ClientesScreen cliente={destino.cliente} onNavegar={navegar} onErro={setErro} />}
           {ecra === "credito" && (
             <VendaCreditoScreen

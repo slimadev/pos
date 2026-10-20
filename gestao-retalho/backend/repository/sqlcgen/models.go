@@ -58,6 +58,41 @@ type Contas struct {
 	MotivoCancelamento   sql.NullString `json:"motivo_cancelamento"`
 }
 
+type CotacaoItens struct {
+	ID               int64   `json:"id"`
+	CotacaoID        int64   `json:"cotacao_id"`
+	ProdutoID        int64   `json:"produto_id"`
+	UnidadeProdutoID int64   `json:"unidade_produto_id"`
+	Descricao        string  `json:"descricao"`
+	NomeUnidade      string  `json:"nome_unidade"`
+	Quantidade       float64 `json:"quantidade"`
+	PrecoUnitario    float64 `json:"preco_unitario"`
+	Desconto         float64 `json:"desconto"`
+	Subtotal         float64 `json:"subtotal"`
+}
+
+type Cotacoes struct {
+	ID              int64          `json:"id"`
+	NegocioID       int64          `json:"negocio_id"`
+	Ano             int64          `json:"ano"`
+	Numero          int64          `json:"numero"`
+	ClienteID       sql.NullInt64  `json:"cliente_id"`
+	ClienteNome     string         `json:"cliente_nome"`
+	ClienteNuit     sql.NullString `json:"cliente_nuit"`
+	ClienteContacto sql.NullString `json:"cliente_contacto"`
+	ValidadeDias    int64          `json:"validade_dias"`
+	Subtotal        float64        `json:"subtotal"`
+	DescontoTotal   float64        `json:"desconto_total"`
+	Total           float64        `json:"total"`
+	TaxaIva         float64        `json:"taxa_iva"`
+	ValorIva        float64        `json:"valor_iva"`
+	Observacoes     sql.NullString `json:"observacoes"`
+	Estado          string         `json:"estado"`
+	VendaID         sql.NullInt64  `json:"venda_id"`
+	CriadoEm        string         `json:"criado_em"`
+	UtilizadorID    int64          `json:"utilizador_id"`
+}
+
 type Dividas struct {
 	ID            int64   `json:"id"`
 	ClienteID     int64   `json:"cliente_id"`

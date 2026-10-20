@@ -53,6 +53,7 @@ type App struct {
 	RelatorioService    *usecase.RelatorioService
 	OperadorService     *usecase.OperadorService
 	CatalogoService     *usecase.CatalogoService
+	CotacaoService      *usecase.CotacaoService
 }
 
 func NewApp(
@@ -72,6 +73,7 @@ func NewApp(
 	relatorios *usecase.RelatorioService,
 	operadores *usecase.OperadorService,
 	catalogo *usecase.CatalogoService,
+	cotacoes *usecase.CotacaoService,
 ) *App {
 	return &App{
 		db:                  db,
@@ -90,6 +92,7 @@ func NewApp(
 		RelatorioService:    relatorios,
 		OperadorService:     operadores,
 		CatalogoService:     catalogo,
+		CotacaoService:      cotacoes,
 	}
 }
 
@@ -794,6 +797,51 @@ func (a *App) exportarTabela(t export.Tabela, formato string) (string, error) {
 	path, err := export.GravarTabela(t, formato)
 	if err != nil {
 		return "", err
+	}
+	if err := export.AbrirFicheiro(path); err != nil {
+		return path, err
+	}
+	return path, nil
+}
+
+// --- Cotações ---------------------------------------------------------------
+
+func (a *App) ListarCotacoes() ([]usecase.CotacaoCompleta, error) {
+	return a.CotacaoService.Listar(a.ctx)
+}
+
+func (a *App) ObterCotacao(id int64) (usecase.CotacaoCompleta, error) {
+	return a.CotacaoService.Obter(a.ctx, id)
+}
+
+func (a *App) CriarCotacao(p usecase.NovaCotacao) (usecase.CotacaoCompleta, error) {
+	p.UtilizadorID = a.utilizadorAtual()
+	return a.CotacaoService.Criar(a.ctx, p)
+}
+
+func (a *App) CancelarCotacao(id int64) error {
+	return a.CotacaoService.Cancelar(a.ctx, id)
+}
+
+func (a *App) ConverterCotacao(p usecase.ConverterCotacaoParams) (usecase.VendaCompleta, error) {
+	p.UtilizadorID = a.utilizadorAtual()
+	return a.CotacaoService.Converter(a.ctx, p)
+}
+
+// AbrirCotacaoPDF grava a cotação em PDF (pasta dos recibos) e abre-a no
+// leitor de PDF — para imprimir ou anexar a um email.
+func (a *App) AbrirCotacaoPDF(id int64) (string, error) {
+	pdf, nome, err := a.CotacaoService.GerarPDF(a.ctx, id)
+	if err != nil {
+		return "", err
+	}
+	dir, err := config.ResolveRecibosDir()
+	if err != nil {
+		return "", err
+	}
+	path := filepath.Join(dir, nome)
+	if err := os.WriteFile(path, pdf, 0o644); err != nil {
+		return "", fmt.Errorf("gravar cotação: %w", err)
 	}
 	if err := export.AbrirFicheiro(path); err != nil {
 		return path, err

@@ -24,15 +24,18 @@ type Querier interface {
 	AtualizarUnidadeProduto(ctx context.Context, arg AtualizarUnidadeProdutoParams) error
 	AtualizarUtilizadorAdmin(ctx context.Context, arg AtualizarUtilizadorAdminParams) error
 	CancelarConta(ctx context.Context, arg CancelarContaParams) (Contas, error)
+	CancelarCotacao(ctx context.Context, id int64) (int64, error)
 	CriarArmazem(ctx context.Context, arg CriarArmazemParams) (Armazens, error)
 	CriarCategoria(ctx context.Context, arg CriarCategoriaParams) (Categorias, error)
 	CriarCliente(ctx context.Context, arg CriarClienteParams) (Clientes, error)
 	CriarConta(ctx context.Context, arg CriarContaParams) (Contas, error)
+	CriarCotacao(ctx context.Context, arg CriarCotacaoParams) (Cotacoes, error)
 	CriarDivida(ctx context.Context, arg CriarDividaParams) (Dividas, error)
 	CriarIngrediente(ctx context.Context, arg CriarIngredienteParams) (FichasTecnicas, error)
 	CriarInventario(ctx context.Context, arg CriarInventarioParams) (Inventarios, error)
 	CriarInventarioItem(ctx context.Context, arg CriarInventarioItemParams) error
 	CriarItemConta(ctx context.Context, arg CriarItemContaParams) (ItensConta, error)
+	CriarItemCotacao(ctx context.Context, arg CriarItemCotacaoParams) (CotacaoItens, error)
 	CriarItemVenda(ctx context.Context, arg CriarItemVendaParams) (ItensVenda, error)
 	CriarLote(ctx context.Context, arg CriarLoteParams) (LotesProduto, error)
 	CriarMovimentoStock(ctx context.Context, arg CriarMovimentoStockParams) (MovimentosStock, error)
@@ -58,12 +61,14 @@ type Querier interface {
 	ListarClientes(ctx context.Context, negocioID int64) ([]Clientes, error)
 	ListarConfiguracoes(ctx context.Context, negocioID int64) ([]ListarConfiguracoesRow, error)
 	ListarContasAbertas(ctx context.Context, negocioID int64) ([]Contas, error)
+	ListarCotacoes(ctx context.Context, negocioID int64) ([]Cotacoes, error)
 	ListarDividasAbertas(ctx context.Context, negocioID int64) ([]Dividas, error)
 	ListarDividasPorCliente(ctx context.Context, clienteID int64) ([]Dividas, error)
 	ListarIngredientes(ctx context.Context, produtoCompostoID int64) ([]FichasTecnicas, error)
 	ListarInventarioItens(ctx context.Context, inventarioID int64) ([]InventarioItens, error)
 	ListarInventarios(ctx context.Context, negocioID int64) ([]Inventarios, error)
 	ListarItensConta(ctx context.Context, contaID int64) ([]ItensConta, error)
+	ListarItensCotacao(ctx context.Context, cotacaoID int64) ([]CotacaoItens, error)
 	ListarItensVenda(ctx context.Context, vendaID int64) ([]ItensVenda, error)
 	ListarLotesAVencer(ctx context.Context, arg ListarLotesAVencerParams) ([]LotesProduto, error)
 	ListarLotesFEFO(ctx context.Context, arg ListarLotesFEFOParams) ([]LotesProduto, error)
@@ -81,6 +86,7 @@ type Querier interface {
 	ListarUtilizadores(ctx context.Context) ([]Utilizadores, error)
 	ListarVendasPorCliente(ctx context.Context, clienteID int64) ([]Vendas, error)
 	ListarVendasPorPeriodo(ctx context.Context, arg ListarVendasPorPeriodoParams) ([]Vendas, error)
+	MarcarCotacaoConvertida(ctx context.Context, arg MarcarCotacaoConvertidaParams) (int64, error)
 	MarcarInventarioItemAjustado(ctx context.Context, id int64) error
 	MoverProdutosDeCategoria(ctx context.Context, arg MoverProdutosDeCategoriaParams) (int64, error)
 	MoverSubcategorias(ctx context.Context, arg MoverSubcategoriasParams) error
@@ -88,6 +94,7 @@ type Querier interface {
 	ObterCliente(ctx context.Context, id int64) (Clientes, error)
 	ObterConfiguracao(ctx context.Context, arg ObterConfiguracaoParams) (ObterConfiguracaoRow, error)
 	ObterConta(ctx context.Context, id int64) (Contas, error)
+	ObterCotacao(ctx context.Context, id int64) (Cotacoes, error)
 	ObterCustoMedioProdutoArmazem(ctx context.Context, arg ObterCustoMedioProdutoArmazemParams) (ProdutoCustoMedio, error)
 	ObterDivida(ctx context.Context, id int64) (Dividas, error)
 	ObterDividaPorVenda(ctx context.Context, vendaID int64) (Dividas, error)
@@ -104,6 +111,7 @@ type Querier interface {
 	ObterUtilizador(ctx context.Context, id int64) (Utilizadores, error)
 	ObterUtilizadorPorUsername(ctx context.Context, username string) (Utilizadores, error)
 	ObterVenda(ctx context.Context, id int64) (Vendas, error)
+	ProximoNumeroCotacao(ctx context.Context, arg ProximoNumeroCotacaoParams) (int64, error)
 	RegistarContagemInventarioItem(ctx context.Context, arg RegistarContagemInventarioItemParams) error
 	RelatorioContasPorPeriodo(ctx context.Context, arg RelatorioContasPorPeriodoParams) ([]Contas, error)
 	RelatorioLucroPorPeriodo(ctx context.Context, arg RelatorioLucroPorPeriodoParams) (RelatorioLucroPorPeriodoRow, error)

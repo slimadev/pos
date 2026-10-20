@@ -820,3 +820,50 @@ func (a *AdminApp) AbrirPDV() error {
 	}
 	return a.PDV.Abrir(a.ctx)
 }
+
+// --- Cotações ---------------------------------------------------------------
+//
+// Orçamentos/proformas: não mexem no stock nem contam como venda até serem
+// convertidos numa venda (ver usecase.CotacaoService).
+
+func (a *AdminApp) ListarCotacoes() ([]usecase.CotacaoCompleta, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Vendas.ListarCotacoes(a.ctx)
+}
+
+func (a *AdminApp) ObterCotacao(id int64) (usecase.CotacaoCompleta, error) {
+	if err := a.exigirSessao(); err != nil {
+		return usecase.CotacaoCompleta{}, err
+	}
+	return a.Vendas.ObterCotacao(a.ctx, id)
+}
+
+func (a *AdminApp) CriarCotacao(p usecase.NovaCotacao) (usecase.CotacaoCompleta, error) {
+	if err := a.exigirSessao(); err != nil {
+		return usecase.CotacaoCompleta{}, err
+	}
+	return a.Vendas.CriarCotacao(a.ctx, p)
+}
+
+func (a *AdminApp) CancelarCotacao(id int64) error {
+	if err := a.exigirSessao(); err != nil {
+		return err
+	}
+	return a.Vendas.CancelarCotacao(a.ctx, id)
+}
+
+func (a *AdminApp) ConverterCotacao(p usecase.ConverterCotacaoParams) (usecase.VendaCompleta, error) {
+	if err := a.exigirSessao(); err != nil {
+		return usecase.VendaCompleta{}, err
+	}
+	return a.Vendas.ConverterCotacao(a.ctx, p)
+}
+
+func (a *AdminApp) AbrirCotacaoPDF(id int64) (string, error) {
+	if err := a.exigirSessao(); err != nil {
+		return "", err
+	}
+	return a.Vendas.AbrirCotacaoPDF(a.ctx, id)
+}
