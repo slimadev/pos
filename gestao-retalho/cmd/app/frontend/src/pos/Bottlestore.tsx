@@ -17,12 +17,12 @@ import {
   ListarProdutos,
   ListarArmazens,
   ListarClientes,
-  GerarRecibo,
 } from "../../wailsjs/go/api/App";
 import { api, domain, usecase } from "../../wailsjs/go/models";
 import Catalogo from "./Catalogo";
 import { METODOS, ROTULO_METODO, lerNumero, mt, qtd } from "./formato";
 import { calcularTroco } from "./troco";
+import ReciboModal from "./ReciboModal";
 import "./Bottlestore.css";
 
 interface ContaComTotal {
@@ -41,6 +41,12 @@ export default function Bottlestore() {
   const [clientes, setClientes] = useState<domain.Cliente[]>([]);
   const [contaSelecionadaId, setContaSelecionadaId] = useState<number | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  // Recibo da conta acabada de fechar — vive aqui porque fechar a conta
+  // volta à lista (o detalhe da conta desmonta).
+  const [recibo, setRecibo] = useState<{ id: number; troco: number } | null>(null);
+  const modalRecibo = recibo && (
+    <ReciboModal vendaId={recibo.id} troco={recibo.troco} onFechar={() => setRecibo(null)} />
+  );
 
   const [novoIdentificador, setNovoIdentificador] = useState("");
   const [novoClienteId, setNovoClienteId] = useState<number | "">("");
@@ -82,7 +88,9 @@ export default function Bottlestore() {
 
   if (contaSelecionada) {
     return (
-      <ContaDetalhe
+      <>
+        {modalRecibo}
+        <ContaDetalhe
         contaComTotal={contaSelecionada}
         clientes={clientes}
         outrasContasAbertas={contas.filter((c) => c.conta.ID !== contaSelecionadaId).map((c) => c.conta)}
@@ -91,8 +99,10 @@ export default function Bottlestore() {
           recarregarContas();
         }}
         onMudou={recarregarContas}
+        onRecibo={(id, troco) => setRecibo({ id, troco })}
         onErro={setErro}
       />
+      </>
     );
   }
 
@@ -100,6 +110,7 @@ export default function Bottlestore() {
 
   return (
     <div className="bs">
+      {modalRecibo}
       {erro && (
         <div className="bs-erro">
           {erro} <button onClick={() => setErro(null)}>×</button>
@@ -165,6 +176,7 @@ function ContaDetalhe({
   outrasContasAbertas,
   onVoltar,
   onMudou,
+  onRecibo,
   onErro,
 }: {
   contaComTotal: ContaComTotal;
@@ -172,6 +184,7 @@ function ContaDetalhe({
   outrasContasAbertas: domain.Conta[];
   onVoltar: () => void;
   onMudou: () => void;
+  onRecibo: (vendaId: number, troco: number) => void;
   onErro: (e: string) => void;
 }) {
   const { conta, itens } = contaComTotal;
@@ -316,11 +329,11 @@ function ContaDetalhe({
           // ListarClientes nunca devolve o registo fixo "Anónimo" (filtrado
           // no backend) — não vir na lista é como sabemos que é ele.
           clienteAnonimo={!clientes.some((c) => c.ID === conta.ClienteID)}
-          onFechar={(vendaId) => {
+          onFechar={(vendaId, troco) => {
             setMostrarFecho(false);
             onMudou();
             onVoltar();
-            if (vendaId) GerarRecibo(vendaId).catch(() => {});
+            if (vendaId) onRecibo(vendaId, troco);
           }}
           onCancelar={() => setMostrarFecho(false)}
           onErro={onErro}
@@ -343,7 +356,7 @@ function ModalFecho({
   total: number;
   armazemId: number;
   clienteAnonimo: boolean;
-  onFechar: (vendaId: number | null) => void;
+  onFechar: (vendaId: number | null, troco: number) => void;
   onCancelar: () => void;
   onErro: (e: string) => void;
 }) {
@@ -383,7 +396,7 @@ function ModalFecho({
             `Aviso: o cliente passou o limite de crédito (${mt(resultado.Alerta.LimiteCredito)}) — deve agora ${mt(resultado.Alerta.TotalEmAberto)}.`,
           );
         }
-        onFechar(resultado.Venda.Venda.ID);
+        onFechar(resultado.Venda.Venda.ID, troco);
       })
       .catch((e) => onErro(String(e)))
       .finally(() => setAFechar(false));

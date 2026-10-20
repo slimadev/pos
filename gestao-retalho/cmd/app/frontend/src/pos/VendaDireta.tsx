@@ -14,12 +14,12 @@ import {
   ListarArmazens,
   ListarClientes,
   RegistarVendaDireta,
-  GerarRecibo,
   ListarVendasDoDia,
 } from "../../wailsjs/go/api/App";
 import { domain, usecase } from "../../wailsjs/go/models";
 import Catalogo, { type CatalogoHandle } from "./Catalogo";
 import { calcularTroco } from "./troco";
+import ReciboModal from "./ReciboModal";
 import { METODOS, ROTULO_METODO, lerNumero, mt, qtd } from "./formato";
 import "./VendaDireta.css";
 
@@ -77,6 +77,7 @@ export default function VendaDireta({ tipoNegocio }: { tipoNegocio: string }) {
 
   // A última venda e o troco a dar — fica à vista depois de o carrinho
   // limpar, até começar a venda seguinte.
+  const [recibo, setRecibo] = useState<{ id: number; troco: number } | null>(null);
   const [ultimaVenda, setUltimaVenda] = useState<{ id: number; total: number; troco: number } | null>(null);
   const [historicoDia, setHistoricoDia] = useState<domain.Venda[]>([]);
   const [erro, setErro] = useState<string | null>(null);
@@ -228,12 +229,14 @@ export default function VendaDireta({ tipoNegocio }: { tipoNegocio: string }) {
     novaVenda();
   }
 
-  function gerarRecibo(vendaId: number) {
-    GerarRecibo(vendaId).catch((e) => setErro(String(e)));
+  // O recibo abre num modal (talão + "Imprimir"), não no leitor de PDF.
+  function gerarRecibo(vendaId: number, troco = 0) {
+    setRecibo({ id: vendaId, troco });
   }
 
   return (
     <div className="pos">
+      {recibo && <ReciboModal vendaId={recibo.id} troco={recibo.troco} onFechar={() => setRecibo(null)} />}
       <div className="pos-vendas">
         {armazemId !== "" && (
           <Catalogo
@@ -313,7 +316,7 @@ export default function VendaDireta({ tipoNegocio }: { tipoNegocio: string }) {
                 <strong>{mt(ultimaVenda.troco)}</strong>
               </div>
             )}
-            <button className="pos-concluida-recibo" onClick={() => gerarRecibo(ultimaVenda.id)}>
+            <button className="pos-concluida-recibo" onClick={() => gerarRecibo(ultimaVenda.id, ultimaVenda.troco)}>
               Imprimir recibo
             </button>
             <button className="pos-concluida-nova" onClick={novaVenda}>

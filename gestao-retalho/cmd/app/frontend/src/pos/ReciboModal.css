@@ -1,0 +1,208 @@
+/* Modal do recibo (ReciboModal.tsx): no ecrã, o talão sobre um fundo
+   cinzento; na impressão, só o talão. */
+
+.recibo-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(15, 17, 21, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.recibo-janela {
+  width: min(560px, 100%);
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
+}
+
+.recibo-barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  font-weight: 700;
+  border-bottom: 1px solid var(--color-surface-border);
+}
+
+.recibo-fechar {
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.recibo-fundo {
+  flex: 1;
+  overflow: auto;
+  background: #e9eaed;
+  padding: 24px;
+  display: flex;
+  justify-content: center;
+}
+
+.recibo-a-carregar,
+.recibo-erro {
+  align-self: center;
+  color: #444;
+}
+.recibo-erro {
+  color: #b42318;
+}
+
+/* O papel: sempre preto sobre branco (é o que sai na impressora), seja
+   qual for o tema do PDV. */
+.recibo-papel {
+  background: #fff;
+  color: #111;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-size: 12px;
+  line-height: 1.35;
+  padding: 4mm;
+  box-sizing: border-box;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  align-self: flex-start;
+}
+.recibo-papel.papel-80 {
+  width: 80mm;
+}
+.recibo-papel.papel-58 {
+  width: 58mm;
+  padding: 2.5mm;
+  font-size: 11px;
+}
+.recibo-papel.papel-a5 {
+  width: 148mm;
+  padding: 10mm;
+  font-size: 13px;
+}
+
+.recibo-logo {
+  display: block;
+  max-width: 40%;
+  max-height: 22mm;
+  margin: 0 auto 2mm;
+  object-fit: contain;
+}
+.recibo-loja {
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.35em;
+  margin-bottom: 1mm;
+}
+.recibo-centro {
+  text-align: center;
+}
+.recibo-papel hr {
+  border: none;
+  border-top: 1px dashed #555;
+  margin: 2mm 0;
+}
+.recibo-item-nome {
+  font-weight: 700;
+}
+.recibo-linha {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.recibo-linha span:last-child {
+  white-space: nowrap;
+}
+.recibo-total {
+  font-weight: 800;
+  font-size: 1.35em;
+  margin: 1mm 0;
+}
+
+.recibo-acoes {
+  display: flex;
+  gap: 10px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--color-surface-border);
+}
+.recibo-btn {
+  flex: 1;
+  padding: 14px;
+  border-radius: 8px;
+  border: 1px solid var(--color-surface-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.recibo-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.recibo-btn-imprimir {
+  flex: 1.6;
+  border: none;
+  background: var(--color-accent);
+  color: #fff;
+  font-size: 17px;
+}
+
+/* Impressão: só o talão, encostado ao canto, sem fundo nem margens da
+   página — a largura do papel é a do rolo da impressora. O resto da app
+   sai do fluxo (display: none), senão continuava a ocupar páginas em
+   branco. O modal é um filho direto do <body> (createPortal). */
+@media print {
+  @page {
+    margin: 0;
+  }
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    height: auto !important;
+    /* style.css dá min-height: 100vh — no papel isso é uma página a mais. */
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+  body > *:not(.recibo-overlay) {
+    display: none !important;
+  }
+  .recibo-overlay {
+    position: static;
+    display: block;
+    background: none;
+    padding: 0;
+  }
+  .recibo-janela {
+    display: block;
+    width: auto;
+    max-height: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: none;
+    overflow: visible;
+  }
+  .recibo-barra,
+  .recibo-acoes {
+    display: none !important;
+  }
+  .recibo-fundo {
+    display: block;
+    padding: 0;
+    background: none;
+    overflow: visible;
+  }
+  .recibo-papel {
+    box-shadow: none;
+  }
+}

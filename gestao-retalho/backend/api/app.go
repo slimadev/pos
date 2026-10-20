@@ -474,6 +474,12 @@ func (a *App) ListarVendasEntreDatas(desde, ate string) ([]domain.Venda, error) 
 // GerarRecibo grava o PDF em disco e abre-o no visualizador por omissão do
 // sistema — mais simples do que construir um diálogo "guardar como" só
 // para este passo (SDD 4.10, "imprimir/gerar recibo").
+// ObterRecibo devolve o recibo para o PDV o mostrar num modal e imprimir
+// pela própria janela (sem abrir o PDF noutro programa).
+func (a *App) ObterRecibo(vendaID int64) (usecase.ReciboEcra, error) {
+	return a.ReciboService.ObterParaEcra(a.ctx, vendaID)
+}
+
 func (a *App) GerarRecibo(vendaID int64) (string, error) {
 	pdfBytes, err := a.ReciboService.GerarPDF(a.ctx, vendaID)
 	if err != nil {
