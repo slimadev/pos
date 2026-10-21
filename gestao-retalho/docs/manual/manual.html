@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<title>Gestão de Retalho — Manual do Utilizador</title>
+<style>
+  @page { size: A4; margin: 16mm 15mm 18mm 15mm; }
+  :root { --acento: #c44f12; --texto: #1a1d23; --fraco: #5b6270; --linha: #e3e5ea; --fundo: #f6f7f9; }
+  * { box-sizing: border-box; }
+  body { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--texto); font-size: 10.5pt; line-height: 1.5; margin: 0; }
+  h1, h2, h3 { line-height: 1.2; }
+  h2 { font-size: 19pt; color: var(--acento); margin: 0 0 10pt; padding-bottom: 6pt; border-bottom: 2px solid var(--acento); break-before: page; }
+  h3 { font-size: 13pt; margin: 16pt 0 6pt; break-after: avoid; }
+  p { margin: 0 0 7pt; }
+  a { color: var(--acento); text-decoration: none; }
+  ul, ol { margin: 0 0 8pt; padding-left: 18pt; }
+  li { margin-bottom: 3pt; }
+  figure { margin: 8pt 0 12pt; break-inside: avoid; }
+  figure img { max-width: 100%; max-height: 105mm; width: auto; margin: 0 auto; border: 1px solid var(--linha); border-radius: 4pt; display: block; }
+  figure.estreita img { max-height: 120mm; }
+  figcaption { font-size: 8.5pt; color: var(--fraco); margin-top: 3pt; text-align: center; }
+  .nota, .aviso { border-radius: 4pt; padding: 7pt 10pt; margin: 8pt 0; font-size: 9.5pt; break-inside: avoid; }
+  .nota { background: #eef5fb; border-left: 3pt solid #2f6fae; }
+  .aviso { background: #fdf3e6; border-left: 3pt solid #c47a12; }
+  .tecla { display: inline-block; border: 1px solid #b9bec8; border-bottom-width: 2px; border-radius: 3pt; padding: 0 4pt; font-size: 9pt; background: #fff; }
+  .botao { font-weight: 600; }
+  table { border-collapse: collapse; width: 100%; margin: 6pt 0 10pt; font-size: 9.5pt; break-inside: avoid; }
+  th, td { border-bottom: 1px solid var(--linha); padding: 4pt 6pt; text-align: left; vertical-align: top; }
+  th { background: var(--fundo); }
+
+  .capa { height: 255mm; display: flex; flex-direction: column; justify-content: center; text-align: center; }
+  .capa .marca { width: 34mm; height: 34mm; margin: 0 auto 10mm; background: var(--acento); border-radius: 6mm; color: #fff; font-size: 26mm; font-weight: 800; line-height: 34mm; }
+  .capa h1 { font-size: 32pt; margin: 0 0 4mm; }
+  .capa .sub { font-size: 15pt; color: var(--fraco); margin-bottom: 18mm; }
+  .capa .info { font-size: 10pt; color: var(--fraco); }
+
+  .indice { break-before: page; }
+  .indice h2 { break-before: avoid; }
+  .indice ol { columns: 2; column-gap: 12mm; padding-left: 14pt; }
+  .indice li { margin-bottom: 4pt; break-inside: avoid; }
+  .indice a { color: var(--texto); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<section class="capa">
+  <div class="marca">G</div>
+  <h1>Gestão de Retalho</h1>
+  <div class="sub">Manual do Utilizador</div>
+  <div class="info">Versão 1.0 · Outubro de 2026<br>Administração e Ponto de Venda (PDV)<br>Exemplos com uma loja de ferragem</div>
+</section>
+
+<section class="indice">
+  <h2>Índice</h2>
+  <ol>
+    <li><a href="#introducao">Introdução</a></li>
+    <li><a href="#instalacao">Instalação e primeiro arranque</a></li>
+    <li><a href="#entrar">Entrar na Administração</a></li>
+    <li><a href="#configuracoes">Configurações da loja</a></li>
+    <li><a href="#dashboard">Dashboard</a></li>
+    <li><a href="#produtos">Produtos</a></li>
+    <li><a href="#categorias">Categorias</a></li>
+    <li><a href="#armazens">Armazéns</a></li>
+    <li><a href="#stock">Stock e receção de mercadoria</a></li>
+    <li><a href="#inventario">Inventário</a></li>
+    <li><a href="#vendas">Vendas e anulação</a></li>
+    <li><a href="#credito">Venda a crédito</a></li>
+    <li><a href="#clientes">Clientes e dívidas</a></li>
+    <li><a href="#cotacoes">Cotações</a></li>
+    <li><a href="#faturas">Faturas</a></li>
+    <li><a href="#caixa">Fecho de caixa</a></li>
+    <li><a href="#relatorios">Relatórios</a></li>
+    <li><a href="#utilizadores">Utilizadores (operadores)</a></li>
+    <li><a href="#pdv">Ponto de Venda (PDV)</a></li>
+    <li><a href="#impressao">Impressão de recibos</a></li>
+    <li><a href="#atalhos">Atalhos e dicas</a></li>
+    <li><a href="#problemas">Problemas frequentes</a></li>
+  </ol>
+</section>
+
+<section id="introducao">
+  <h2>1. Introdução</h2>
+  <p>A Gestão de Retalho é composta por dois programas que trabalham sobre a mesma base de dados:</p>
+  <table>
+    <tr><th style="width:32%">Programa</th><th>Para quê</th><th style="width:22%">Quem usa</th></tr>
+    <tr><td><strong>Administração</strong><br>(ícone "Gestão de Retalho")</td><td>Produtos, preços, stock, clientes, cotações, faturas, relatórios e configurações. Protegida por utilizador e palavra-passe.</td><td>Dono ou gerente</td></tr>
+    <tr><td><strong>Ponto de Venda (PDV)</strong></td><td>Vender ao balcão: escolher produtos, receber o pagamento, dar o troco e imprimir o recibo. Pensado para ecrãs de toque.</td><td>Operadores de caixa</td></tr>
+  </table>
+  <p>O PDV abre-se sempre a partir da Administração, com o botão laranja <span class="botao">PDV</span> no topo do menu. Tudo o que se vende no PDV aparece de imediato na Administração.</p>
+  <div class="nota">Os valores apresentados neste manual (produtos, clientes e vendas) são de uma loja de demonstração. Os preços incluem IVA.</div>
+</section>
+
+<section id="instalacao">
+  <h2>2. Instalação e primeiro arranque</h2>
+  <h3>Instalar</h3>
+  <ol>
+    <li>Antes de instalar, ligue a impressora de recibos e instale o controlador do fabricante. Defina-a como impressora predefinida do Windows, com o papel do rolo (80 mm ou 58 mm).</li>
+    <li>Execute <strong>GestaoRetalho-1.0.0-Instalador.exe</strong>. Se o Windows mostrar "O Windows protegeu o computador", carregue em <em>Mais informações → Executar mesmo assim</em>.</li>
+    <li>Siga os passos do instalador. No fim fica um atalho <strong>Gestão de Retalho</strong> no ambiente de trabalho e no menu Iniciar.</li>
+  </ol>
+  <div class="nota">O instalador instala também o componente WebView2 do Windows, se faltar (precisa de Internet nesse momento). Depois disso, o programa funciona sem Internet.</div>
+  <h3>Primeiro arranque</h3>
+  <p>Na primeira vez que abre a Administração aparece o assistente de configuração. Preencha:</p>
+  <ul>
+    <li><strong>Tipo de negócio</strong> — Ferragem, Bar, Farmácia, Mercearia ou Personalizado. Define as cores, os módulos ativos e algumas categorias e produtos de exemplo. Não se muda depois.</li>
+    <li><strong>Nome da loja</strong> e, opcionalmente, o <strong>logótipo</strong>.</li>
+    <li><strong>Administrador</strong> — o seu nome, utilizador e palavra-passe. Guarde bem a palavra-passe: é a única forma de entrar na Administração.</li>
+  </ul>
+  <p>Depois disso, a loja fica criada com um armazém "Principal" e pode começar a registar produtos e stock.</p>
+  <div class="aviso">Os dados ficam no próprio computador, na pasta <code>%AppData%\gestao-retalho-admin</code>. Faça cópias de segurança desta pasta com regularidade (por exemplo para uma pen USB). Desinstalar o programa não apaga os dados.</div>
+</section>
+
+<section id="entrar">
+  <h2>3. Entrar na Administração</h2>
+  <p>Abra o atalho <strong>Gestão de Retalho</strong>, escreva o utilizador e a palavra-passe do administrador e carregue em <span class="botao">Entrar</span>.</p>
+  <figure class="estreita"><img src="img/01-login.png"><figcaption>Ecrã de entrada, com o logótipo e o nome da loja.</figcaption></figure>
+  <h3>O menu</h3>
+  <p>À esquerda está o menu, organizado por grupos:</p>
+  <table>
+    <tr><th style="width:22%">Grupo</th><th>Ecrãs</th></tr>
+    <tr><td>(topo)</td><td><strong>PDV</strong> (abre o ponto de venda), <strong>Dashboard</strong></td></tr>
+    <tr><td>Vendas</td><td>Vendas, Cotações, Faturas, Clientes e dívidas</td></tr>
+    <tr><td>Stock</td><td>Stock, Inventário, Armazéns (e Farmácia, nas farmácias)</td></tr>
+    <tr><td>Catálogo</td><td>Produtos, Categorias, Fichas técnicas</td></tr>
+    <tr><td>Gestão</td><td>Relatórios, Utilizadores</td></tr>
+  </table>
+  <p>A engrenagem ao lado do nome da loja abre as <a href="#configuracoes">Configurações da loja</a>. <span class="botao">Sair</span>, no fundo do menu, termina a sessão.</p>
+</section>
+
+<section id="configuracoes">
+  <h2>4. Configurações da loja</h2>
+  <p>Carregue na <strong>engrenagem</strong> junto ao nome da loja, no canto superior esquerdo.</p>
+  <figure><img src="img/03-configuracoes.png"><figcaption>Configurações da loja.</figcaption></figure>
+  <ul>
+    <li><strong>Nome da loja</strong> e <strong>NUIT</strong> (9 algarismos) — aparecem no menu, nos recibos, cotações e faturas.</li>
+    <li><strong>Logótipo</strong> — PNG ou JPG até 1,5 MB, de preferência quadrado. Sem logótipo, aparece um quadrado com a cor da loja.</li>
+    <li><strong>Endereço, telefone e email</strong> — aparecem no cabeçalho dos documentos.</li>
+    <li><strong>Taxa de IVA (%)</strong> — 16 por omissão; escreva 0 se a loja for isenta. Os preços dos produtos incluem IVA; esta taxa é usada para mostrar a parte do total que é imposto.</li>
+    <li><strong>Papel da impressora de recibos</strong> — rolo de 80 mm, rolo de 58 mm ou folha A5.</li>
+  </ul>
+  <p>Carregue em <span class="botao">Guardar</span>. O PDV lê estes dados quando abre: se estiver aberto, feche-o e volte a abri-lo.</p>
+</section>
+
+<section id="dashboard">
+  <h2>5. Dashboard</h2>
+  <p>É o primeiro ecrã depois de entrar. Mostra o resumo do dia:</p>
+  <figure><img src="img/02-dashboard.png"><figcaption>Dashboard.</figcaption></figure>
+  <ul>
+    <li><strong>Vendas hoje</strong> e a variação face a ontem; <strong>Lucro estimado</strong> e margem.</li>
+    <li><strong>Contas abertas</strong> (bares) e <strong>Dívidas em aberto</strong> de clientes.</li>
+    <li><strong>Vendas, últimos 14 dias</strong> — uma barra por dia; passe o rato por cima para ver o valor.</li>
+    <li><strong>Alertas</strong> — produtos abaixo do stock mínimo, dívidas com mais de 30 dias, lotes a vencer (farmácias).</li>
+    <li><strong>Mais vendidos hoje</strong>.</li>
+  </ul>
+  <p>O botão <span class="botao">Atualizar</span> volta a ler os dados (útil enquanto o PDV está a vender).</p>
+</section>
+
+<section id="produtos">
+  <h2>6. Produtos</h2>
+  <figure><img src="img/04-produtos.png"><figcaption>Lista de produtos.</figcaption></figure>
+  <p>A lista mostra cada produto com a categoria, o tipo, o preço de venda e o stock mínimo. No topo pode:</p>
+  <ul>
+    <li><strong>Pesquisar</strong> pelo nome ou pelo código de barras;</li>
+    <li><strong>Filtrar</strong> por categoria e por estado (ativos, inativos, todos).</li>
+  </ul>
+  <p>Em cada linha: <span class="botao">Editar</span>, <span class="botao">Duplicar</span> (cria uma cópia, útil para variantes) e <span class="botao">Desativar</span> (o produto deixa de aparecer no PDV, mas o histórico mantém-se).</p>
+  <h3>Criar ou editar um produto</h3>
+  <figure><img src="img/05-produto-editar.png"><figcaption>Edição de um produto com duas unidades: à unidade e em caixa de 100.</figcaption></figure>
+  <ul>
+    <li><strong>Nome</strong>, <strong>Categoria</strong> e <strong>Tipo</strong>: <em>Simples</em> (comprado e vendido tal como está — a maioria dos produtos de uma ferragem), <em>Composto</em> ou <em>Semi Produzido</em> (ver <a href="#categorias">Fichas técnicas</a>).</li>
+    <li><strong>Unidade base</strong> — como se conta o stock (unidade, kg, metro, saco…). Não se muda depois de criar.</li>
+    <li><strong>Stock mínimo</strong> — abaixo deste valor o produto aparece nos alertas.</li>
+    <li><strong>Controla lotes e validade</strong> — para farmácias.</li>
+  </ul>
+  <p><strong>Unidades de venda e compra.</strong> Cada produto tem pelo menos uma unidade, e pode ter várias. Exemplo: o parafuso conta-se à unidade, vende-se à unidade a 3,00 MT e compra-se em caixa de 100 a 180,00 MT. Para cada unidade indique:</p>
+  <ul>
+    <li><strong>Contém</strong> — quantas unidades base tem (a caixa contém 100);</li>
+    <li><strong>Preço de custo</strong> e <strong>Preço de venda</strong> (com IVA);</li>
+    <li><strong>Código de barras</strong> (opcional) — o leitor do PDV encontra o produto por ele;</li>
+    <li><strong>Venda / Compra</strong> — qual é a unidade usada por omissão no PDV e nas receções.</li>
+  </ul>
+  <div class="nota">Pode escrever os preços com vírgula (185,50). Um código de barras só pode estar num produto.</div>
+</section>
+
+<section id="categorias">
+  <h2>7. Categorias e Fichas técnicas</h2>
+  <h3>Categorias</h3>
+  <p>As categorias agrupam os produtos e aparecem como separadores no PDV (Cimento e areia, Elétrico, Ferramentas…).</p>
+  <figure><img src="img/06-categorias.png"><figcaption>Categorias, com o número de produtos de cada uma.</figcaption></figure>
+  <ul>
+    <li><span class="botao">+ Criar categoria</span> — nome e, opcionalmente, a categoria-mãe.</li>
+    <li>Não pode haver duas categorias com o mesmo nome. Se tiver ficado alguma repetida, aparece marcada como <em>repetida</em>; use <span class="botao">Juntar com…</span> para passar os produtos para a outra.</li>
+    <li><span class="botao">Desativar</span> esconde a categoria do PDV.</li>
+  </ul>
+  <h3>Fichas técnicas</h3>
+  <p>Usadas sobretudo em bares e restaurantes. Um produto <em>Composto</em> (por exemplo um cocktail) é feito na hora a partir de outros produtos; a ficha técnica diz quanto de cada ingrediente leva, e o stock dos ingredientes desce quando se vende. Um produto <em>Semi Produzido</em> é preparado antes e guardado em stock. Numa ferragem raramente são necessárias.</p>
+</section>
+
+<section id="armazens">
+  <h2>8. Armazéns</h2>
+  <p>Uma loja pode ter vários armazéns: o principal, outros pontos de venda e depósitos.</p>
+  <figure><img src="img/07-armazens.png"><figcaption>Armazéns.</figcaption></figure>
+  <p>Ao criar ou editar um armazém escolhe o tipo (<em>Principal</em>, <em>Ponto de venda</em>, <em>Depósito</em>) e se está <strong>disponível para venda</strong>:</p>
+  <figure><img src="img/07-armazem-novo.png"><figcaption>Novo armazém do tipo Depósito: fica fora de venda.</figcaption></figure>
+  <ul>
+    <li>Só os armazéns <strong>disponíveis para venda</strong> aparecem para escolher no PDV.</li>
+    <li>Um depósito fica fora de venda por omissão: guarda stock, mas não se vende a partir dele. Para levar mercadoria do depósito para a loja, faça uma <em>transferência</em> (ver <a href="#stock">Stock</a>).</li>
+    <li>Tem de existir sempre pelo menos um armazém ativo disponível para venda.</li>
+  </ul>
+</section>
+
+<section id="stock">
+  <h2>9. Stock e receção de mercadoria</h2>
+  <figure><img src="img/08-stock.png"><figcaption>Stock do armazém Principal.</figcaption></figure>
+  <p>Escolha o armazém no topo. A tabela mostra, para cada produto, a quantidade, o custo médio e o valor em stock (e o total do armazém no fim). Produtos abaixo do mínimo aparecem assinalados.</p>
+  <h3>Receção de mercadoria (entrada de compras)</h3>
+  <p>Quando chega mercadoria de um fornecedor, use <span class="botao">+ Receção de mercadoria</span> e registe a guia ou fatura inteira de uma vez:</p>
+  <figure><img src="img/11-rececao.png"><figcaption>Receção de 50 sacos de cimento e 10 caixas de parafusos.</figcaption></figure>
+  <ol>
+    <li>Escreva a referência do documento do fornecedor (opcional).</li>
+    <li>Pesquise cada produto pelo nome ou leia o código de barras e carregue em <span class="tecla">Enter</span>.</li>
+    <li>Confirme a <strong>unidade de compra</strong> (saco, caixa…), a <strong>quantidade</strong> e o <strong>custo por unidade</strong>. Por baixo do nome aparece a conversão ("= 1 000 unidade").</li>
+    <li>Carregue em <span class="botao">Registar receção</span>.</li>
+  </ol>
+  <p>O stock aumenta e o custo médio é recalculado. Ou entram todas as linhas, ou nenhuma.</p>
+  <h3>Outros movimentos</h3>
+  <p>O botão <span class="botao">+ Movimento</span> de cada produto regista um movimento isolado:</p>
+  <figure><img src="img/09-movimento.png"><figcaption>Tipos de movimento.</figcaption></figure>
+  <table>
+    <tr><th style="width:24%">Tipo</th><th>Quando usar</th></tr>
+    <tr><td>Entrada</td><td>Entrada avulsa de um só produto.</td></tr>
+    <tr><td>Transferência</td><td>Passar stock de um armazém para outro (por exemplo do depósito para a loja).</td></tr>
+    <tr><td>Perda</td><td>Produto partido, estragado ou roubado. Pede o motivo.</td></tr>
+    <tr><td>Consumo interno</td><td>Produto usado pela própria loja.</td></tr>
+  </table>
+  <p>O botão <span class="botao">Histórico</span> mostra todos os movimentos do produto (entradas, vendas, ajustes de inventário…):</p>
+  <figure><img src="img/10-historico.png"><figcaption>Histórico de movimentos do cimento.</figcaption></figure>
+  <p><span class="botao">Valor do stock / exportar</span> abre o relatório de stock, que se pode exportar para Excel ou PDF.</p>
+</section>
+
+<section id="inventario">
+  <h2>10. Inventário</h2>
+  <p>O inventário serve para contar o que existe fisicamente e corrigir o stock do sistema.</p>
+  <ol>
+    <li>Escolha o armazém e carregue em <span class="botao">+ Iniciar inventário</span>.</li>
+    <li>Para cada produto, escreva a quantidade <strong>contada</strong>. A coluna <em>Diferença</em> mostra logo a falta (vermelho) ou a sobra.</li>
+    <li>Pode contar aos poucos: as contagens ficam gravadas e pode sair e voltar.</li>
+    <li>No fim, carregue em <span class="botao">Fechar inventário</span>. O sistema faz os ajustes de stock das diferenças.</li>
+  </ol>
+  <figure><img src="img/12-inventario.png"><figcaption>Inventário em curso: faltam 5 buchas.</figcaption></figure>
+  <div class="aviso">Só pode haver um inventário aberto por armazém. Evite vender do armazém enquanto conta, ou conte fora do horário de abertura.</div>
+</section>
+
+<section id="vendas">
+  <h2>11. Vendas e anulação</h2>
+  <figure><img src="img/13-vendas.png"><figcaption>Vendas dos últimos 7 dias.</figcaption></figure>
+  <p>Lista todas as vendas (do PDV e da Administração). Escolha o período (ou use <span class="botao">Hoje</span>, <span class="botao">7 dias</span>, <span class="botao">30 dias</span>) e filtre por estado e por operador. No topo aparecem o número de vendas, o total vendido e o valor médio.</p>
+  <table>
+    <tr><th style="width:22%">Estado</th><th>Significado</th></tr>
+    <tr><td>Paga</td><td>Paga por inteiro.</td></tr>
+    <tr><td>Dívida / Parcial</td><td>Venda a crédito: nada pago ou parte paga.</td></tr>
+    <tr><td>Cancelada</td><td>Anulada.</td></tr>
+  </table>
+  <h3>Detalhe da venda</h3>
+  <p><span class="botao">Detalhe</span> mostra os produtos, os totais, o custo e a margem, e os pagamentos. Daqui pode imprimir o recibo em PDF.</p>
+  <figure><img src="img/14-venda-detalhe.png"><figcaption>Detalhe de uma venda.</figcaption></figure>
+  <h3>Anular uma venda</h3>
+  <p>Se uma venda foi registada por engano ou o cliente desistiu, carregue em <span class="botao">Anular venda</span>, escreva o motivo e confirme.</p>
+  <figure><img src="img/15-venda-anular.png"><figcaption>Confirmação da anulação.</figcaption></figure>
+  <ul>
+    <li>O stock volta ao armazém e a venda deixa de contar nos relatórios e no fecho de caixa.</li>
+    <li>Só se anula no próprio dia da venda.</li>
+    <li>Uma venda a crédito só se anula se ainda não tiver pagamentos.</li>
+    <li>Com a faturação ligada, a anulação emite uma Nota de Crédito (ver <a href="#faturas">Faturas</a>).</li>
+  </ul>
+</section>
+
+<section id="credito">
+  <h2>12. Venda a crédito</h2>
+  <p>O cliente leva os produtos agora e paga depois. Só existe na Administração (o PDV exige o pagamento completo). Abre-se em <strong>Vendas → Venda a crédito</strong> ou na ficha do cliente (<span class="botao">Vender a crédito</span>).</p>
+  <figure><img src="img/16-venda-credito.png"><figcaption>Venda a crédito de 10 sacos de cimento, com 2 000 MT de entrada.</figcaption></figure>
+  <ol>
+    <li>Escolha o <strong>cliente</strong> (tem de estar registado). Aparece quanto já deve e o limite de crédito.</li>
+    <li>Toque nos produtos à esquerda e ajuste as quantidades.</li>
+    <li>Se o cliente pagar parte agora, escreva a <strong>entrada</strong> e o método.</li>
+    <li>Carregue em <span class="botao">Registar venda a crédito</span>. O que falta fica em dívida.</li>
+  </ol>
+  <div class="nota">Se o cliente passar o limite de crédito aparece um aviso, mas a venda não é bloqueada.</div>
+</section>
+
+<section id="clientes">
+  <h2>13. Clientes e dívidas</h2>
+  <figure><img src="img/26-clientes.png"><figcaption>Clientes, com o valor em dívida e a dívida mais antiga.</figcaption></figure>
+  <p>No topo: total em dívida, clientes com dívida e dívidas com mais de 30 dias. Pesquise por nome ou telefone. <span class="botao">+ Novo cliente</span> regista nome, telefone, NUIT, email, morada e limite de crédito. <span class="botao">Exportar dívidas</span> abre o relatório de dívidas em aberto (Excel/PDF).</p>
+  <h3>Ficha do cliente</h3>
+  <figure><img src="img/27-cliente-ficha.png"><figcaption>Ficha do cliente: dívidas e compras.</figcaption></figure>
+  <p>Mostra as dívidas (com o que falta pagar) e todas as compras. Para registar um pagamento carregue em <span class="botao">Pagar</span>:</p>
+  <figure><img src="img/28-pagar-divida.png"><figcaption>Pagamento de uma dívida.</figcaption></figure>
+  <p>Escreva o valor (pode ser só uma parte) e o método. <span class="botao">Pagamentos</span> mostra os pagamentos já feitos de cada dívida. Os pagamentos de dívidas entram no fecho de caixa do dia em que são recebidos.</p>
+</section>
+
+<section id="cotacoes">
+  <h2>14. Cotações</h2>
+  <p>Uma cotação (orçamento/proforma) dá ao cliente o preço por escrito. <strong>Não mexe no stock nem conta como venda</strong> até ser convertida.</p>
+  <figure><img src="img/20-cotacoes.png"><figcaption>Lista de cotações: uma aberta e uma já convertida em venda.</figcaption></figure>
+  <h3>Criar uma cotação</h3>
+  <ol>
+    <li><span class="botao">+ Nova cotação</span>.</li>
+    <li>Escolha o cliente: um cliente registado, "Outro" (escreve o nome) ou "Consumidor final".</li>
+    <li>Indique a validade em dias (15 por omissão).</li>
+    <li>Pesquise e acrescente os produtos; ajuste quantidades e descontos. Pode juntar um desconto geral e observações (aparecem no documento).</li>
+    <li><span class="botao">Criar cotação</span>. Recebe um número do tipo <strong>COT 2026/0002</strong>.</li>
+  </ol>
+  <figure><img src="img/21-cotacao.png"><figcaption>Cotação aberta para a Escola Primária.</figcaption></figure>
+  <h3>Enviar ao cliente</h3>
+  <p><span class="botao">Abrir PDF</span> gera o documento em A4, pronto a imprimir ou a anexar a um email.</p>
+  <figure class="estreita"><img src="img/23-cotacao-pdf.png"><figcaption>Cotação em PDF.</figcaption></figure>
+  <h3>Converter em venda</h3>
+  <p>Quando o cliente aceita, carregue em <span class="botao">Converter em venda</span>:</p>
+  <figure><img src="img/22-cotacao-converter.png"><figcaption>Converter a cotação em venda.</figcaption></figure>
+  <ul>
+    <li>Escolha o armazém de onde sai a mercadoria e quanto o cliente paga agora.</li>
+    <li>Pago por inteiro: venda normal. Pago em parte: venda a crédito, e o resto fica em dívida (só para clientes registados).</li>
+    <li>Vale sempre o <strong>preço cotado</strong>, mesmo que o preço do produto tenha subido entretanto.</li>
+  </ul>
+  <p>Uma cotação só se converte uma vez. <span class="botao">Cancelar cotação</span> fecha-a sem venda.</p>
+</section>
+
+<section id="faturas">
+  <h2>15. Faturas</h2>
+  <div class="aviso"><strong>Importante:</strong> a emissão de documentos fiscais só deve ser ligada depois de o programa estar aprovado pela Autoridade Tributária. Enquanto estiver desligada, o PDV emite um recibo interno, que não serve de fatura.</div>
+  <figure><img src="img/24-faturas.png"><figcaption>Ecrã Faturas com a emissão ligada.</figcaption></figure>
+  <p>Com a emissão ligada (<span class="botao">Ligar emissão</span>), cada operação gera o seu documento, com numeração própria por tipo e ano:</p>
+  <table>
+    <tr><th style="width:30%">Documento</th><th>Quando é emitido</th></tr>
+    <tr><td>Fatura-Recibo (FR)</td><td>Venda paga por inteiro.</td></tr>
+    <tr><td>Fatura (FT)</td><td>Venda a crédito ou com parte por pagar.</td></tr>
+    <tr><td>Recibo (RC)</td><td>Pagamento de uma dívida; indica a fatura que paga.</td></tr>
+    <tr><td>Nota de Crédito (NC)</td><td>Anulação de uma venda; anula a fatura correspondente.</td></tr>
+  </table>
+  <ul>
+    <li>Os documentos mostram o NUIT da loja e do cliente, a base tributável e o IVA.</li>
+    <li><strong>Um documento emitido não se altera nem se apaga</strong>. Para corrigir, anula-se a venda (Nota de Crédito) e faz-se uma nova.</li>
+    <li>Escolha o mês para ver os documentos e o total de IVA; <span class="botao">PDF</span> abre cada documento em A4.</li>
+    <li><span class="botao">Exportar o mês (Excel)</span> gera o ficheiro mensal dos documentos emitidos.</li>
+    <li>Se aparecer "venda(s) sem documento", a emissão falhou nessa venda: carregue em <span class="botao">Emitir</span>.</li>
+  </ul>
+  <figure class="estreita"><img src="img/25-fatura-pdf.png"><figcaption>Fatura-Recibo em PDF.</figcaption></figure>
+</section>
+
+<section id="caixa">
+  <h2>16. Fecho de caixa</h2>
+  <p>No fim do dia, em <strong>Vendas → Fecho de caixa</strong> (ou Relatórios → Fecho de caixa diário), confira o dinheiro de cada método de pagamento.</p>
+  <figure><img src="img/17-fecho-caixa.png"><figcaption>Fecho de caixa: faltam 50 MT em dinheiro.</figcaption></figure>
+  <ol>
+    <li>Escolha o dia.</li>
+    <li>Para cada método vê o que entrou de vendas e de dívidas pagas, e o total <strong>esperado</strong>.</li>
+    <li>Conte a gaveta (e confira o M-Pesa, e-Mola, etc.) e escreva o valor em <strong>Contado</strong>. A <strong>Diferença</strong> aparece logo.</li>
+  </ol>
+  <div class="nota">O troco não conta: numa venda de 1 370 MT paga com 2 000 MT, ficam registados 1 370 MT em dinheiro, que é o que fica na gaveta.</div>
+</section>
+
+<section id="relatorios">
+  <h2>17. Relatórios</h2>
+  <p>Escolha o relatório à esquerda, o período (ou <span class="botao">Hoje</span>, <span class="botao">7 dias</span>, <span class="botao">30 dias</span>) e, quando existir, o armazém. Todos se exportam para <span class="botao">Excel</span> ou <span class="botao">PDF</span>.</p>
+  <figure><img src="img/18-relatorio-vendas.png"><figcaption>Vendas por período.</figcaption></figure>
+  <table>
+    <tr><th style="width:36%">Relatório</th><th>Mostra</th></tr>
+    <tr><td>Vendas por período</td><td>Vendas e total por dia.</td></tr>
+    <tr><td>Lucro por período</td><td>Receita, custo, lucro e margem.</td></tr>
+    <tr><td>Vendas por produto</td><td>O que mais se vende, em quantidade e valor.</td></tr>
+    <tr><td>Vendas por método de pagamento</td><td>Dinheiro, M-Pesa, e-Mola, cartão, transferência.</td></tr>
+    <tr><td>Vendas por operador</td><td>Quanto vendeu cada operador.</td></tr>
+    <tr><td>Fecho de caixa diário</td><td>Ver <a href="#caixa">Fecho de caixa</a>.</td></tr>
+    <tr><td>Stock atual</td><td>Quantidade e valor de cada produto, por armazém.</td></tr>
+    <tr><td>Movimentos de stock</td><td>Todas as entradas, saídas e ajustes.</td></tr>
+    <tr><td>Perdas e consumo interno</td><td>O que saiu sem venda.</td></tr>
+    <tr><td>Dívidas em aberto</td><td>Clientes com dívida, valores e idade.</td></tr>
+  </table>
+  <figure><img src="img/19-relatorio-operador.png"><figcaption>Vendas por operador.</figcaption></figure>
+</section>
+
+<section id="utilizadores">
+  <h2>18. Utilizadores (operadores)</h2>
+  <p>Os operadores são as pessoas que vendem no PDV. Cada um entra com um PIN, e as vendas ficam em seu nome.</p>
+  <figure><img src="img/29-utilizadores.png"><figcaption>Operadores do PDV.</figcaption></figure>
+  <ul>
+    <li><span class="botao">+ Novo operador</span> — nome e PIN de 4 a 6 algarismos.</li>
+    <li><span class="botao">Mudar nome</span>, <span class="botao">Novo PIN</span> (se o operador o esqueceu) e <span class="botao">Desativar</span> (quando deixa de trabalhar na loja; as vendas dele mantêm-se).</li>
+  </ul>
+  <div class="nota">Sem nenhum operador ativo, o PDV abre diretamente para vender, e as vendas ficam em nome do administrador.</div>
+</section>
+
+<section id="pdv">
+  <h2>19. Ponto de Venda (PDV)</h2>
+  <p>Abra-o na Administração com o botão <span class="botao">PDV</span>. Abre em ecrã inteiro.</p>
+  <h3>Identificação do operador</h3>
+  <p>Toque no seu nome e escreva o PIN no teclado do ecrã:</p>
+  <figure><img src="img/40-pdv-operador.png"><figcaption>Escolher o operador.</figcaption></figure>
+  <figure><img src="img/41-pdv-pin.png"><figcaption>Escrever o PIN.</figcaption></figure>
+  <p>No fim do turno, ou para outra pessoa vender, carregue em <span class="botao">Trocar operador</span> (canto superior direito).</p>
+  <h3>O ecrã de venda</h3>
+  <figure><img src="img/42-pdv-venda.png"><figcaption>Ecrã de venda: produtos à esquerda, venda à direita.</figcaption></figure>
+  <ul>
+    <li><strong>Pesquisa</strong> (topo): escreva parte do nome, ou leia o código de barras com o leitor, e carregue em <span class="tecla">Enter</span> para juntar à venda. <span class="tecla">F2</span> volta à pesquisa a qualquer momento.</li>
+    <li><strong>Categorias</strong>: toque numa categoria para ver só esses produtos.</li>
+    <li><strong>Armazém</strong> e <strong>Cliente</strong>: de onde sai o stock e a quem se vende (por omissão, cliente anónimo).</li>
+    <li>Cada cartão mostra o preço e o stock disponível; os produtos sem stock aparecem assinalados.</li>
+  </ul>
+  <figure><img src="img/43-pdv-categoria.png"><figcaption>Categoria Ferramentas selecionada, com dois produtos na venda.</figcaption></figure>
+  <h3>A venda</h3>
+  <ul>
+    <li>Toque num produto para o juntar; tocar outra vez soma mais um. Ajuste com <strong>−</strong> e <strong>+</strong>.</li>
+    <li><strong>Desconto (MT)</strong> aplica um desconto ao total.</li>
+    <li><span class="botao">Nova venda</span> limpa a venda atual (pede confirmação).</li>
+  </ul>
+  <h3>Pagamento e troco</h3>
+  <ol>
+    <li>Escolha o método (Dinheiro, M-Pesa, e-Mola, Cartão, Transferência) e escreva o valor recebido. <span class="botao">Tudo</span> preenche o valor exato.</li>
+    <li>Se o cliente entregar mais dinheiro, aparece o <strong>Troco</strong> em verde.</li>
+    <li>Para pagar com dois métodos, use <span class="botao">+ forma de pagamento</span>.</li>
+    <li>Carregue em <span class="botao">Finalizar venda</span> ou <span class="tecla">F12</span>.</li>
+  </ol>
+  <figure><img src="img/44-pdv-troco.png"><figcaption>Venda de 1 370 MT paga com 2 000 MT: troco de 630 MT.</figcaption></figure>
+  <div class="nota">Só há troco de dinheiro. Se escrever a mais em M-Pesa ou cartão, o PDV pede para corrigir o valor.</div>
+  <h3>Venda concluída</h3>
+  <figure><img src="img/45-pdv-concluida.png"><figcaption>Venda concluída, com o troco a dar.</figcaption></figure>
+  <p>Aparece o número da venda, o troco a dar e dois botões: <span class="botao">Imprimir recibo</span> e <span class="botao">Nova venda</span>. Também pode tocar logo num produto para começar a venda seguinte. Em baixo, à esquerda, a lista <strong>Vendas de hoje</strong> permite reimprimir o recibo de qualquer venda do dia.</p>
+</section>
+
+<section id="impressao">
+  <h2>20. Impressão de recibos</h2>
+  <figure><img src="img/46-pdv-recibo.png"><figcaption>Recibo da venda, no formato do rolo da impressora.</figcaption></figure>
+  <p>O recibo abre numa janela com o aspeto do talão impresso, na largura configurada (80 mm, 58 mm ou A5). Mostra a loja, o número do documento, os produtos, os totais, o IVA, o dinheiro entregue e o troco.</p>
+  <ul>
+    <li><span class="botao">Imprimir</span> (ou <span class="tecla">Ctrl</span>+<span class="tecla">P</span>) — abre a impressão do Windows. Escolha a impressora de recibos; só o talão é impresso.</li>
+    <li><span class="botao">Guardar PDF</span> — guarda o recibo em PDF.</li>
+    <li><span class="botao">Fechar</span> (ou <span class="tecla">Esc</span>).</li>
+  </ul>
+  <div class="nota">Se a impressora de recibos for a predefinida do Windows e tiver o papel certo configurado, basta carregar em Imprimir na janela do Windows.</div>
+</section>
+
+<section id="atalhos">
+  <h2>21. Atalhos e dicas</h2>
+  <table>
+    <tr><th style="width:26%">Tecla</th><th>Onde</th><th>O que faz</th></tr>
+    <tr><td><span class="tecla">F2</span></td><td>PDV</td><td>Vai para a pesquisa de produtos.</td></tr>
+    <tr><td><span class="tecla">Enter</span></td><td>PDV, pesquisas</td><td>Junta o produto encontrado (ou lido pelo leitor).</td></tr>
+    <tr><td><span class="tecla">F12</span></td><td>PDV</td><td>Finaliza a venda.</td></tr>
+    <tr><td><span class="tecla">Ctrl</span>+<span class="tecla">P</span></td><td>Recibo</td><td>Imprime.</td></tr>
+    <tr><td><span class="tecla">Esc</span></td><td>Janelas</td><td>Fecha a janela aberta.</td></tr>
+  </table>
+  <h3>Dicas</h3>
+  <ul>
+    <li>Registe os códigos de barras dos produtos: vender passa a ser só ler o código.</li>
+    <li>Defina o stock mínimo dos produtos importantes para receber alertas a tempo.</li>
+    <li>Faça o fecho de caixa todos os dias e um inventário pelo menos uma vez por mês.</li>
+    <li>Use cotações para clientes que pedem preço antes de comprar: convertem-se em venda com um toque.</li>
+    <li>Faça cópia de segurança da pasta de dados regularmente.</li>
+  </ul>
+</section>
+
+<section id="problemas">
+  <h2>22. Problemas frequentes</h2>
+  <table>
+    <tr><th style="width:36%">Problema</th><th>O que fazer</th></tr>
+    <tr><td>Esqueci a palavra-passe do administrador.</td><td>Contacte o suporte. Não há recuperação automática, por segurança.</td></tr>
+    <tr><td>O operador esqueceu o PIN.</td><td>Na Administração, em Utilizadores, use <em>Novo PIN</em>.</td></tr>
+    <tr><td>Um produto não aparece no PDV.</td><td>Confirme que está ativo (Produtos), que a categoria está ativa e que tem stock no armazém escolhido no PDV.</td></tr>
+    <tr><td>O armazém não aparece no PDV.</td><td>Em Armazéns, edite-o e marque "Disponível para venda".</td></tr>
+    <tr><td>"Stock insuficiente" ao vender.</td><td>Registe a receção da mercadoria ou corrija com um inventário.</td></tr>
+    <tr><td>Alterei o nome ou o logótipo e o PDV não mudou.</td><td>Feche o PDV e volte a abri-lo.</td></tr>
+    <tr><td>O recibo sai demasiado pequeno ou cortado.</td><td>Confirme o papel nas Configurações da loja (80 ou 58 mm) e nas preferências da impressora no Windows.</td></tr>
+    <tr><td>Enganei-me numa venda.</td><td>No próprio dia, em Vendas → Detalhe → Anular venda, e faça-a de novo.</td></tr>
+    <tr><td>O fecho de caixa não bate certo.</td><td>Veja em Vendas as vendas do dia e confirme os métodos de pagamento; procure vendas anuladas ou pagamentos de dívidas.</td></tr>
+  </table>
+</section>
+
+</body>
+</html>
