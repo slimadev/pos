@@ -1,10 +1,23 @@
 // Formatação partilhada pelos ecrãs de venda: valores como em pt
 // ("1 234,56 MT") e métodos de pagamento com o nome que o cliente conhece.
 
-export const mt = (n: number) =>
-  `${n.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MT`;
+// Espaço nos milhares mesmo com 4 algarismos (o pt-PT do Intl não o põe:
+// "3510" ao lado de "13 260") e inquebrável, para "MT" não mudar de linha.
+const ESPACO = "\u00a0";
+function formatar(n: number, minCasas: number, maxCasas: number): string {
+  const texto = Math.abs(n).toLocaleString("en-US", {
+    minimumFractionDigits: minCasas,
+    maximumFractionDigits: maxCasas,
+    useGrouping: false,
+  });
+  const [inteiro, decimal] = texto.split(".");
+  const sinal = n < 0 && Number(texto) !== 0 ? "−" : "";
+  return sinal + inteiro.replace(/\B(?=(\d{3})+(?!\d))/g, ESPACO) + (decimal ? "," + decimal : "");
+}
 
-export const qtd = (n: number) => n.toLocaleString("pt-PT", { maximumFractionDigits: 3 });
+export const mt = (n: number) => `${formatar(n, 2, 2)}${ESPACO}MT`;
+
+export const qtd = (n: number, casas = 3) => formatar(n, 0, casas);
 
 export const METODOS = ["dinheiro", "mpesa", "emola", "cartao", "transferencia"] as const;
 

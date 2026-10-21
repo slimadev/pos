@@ -243,3 +243,18 @@ func TestFaturacao_VendaSemDocumentoEmiteDepois(t *testing.T) {
 		t.Errorf("ainda há vendas sem documento: %+v", em)
 	}
 }
+
+// Uma venda feita no mesmo segundo, mas antes de ligar a emissão, não é
+// "sem documento" — a data de início guarda frações de segundo.
+func TestFaturacao_VendaAntesDeLigarNaoFicaEmFalta(t *testing.T) {
+	ctx := context.Background()
+	s := novosServicosFaturacao(t)
+	s.vender(t, nil, 1, 580)
+	time.Sleep(5 * time.Millisecond)
+	if _, err := s.faturacao.DefinirAtiva(ctx, true); err != nil {
+		t.Fatalf("ativar: %v", err)
+	}
+	if em, err := s.faturacao.VendasSemDocumento(ctx); err != nil || len(em) != 0 {
+		t.Errorf("vendas sem documento = %+v, %v; want nenhuma", em, err)
+	}
+}

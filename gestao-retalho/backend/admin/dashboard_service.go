@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gestao-retalho/backend/api"
+	"gestao-retalho/backend/export"
 	"gestao-retalho/backend/repository"
 )
 
@@ -165,7 +166,7 @@ func (s *DashboardService) ObterDashboard(ctx context.Context) (Dashboard, error
 				d.Alertas = append(d.Alertas, Alerta{
 					Severidade: "alta",
 					Titulo:     fmt.Sprintf("Dívida de %d dias", dv.IdadeDias),
-					Detalhe:    fmt.Sprintf("%s · %.2f MT", dv.ClienteNome, dv.ValorEmAberto),
+					Detalhe:    fmt.Sprintf("%s · %s MT", dv.ClienteNome, export.FormatarValor(dv.ValorEmAberto)),
 				})
 			}
 		}

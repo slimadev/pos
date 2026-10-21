@@ -121,7 +121,7 @@ export default function ReciboModal({
                     <span>{mt(d.Total - d.ValorIVA)}</span>
                   </div>
                   <div className="recibo-linha">
-                    <span>{d.TaxaIVA > 0 ? `IVA (${d.TaxaIVA.toLocaleString("pt-PT")}%)` : "IVA (isento)"}</span>
+                    <span>{d.TaxaIVA > 0 ? `IVA (${qtd(d.TaxaIVA)}%)` : "IVA (isento)"}</span>
                     <span>{mt(d.ValorIVA)}</span>
                   </div>
                 </>

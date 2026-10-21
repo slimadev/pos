@@ -85,7 +85,7 @@ func (s *FaturacaoService) DefinirAtiva(ctx context.Context, ativa bool) (Estado
 	valor := "false"
 	if ativa {
 		valor = "true"
-		if err := s.configs.Definir(ctx, "faturacao_desde", time.Now().UTC().Format(time.RFC3339)); err != nil {
+		if err := s.configs.Definir(ctx, "faturacao_desde", time.Now().UTC().Format(time.RFC3339Nano)); err != nil {
 			return EstadoFaturacao{}, err
 		}
 	}
