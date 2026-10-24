@@ -1933,3 +1933,69 @@ body {
 .admin-form input[type="month"] {
   padding: 7px 10px;
 }
+
+/* ImportarProdutos.tsx */
+.admin-modal-card.largo:has(.admin-importar-topo) {
+  width: 1180px;
+}
+.admin-importar-topo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.admin-importar-ficheiro {
+  font-weight: 600;
+  font-size: 13.5px;
+}
+.admin-importar-opcoes {
+  grid-template-columns: 1.4fr 1fr 1fr;
+}
+.admin-importar-colunas {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px 12px;
+  margin-top: 6px;
+}
+.admin-importar-colunas .admin-campo {
+  min-width: 0;
+}
+.admin-importar-resumo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--bg);
+}
+.admin-importar-margem {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.admin-importar-margem input {
+  width: 56px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  text-align: right;
+  font-family: inherit;
+}
+.admin-importar-tabela {
+  max-height: 340px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.admin-importar-tabela thead th {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 1;
+}
+.admin-unidades-tabela input.admin-importar-falta {
+  border-color: var(--danger);
+}

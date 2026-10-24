@@ -55,6 +55,7 @@ type App struct {
 	CatalogoService     *usecase.CatalogoService
 	CotacaoService      *usecase.CotacaoService
 	FaturacaoService    *usecase.FaturacaoService
+	ImportacaoService   *usecase.ImportacaoService
 }
 
 func NewApp(
@@ -76,6 +77,7 @@ func NewApp(
 	catalogo *usecase.CatalogoService,
 	cotacoes *usecase.CotacaoService,
 	faturacao *usecase.FaturacaoService,
+	importacao *usecase.ImportacaoService,
 ) *App {
 	return &App{
 		db:                  db,
@@ -96,6 +98,7 @@ func NewApp(
 		CatalogoService:     catalogo,
 		CotacaoService:      cotacoes,
 		FaturacaoService:    faturacao,
+		ImportacaoService:   importacao,
 	}
 }
 
@@ -916,4 +919,24 @@ func (a *App) ExportarDocumentosMes(ano, mes int) (string, error) {
 		return "", err
 	}
 	return a.exportarTabela(t, "xlsx")
+}
+
+// --- Importação de produtos do Excel -----------------------------------------
+
+func (a *App) AnalisarExcelProdutos(caminho string) (usecase.AnaliseExcel, error) {
+	return a.ImportacaoService.AnalisarExcel(caminho)
+}
+
+func (a *App) PreVisualizarImportacao(p usecase.PedidoPreVisualizacao) ([]usecase.LinhaImportacao, error) {
+	return a.ImportacaoService.PreVisualizar(a.ctx, p)
+}
+
+func (a *App) ImportarProdutos(p usecase.ImportarProdutosParams) (usecase.ResultadoImportacao, error) {
+	p.UtilizadorID = a.utilizadorAtual()
+	return a.ImportacaoService.Importar(a.ctx, p)
+}
+
+// AbrirModeloImportacao grava a folha modelo (Excel) e abre-a.
+func (a *App) AbrirModeloImportacao() (string, error) {
+	return a.exportarTabela(usecase.ModeloImportacao(), "xlsx")
 }

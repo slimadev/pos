@@ -43,3 +43,16 @@ func TestAdminApp_DocumentosFiscaisExigemSessao(t *testing.T) {
 		t.Error("ExportarDocumentosMes sem sessão: esperava erro")
 	}
 }
+
+func TestAdminApp_ImportacaoExigeSessao(t *testing.T) {
+	app := novoAdminAppTeste(t)
+	if _, err := app.EscolherFicheiroExcel(); err == nil {
+		t.Error("EscolherFicheiroExcel sem sessão: esperava erro")
+	}
+	if _, err := app.AnalisarExcelProdutos("x.xlsx"); err == nil {
+		t.Error("AnalisarExcelProdutos sem sessão: esperava erro")
+	}
+	if _, err := app.ImportarProdutos(usecase.ImportarProdutosParams{}); err == nil {
+		t.Error("ImportarProdutos sem sessão: esperava erro")
+	}
+}

@@ -11,11 +11,13 @@ import {
 import { domain } from "../wailsjs/go/models";
 import Breadcrumb from "./Breadcrumb";
 import Modal from "./Modal";
+import ImportarProdutosAssistente from "./ImportarProdutos";
 
 type ModalEstado =
   | { aberto: false }
   | { aberto: true; categoria: domain.Categoria | null }
-  | { aberto: true; juntar: domain.Categoria };
+  | { aberto: true; juntar: domain.Categoria }
+  | { aberto: true; importar: domain.Categoria };
 
 // Mesma regra do backend (mesmoNome): sem maiúsculas, acentos nem espaços a mais.
 const chaveNome = (nome: string) =>
@@ -117,6 +119,11 @@ export default function CategoriasScreen({ onErro }: { onErro: (e: string) => vo
                       Juntar com…
                     </button>
                   )}
+                  {c.Ativo && (
+                    <button className="admin-btn-secundario" onClick={() => setModal({ aberto: true, importar: c })}>
+                      Importar Excel
+                    </button>
+                  )}
                   <button className="admin-btn-secundario" onClick={() => alternarAtivo(c)}>
                     {c.Ativo ? "Desativar" : "Ativar"}
                   </button>
@@ -131,6 +138,22 @@ export default function CategoriasScreen({ onErro }: { onErro: (e: string) => vo
           )}
         </tbody>
       </table>
+
+      {modal.aberto && "importar" in modal && (
+        <Modal titulo={`Importar produtos para ${modal.importar.Nome}`} largo onFechar={fechar}>
+          <ImportarProdutosAssistente
+            categorias={categorias}
+            categoriaInicial={modal.importar.ID}
+            onConcluido={(r) => {
+              fechar();
+              carregar();
+              setAviso(`${r.Produtos} produto(s) importado(s)${r.Categorias > 0 ? `, ${r.Categorias} categoria(s) nova(s)` : ""}; o stock já entrou.`);
+            }}
+            onCancelar={fechar}
+            onErro={onErro}
+          />
+        </Modal>
+      )}
 
       {modal.aberto && "juntar" in modal && (
         <Modal titulo={`Juntar ${modal.juntar.Nome}`} onFechar={fechar}>

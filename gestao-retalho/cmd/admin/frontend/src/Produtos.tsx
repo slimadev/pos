@@ -16,6 +16,7 @@ import {
 import { api, domain } from "../wailsjs/go/models";
 import Breadcrumb from "./Breadcrumb";
 import Modal from "./Modal";
+import ImportarProdutosAssistente from "./ImportarProdutos";
 import { mt, num } from "./formato";
 
 type TipoProduto = "simples" | "composto" | "semi_elaborado";
@@ -55,6 +56,8 @@ export default function ProdutosScreen({ onErro }: { onErro: (e: string) => void
   const [categorias, setCategorias] = useState<domain.Categoria[]>([]);
   const [aCarregar, setACarregar] = useState(true);
   const [modal, setModal] = useState<ModalEstado>({ aberto: false });
+  const [importar, setImportar] = useState(false);
+  const [aviso, setAviso] = useState<string | null>(null);
   const [pesquisa, setPesquisa] = useState("");
   const [categoriaFiltro, setCategoriaFiltro] = useState<number | "" | "sem">("");
   const [estado, setEstado] = useState<FiltroEstado>("ativos");
@@ -108,10 +111,39 @@ export default function ProdutosScreen({ onErro }: { onErro: (e: string) => void
       <Breadcrumb itens={[{ rotulo: "Produtos" }]} />
       <div className="admin-ecra-header">
         <h2 style={{ margin: 0 }}>Produtos</h2>
-        <button className="admin-btn" onClick={() => setModal({ aberto: true, produto: null })}>
-          + Criar produto
-        </button>
+        <div className="admin-form">
+          <button className="admin-btn-secundario" onClick={() => setImportar(true)}>
+            Importar do Excel
+          </button>
+          <button className="admin-btn" onClick={() => setModal({ aberto: true, produto: null })}>
+            + Criar produto
+          </button>
+        </div>
       </div>
+
+      {aviso && (
+        <div className="admin-aviso-ok">
+          {aviso}
+          <button onClick={() => setAviso(null)} aria-label="Fechar">
+            ×
+          </button>
+        </div>
+      )}
+
+      {importar && (
+        <Modal titulo="Importar produtos do Excel" largo onFechar={() => setImportar(false)}>
+          <ImportarProdutosAssistente
+            categorias={categorias}
+            onConcluido={(r) => {
+              setImportar(false);
+              setAviso(`${r.Produtos} produto(s) importado(s)${r.Categorias > 0 ? `, ${r.Categorias} categoria(s) nova(s)` : ""}; o stock já entrou.`);
+              carregar();
+            }}
+            onCancelar={() => setImportar(false)}
+            onErro={onErro}
+          />
+        </Modal>
+      )}
 
       <div className="admin-form">
         <label className="admin-pesquisa">

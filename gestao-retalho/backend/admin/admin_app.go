@@ -9,6 +9,8 @@ import (
 	"gestao-retalho/backend/export"
 	"gestao-retalho/backend/repository"
 	"gestao-retalho/backend/usecase"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // AdminApp é o struct que o Wails liga ao frontend de cmd/admin — mesmo
@@ -920,4 +922,46 @@ func (a *AdminApp) ExportarDocumentosMes(ano, mes int) (string, error) {
 		return "", err
 	}
 	return a.Vendas.ExportarDocumentosMes(a.ctx, ano, mes)
+}
+
+// --- Importação de produtos do Excel -------------------------------------------
+
+// EscolherFicheiroExcel abre o diálogo do sistema para escolher o .xlsx;
+// devolve "" se o utilizador cancelar.
+func (a *AdminApp) EscolherFicheiroExcel() (string, error) {
+	if err := a.exigirSessao(); err != nil {
+		return "", err
+	}
+	return runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+		Title:   "Escolher o ficheiro Excel com os produtos",
+		Filters: []runtime.FileFilter{{DisplayName: "Excel (*.xlsx)", Pattern: "*.xlsx;*.xlsm"}},
+	})
+}
+
+func (a *AdminApp) AnalisarExcelProdutos(caminho string) (usecase.AnaliseExcel, error) {
+	if err := a.exigirSessao(); err != nil {
+		return usecase.AnaliseExcel{}, err
+	}
+	return a.Produtos.AnalisarExcel(a.ctx, caminho)
+}
+
+func (a *AdminApp) PreVisualizarImportacao(p usecase.PedidoPreVisualizacao) ([]usecase.LinhaImportacao, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Produtos.PreVisualizarImportacao(a.ctx, p)
+}
+
+func (a *AdminApp) ImportarProdutos(p usecase.ImportarProdutosParams) (usecase.ResultadoImportacao, error) {
+	if err := a.exigirSessao(); err != nil {
+		return usecase.ResultadoImportacao{}, err
+	}
+	return a.Produtos.Importar(a.ctx, p)
+}
+
+func (a *AdminApp) AbrirModeloImportacao() (string, error) {
+	if err := a.exigirSessao(); err != nil {
+		return "", err
+	}
+	return a.Produtos.AbrirModeloImportacao(a.ctx)
 }

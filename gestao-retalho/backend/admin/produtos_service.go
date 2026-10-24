@@ -6,6 +6,7 @@ import (
 	"gestao-retalho/backend/api"
 	"gestao-retalho/backend/domain"
 	"gestao-retalho/backend/repository"
+	"gestao-retalho/backend/usecase"
 )
 
 // ProdutosService gere produtos (e as suas unidades de venda/compra —
@@ -116,4 +117,25 @@ func (s *ProdutosService) ListarTodasUnidades(ctx context.Context) ([]domain.Uni
 
 func (s *ProdutosService) abrirLoja(ctx context.Context) (*api.App, func(), error) {
 	return abrirLojaUnica(ctx, s.lojas)
+}
+
+// --- Importação do Excel ------------------------------------------------------
+
+func (s *ProdutosService) AnalisarExcel(ctx context.Context, caminho string) (usecase.AnaliseExcel, error) {
+	return comLoja(ctx, s.lojas, func(a *api.App) (usecase.AnaliseExcel, error) { return a.AnalisarExcelProdutos(caminho) })
+}
+
+func (s *ProdutosService) PreVisualizarImportacao(ctx context.Context, p usecase.PedidoPreVisualizacao) ([]usecase.LinhaImportacao, error) {
+	return comLoja(ctx, s.lojas, func(a *api.App) ([]usecase.LinhaImportacao, error) { return a.PreVisualizarImportacao(p) })
+}
+
+func (s *ProdutosService) Importar(ctx context.Context, p usecase.ImportarProdutosParams) (usecase.ResultadoImportacao, error) {
+	return comLoja(ctx, s.lojas, func(a *api.App) (usecase.ResultadoImportacao, error) {
+		p.UtilizadorID = api.UtilizadorAdminID
+		return a.ImportacaoService.Importar(ctx, p)
+	})
+}
+
+func (s *ProdutosService) AbrirModeloImportacao(ctx context.Context) (string, error) {
+	return comLoja(ctx, s.lojas, func(a *api.App) (string, error) { return a.AbrirModeloImportacao() })
 }
