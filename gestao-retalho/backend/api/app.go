@@ -113,7 +113,9 @@ func (a *App) utilizadorAtual() int64 {
 }
 
 // exigirTurno protege as operações que só o PDV faz (venda direta e
-// contas): numa loja com operadores, alguém tem de se ter identificado.
+// contas): alguém tem de se ter identificado com o PIN. Uma loja sem
+// operadores não vende — cada venda fica sempre com quem a fez, e o admin
+// é obrigado a criar operadores antes de abrir o PDV.
 func (a *App) exigirTurno() error {
 	if a.operadorID.Load() != 0 {
 		return nil
@@ -122,10 +124,10 @@ func (a *App) exigirTurno() error {
 	if err != nil {
 		return err
 	}
-	if len(ativos) > 0 {
-		return fmt.Errorf("escolha o operador antes de vender")
+	if len(ativos) == 0 {
+		return fmt.Errorf("a loja ainda não tem operadores: o administrador tem de criar um em Utilizadores")
 	}
-	return nil
+	return fmt.Errorf("escolha o operador antes de vender")
 }
 
 // --- Turno do operador no PDV -------------------------------------------------

@@ -44,9 +44,9 @@ func TestOperadores_PDVExigeTurnoEAtribuiVendaAoOperador(t *testing.T) {
 		})
 	}
 
-	// Sem operadores, o PDV funciona como antes.
-	if v, err := vender(); err != nil || v.Venda.UtilizadorID != domain.UtilizadorAdminSeedID {
-		t.Fatalf("sem operadores: venda = %+v, err %v; want atribuída ao administrador", v.Venda, err)
+	// Sem operadores o PDV não vende: o admin tem de os criar primeiro.
+	if _, err := vender(); err == nil {
+		t.Fatal("sem operadores a venda devia ser recusada")
 	}
 
 	op, err := svc.Criar(ctx, "Carla Nhantumbo", "2468")
@@ -69,19 +69,12 @@ func TestOperadores_PDVExigeTurnoEAtribuiVendaAoOperador(t *testing.T) {
 
 	hoje := time.Now().Format("2006-01-02")
 	vendas, err := admin.NewVendasService(repo).Listar(ctx, hoje, hoje)
-	if err != nil || len(vendas) != 2 {
-		t.Fatalf("vendas = %+v, err %v; want 2", vendas, err)
-	}
-	nomes := map[string]bool{}
-	for _, v := range vendas {
-		nomes[v.OperadorNome] = true
-	}
-	if !nomes["Carla Nhantumbo"] || !nomes["Administrador"] {
-		t.Errorf("operadores nas vendas = %v, want Carla e Administrador", nomes)
+	if err != nil || len(vendas) != 1 || vendas[0].OperadorNome != "Carla Nhantumbo" {
+		t.Fatalf("vendas = %+v, err %v; want 1 da Carla", vendas, err)
 	}
 	porOperador, err := admin.NewRelatoriosService(repo).VendasPorOperador(ctx, hoje, hoje)
-	if err != nil || len(porOperador) != 2 || porOperador[0].NumeroVendas != 1 || porOperador[0].Total != 45 {
-		t.Fatalf("vendas por operador = %+v, err %v; want 2 linhas de 1 venda de 45", porOperador, err)
+	if err != nil || len(porOperador) != 1 || porOperador[0].NumeroVendas != 1 || porOperador[0].Total != 45 {
+		t.Fatalf("vendas por operador = %+v, err %v; want 1 linha de 1 venda de 45", porOperador, err)
 	}
 
 	if err := svc.DefinirAtivo(ctx, op.ID, false); err != nil {
@@ -90,8 +83,8 @@ func TestOperadores_PDVExigeTurnoEAtribuiVendaAoOperador(t *testing.T) {
 	if atual, _ := pdv.ObterOperadorAtual(); atual.ID != 0 {
 		t.Errorf("operador desativado a meio do turno devia terminar o turno, ainda é %+v", atual)
 	}
-	if _, err := vender(); err != nil {
-		t.Errorf("sem operadores ativos o PDV volta a vender sem turno: %v", err)
+	if _, err := vender(); err == nil {
+		t.Error("sem operadores ativos o PDV não pode vender")
 	}
 
 	if err := svc.RedefinirPIN(ctx, op.ID, "12"); err == nil {

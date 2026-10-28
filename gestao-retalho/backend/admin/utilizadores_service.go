@@ -24,6 +24,24 @@ func (s *UtilizadoresService) Listar(ctx context.Context) ([]usecase.Operador, e
 	return comLoja(ctx, s.lojas, func(a *api.App) ([]usecase.Operador, error) { return a.OperadorService.Listar(ctx) })
 }
 
+// ContarAtivos devolve quantos operadores podem vender (0 sem loja).
+func (s *UtilizadoresService) ContarAtivos(ctx context.Context) (int, error) {
+	if _, existe, err := s.lojas.ObterUnica(ctx); err != nil || !existe {
+		return 0, err
+	}
+	ops, err := s.Listar(ctx)
+	if err != nil {
+		return 0, err
+	}
+	n := 0
+	for _, o := range ops {
+		if o.Ativo {
+			n++
+		}
+	}
+	return n, nil
+}
+
 func (s *UtilizadoresService) Criar(ctx context.Context, nome, pin string) (usecase.Operador, error) {
 	return comLoja(ctx, s.lojas, func(a *api.App) (usecase.Operador, error) { return a.OperadorService.Criar(ctx, nome, pin) })
 }

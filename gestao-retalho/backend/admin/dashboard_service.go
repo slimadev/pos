@@ -227,6 +227,15 @@ func (s *DashboardService) ObterDashboard(ctx context.Context) (Dashboard, error
 		d.MaisVendidosHoje = d.MaisVendidosHoje[:8]
 	}
 
+	// O PDV só vende com operadores (cada venda fica com quem a fez).
+	if ops, err := app.ListarOperadoresAtivos(); err == nil && len(ops) == 0 {
+		d.Alertas = append(d.Alertas, Alerta{
+			Severidade: "alta",
+			Titulo:     "Sem operadores — o PDV não abre",
+			Detalhe:    "Gestão → Utilizadores → Novo operador",
+		})
+	}
+
 	// Sem cópia recente, um terminal avariado ou roubado leva a loja inteira.
 	if ultima, ok := copias.Ultima(); !ok {
 		d.Alertas = append(d.Alertas, Alerta{

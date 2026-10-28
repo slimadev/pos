@@ -65,6 +65,29 @@ func (a *AdminApp) PrecisaConfigurarAdmin() (bool, error) {
 	return a.Auth.PrecisaConfigurar(a.ctx)
 }
 
+// EstadoArranque diz por onde a aplicação deve abrir: o terminal Android abre
+// direto no PDV (PIN do operador) quando há loja e operadores; sem eles,
+// abre na administração para os criar. Não exige sessão — só devolve se a
+// loja está configurada e quantos operadores ativos há, nada mais.
+type EstadoArranque struct {
+	PrecisaConfigurar bool
+	OperadoresAtivos  int
+}
+
+func (a *AdminApp) ObterEstadoArranque() (EstadoArranque, error) {
+	precisa, err := a.Auth.PrecisaConfigurar(a.ctx)
+	if err != nil {
+		return EstadoArranque{}, err
+	}
+	e := EstadoArranque{PrecisaConfigurar: precisa}
+	if !precisa {
+		if e.OperadoresAtivos, err = a.Utilizadores.ContarAtivos(a.ctx); err != nil {
+			return EstadoArranque{}, err
+		}
+	}
+	return e, nil
+}
+
 func (a *AdminApp) CriarAdministrador(nome, username, password string) (SessaoAdministrador, error) {
 	admin, err := a.Auth.CriarAdministrador(a.ctx, nome, username, password)
 	if err != nil {
