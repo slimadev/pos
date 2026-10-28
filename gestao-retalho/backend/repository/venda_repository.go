@@ -115,6 +115,19 @@ func (r *VendaRepository) TransferirItemConta(ctx context.Context, itemID, novaC
 	})
 }
 
+// AlterarQuantidadeItemConta muda a quantidade de uma linha da comanda.
+func (r *VendaRepository) AlterarQuantidadeItemConta(ctx context.Context, itemID int64, quantidade float64) error {
+	return r.q.AlterarQuantidadeItemConta(ctx, sqlcgen.AlterarQuantidadeItemContaParams{
+		Quantidade: quantidade,
+		ID:         itemID,
+	})
+}
+
+// RemoverItemConta tira uma linha da comanda (lançada por engano).
+func (r *VendaRepository) RemoverItemConta(ctx context.Context, itemID int64) error {
+	return r.q.RemoverItemConta(ctx, itemID)
+}
+
 func (r *VendaRepository) ObterConta(ctx context.Context, id int64) (domain.Conta, error) {
 	row, err := r.q.ObterConta(ctx, id)
 	if err != nil {

@@ -10,6 +10,20 @@ import (
 	"database/sql"
 )
 
+const alterarQuantidadeItemConta = `-- name: AlterarQuantidadeItemConta :exec
+UPDATE itens_conta SET quantidade = ? WHERE id = ?
+`
+
+type AlterarQuantidadeItemContaParams struct {
+	Quantidade float64 `json:"quantidade"`
+	ID         int64   `json:"id"`
+}
+
+func (q *Queries) AlterarQuantidadeItemConta(ctx context.Context, arg AlterarQuantidadeItemContaParams) error {
+	_, err := q.db.ExecContext(ctx, alterarQuantidadeItemConta, arg.Quantidade, arg.ID)
+	return err
+}
+
 const cancelarConta = `-- name: CancelarConta :one
 UPDATE contas
 SET status = 'cancelada', fechada_em = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), utilizador_fecho_id = ?, motivo_cancelamento = ?
@@ -274,6 +288,15 @@ func (q *Queries) ObterItemConta(ctx context.Context, id int64) (ItensConta, err
 		&i.UtilizadorID,
 	)
 	return i, err
+}
+
+const removerItemConta = `-- name: RemoverItemConta :exec
+DELETE FROM itens_conta WHERE id = ?
+`
+
+func (q *Queries) RemoverItemConta(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, removerItemConta, id)
+	return err
 }
 
 const transferirItemConta = `-- name: TransferirItemConta :exec

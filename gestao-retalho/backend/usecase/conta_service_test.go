@@ -249,3 +249,71 @@ func TestFecharConta_CriaDividaParaClienteIdentificado(t *testing.T) {
 		t.Errorf("status da dívida = %v, want parcial", dividas[0].Status)
 	}
 }
+
+// Pedir a mesma bebida outra vez soma na mesma linha; o "−" baixa a
+// quantidade e a 0 tira a linha; depois de fechada a conta, nada muda.
+func TestComanda_JuntaMesmaBebidaEAlteraQuantidade(t *testing.T) {
+	ctx := context.Background()
+	produtoSvc, armazemSvc, stockSvc, _, contaSvc, _ := newTestContaServices(t)
+
+	cerveja, uCerveja := criarProdutoComPreco(t, ctx, produtoSvc, "2M 550ml", 180)
+	agua, uAgua := criarProdutoComPreco(t, ctx, produtoSvc, "Água 500ml", 60)
+	armazem := criarArmazem(t, ctx, armazemSvc, "Balcão")
+	for _, p := range []domain.Produto{cerveja, agua} {
+		if _, err := stockSvc.RegistarEntrada(ctx, usecase.EntradaParams{
+			ProdutoID: p.ID, ArmazemDestinoID: armazem.ID, Quantidade: 50, CustoUnitario: 40, UtilizadorID: 1,
+		}); err != nil {
+			t.Fatalf("entrada: %v", err)
+		}
+	}
+	conta, err := contaSvc.AbrirConta(ctx, "Mesa 1", nil, 1)
+	if err != nil {
+		t.Fatalf("abrir conta: %v", err)
+	}
+	lancar := func(produtoID, unidadeID, operador int64) domain.ItemConta {
+		t.Helper()
+		item, err := contaSvc.AdicionarItem(ctx, usecase.AdicionarItemContaParams{
+			ContaID: conta.ID, ProdutoID: produtoID, UnidadeProdutoID: unidadeID, Quantidade: 1, UtilizadorID: operador,
+		})
+		if err != nil {
+			t.Fatalf("adicionar: %v", err)
+		}
+		return item
+	}
+
+	primeira := lancar(cerveja.ID, uCerveja.ID, 1)
+	segunda := lancar(cerveja.ID, uCerveja.ID, 1)
+	if segunda.ID != primeira.ID || segunda.Quantidade != 2 {
+		t.Fatalf("a 2.ª cerveja devia somar na mesma linha: %+v", segunda)
+	}
+	lancar(agua.ID, uAgua.ID, 1)
+
+	itens, _ := contaSvc.ListarItens(ctx, conta.ID)
+	if len(itens) != 2 {
+		t.Fatalf("linhas = %d, want 2 (2× cerveja e a água)", len(itens))
+	}
+
+	if it, err := contaSvc.AlterarQuantidadeItem(ctx, primeira.ID, 1); err != nil || it.Quantidade != 1 {
+		t.Fatalf("baixar para 1: %+v, %v", it, err)
+	}
+	if _, err := contaSvc.AlterarQuantidadeItem(ctx, primeira.ID, -1); err == nil {
+		t.Error("quantidade negativa devia ser recusada")
+	}
+	if _, err := contaSvc.AlterarQuantidadeItem(ctx, primeira.ID, 0); err != nil {
+		t.Fatalf("tirar linha: %v", err)
+	}
+	itens, _ = contaSvc.ListarItens(ctx, conta.ID)
+	if len(itens) != 1 {
+		t.Fatalf("depois de tirar a linha: %d linhas, want 1", len(itens))
+	}
+
+	if _, _, err := contaSvc.FecharConta(ctx, conta.ID, usecase.FecharContaParams{
+		ArmazemID: armazem.ID, UtilizadorID: 1,
+		Pagamentos: []usecase.PagamentoVendaParams{{Metodo: domain.MetodoDinheiro, Valor: 60}},
+	}); err != nil {
+		t.Fatalf("fechar: %v", err)
+	}
+	if _, err := contaSvc.AlterarQuantidadeItem(ctx, itens[0].ID, 5); !errors.Is(err, domain.ErrContaNaoAberta) {
+		t.Errorf("conta fechada: err = %v, want ErrContaNaoAberta", err)
+	}
+}

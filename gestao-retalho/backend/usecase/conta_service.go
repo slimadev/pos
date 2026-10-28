@@ -108,6 +108,26 @@ func (s *ContaService) AdicionarItem(ctx context.Context, p AdicionarItemContaPa
 		return domain.ItemConta{}, fmt.Errorf("unidade %d não pertence ao produto %q", unidade.ID, produto.Nome)
 	}
 
+	// A mesma bebida pedida outra vez (mesma unidade, preço e operador, sem
+	// desconto) soma-se à linha que já existe: a comanda mostra "4× 2M" em
+	// vez de quatro linhas "1× 2M".
+	if p.Desconto == 0 {
+		itens, err := s.vendas.ListarItensConta(ctx, p.ContaID)
+		if err != nil {
+			return domain.ItemConta{}, err
+		}
+		for _, i := range itens {
+			if i.ProdutoID == produto.ID && i.UnidadeProdutoID == unidade.ID && i.PrecoUnitarioAplicado == unidade.PrecoVenda &&
+				i.Desconto == 0 && i.UtilizadorID == p.UtilizadorID {
+				i.Quantidade += p.Quantidade
+				if err := s.vendas.AlterarQuantidadeItemConta(ctx, i.ID, i.Quantidade); err != nil {
+					return domain.ItemConta{}, err
+				}
+				return i, nil
+			}
+		}
+	}
+
 	return s.vendas.CriarItemConta(ctx, domain.ItemConta{
 		ContaID:               p.ContaID,
 		ProdutoID:             produto.ID,
@@ -148,6 +168,32 @@ func (s *ContaService) TransferirItem(ctx context.Context, itemID, novaContaID i
 	}
 
 	return s.vendas.TransferirItemConta(ctx, itemID, novaContaID)
+}
+
+// AlterarQuantidadeItem corrige uma linha da comanda enquanto a conta está
+// aberta: o "−" do PDV, ou um engano. Quantidade 0 tira a linha. Como o
+// stock só sai ao fechar a conta, não há movimentos a desfazer.
+func (s *ContaService) AlterarQuantidadeItem(ctx context.Context, itemID int64, quantidade float64) (domain.ItemConta, error) {
+	if quantidade < 0 {
+		return domain.ItemConta{}, fmt.Errorf("quantidade não pode ser negativa")
+	}
+	item, err := s.vendas.ObterItemConta(ctx, itemID)
+	if err != nil {
+		return domain.ItemConta{}, err
+	}
+	conta, err := s.vendas.ObterConta(ctx, item.ContaID)
+	if err != nil {
+		return domain.ItemConta{}, err
+	}
+	if conta.Status != domain.StatusContaAberta {
+		return domain.ItemConta{}, domain.ErrContaNaoAberta
+	}
+	if quantidade == 0 {
+		item.Quantidade = 0
+		return item, s.vendas.RemoverItemConta(ctx, itemID)
+	}
+	item.Quantidade = quantidade
+	return item, s.vendas.AlterarQuantidadeItemConta(ctx, itemID, quantidade)
 }
 
 func (s *ContaService) CancelarConta(ctx context.Context, contaID, utilizadorID int64, motivo string) (domain.Conta, error) {

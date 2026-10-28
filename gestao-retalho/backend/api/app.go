@@ -562,7 +562,19 @@ func (a *App) AdicionarItemConta(p usecase.AdicionarItemContaParams) (domain.Ite
 }
 
 func (a *App) TransferirItemConta(itemID, novaContaID int64) error {
+	if err := a.exigirTurno(); err != nil {
+		return err
+	}
 	return a.ContaService.TransferirItem(a.ctx, itemID, novaContaID)
+}
+
+// AlterarQuantidadeItemConta muda a quantidade de uma linha da comanda
+// aberta; 0 tira a linha (devolve-a com Quantidade 0).
+func (a *App) AlterarQuantidadeItemConta(itemID int64, quantidade float64) (domain.ItemConta, error) {
+	if err := a.exigirTurno(); err != nil {
+		return domain.ItemConta{}, err
+	}
+	return a.ContaService.AlterarQuantidadeItem(a.ctx, itemID, quantidade)
 }
 
 func (a *App) CancelarConta(contaID int64, motivo string) (domain.Conta, error) {

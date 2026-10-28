@@ -44,3 +44,9 @@ WHERE id = ?;
 
 -- name: TransferirItemConta :exec
 UPDATE itens_conta SET conta_id = ? WHERE id = ?;
+
+-- name: AlterarQuantidadeItemConta :exec
+UPDATE itens_conta SET quantidade = ? WHERE id = ?;
+
+-- name: RemoverItemConta :exec
+DELETE FROM itens_conta WHERE id = ?;

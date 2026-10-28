@@ -10,6 +10,7 @@ import (
 )
 
 type Querier interface {
+	AlterarQuantidadeItemConta(ctx context.Context, arg AlterarQuantidadeItemContaParams) error
 	ApagarDivida(ctx context.Context, id int64) error
 	AtualizarArmazem(ctx context.Context, arg AtualizarArmazemParams) error
 	AtualizarCategoria(ctx context.Context, arg AtualizarCategoriaParams) error
@@ -134,6 +135,7 @@ type Querier interface {
 	RelatorioVendasPorMetodoPagamento(ctx context.Context, arg RelatorioVendasPorMetodoPagamentoParams) ([]RelatorioVendasPorMetodoPagamentoRow, error)
 	RelatorioVendasPorProduto(ctx context.Context, arg RelatorioVendasPorProdutoParams) ([]RelatorioVendasPorProdutoRow, error)
 	RemoverIngredientes(ctx context.Context, produtoCompostoID int64) error
+	RemoverItemConta(ctx context.Context, id int64) error
 	TransferirItemConta(ctx context.Context, arg TransferirItemContaParams) error
 }
 
