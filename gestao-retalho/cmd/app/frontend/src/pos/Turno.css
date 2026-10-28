@@ -25,6 +25,28 @@
   color: var(--color-text-muted);
 }
 
+.turno-sem-operadores {
+  text-align: center;
+}
+
+.turno-sem-operadores .turno-dica {
+  max-width: 420px;
+  line-height: 1.5;
+}
+
+.turno-sem-operadores-icone {
+  width: 48px;
+  height: 48px;
+  color: var(--color-primary);
+}
+
+.turno-sem-operadores .turno-entrar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
 .turno-operadores {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));

@@ -11,8 +11,11 @@ import { useTheme, type Theme } from "./hooks/useTheme";
 import Wizard from "./wizard/Wizard";
 import VendaDireta from "./pos/VendaDireta";
 import Bottlestore from "./pos/Bottlestore";
-import EscolherOperador from "./pos/Turno";
+import EscolherOperador, { SemOperadores } from "./pos/Turno";
+import { abrirAdministracao, noAndroid } from "./plataforma";
+import { rotuloTipoNegocio } from "./pos/formato";
 import "./App.css";
+import { ArrowsRightLeftIcon, LockClosedIcon } from "@heroicons/react/24/outline";
 
 type Estado = { tipo: "a-carregar" } | { tipo: "wizard" } | { tipo: "pronto"; config: usecase.EstadoConfig };
 
@@ -64,10 +67,10 @@ type Turno =
   | { tipo: "ativo"; operador: usecase.Operador };
 
 /**
- * Com operadores registados no cmd/admin, ninguém vende sem se identificar
- * (o backend também o exige). Sem operadores, o PDV funciona como sempre e
- * tudo fica atribuído ao administrador. Ao voltar o foco à janela volta a
- * verificar: um operador criado ou desativado no admin entretanto conta.
+ * Ninguém vende sem se identificar com o PIN (o backend também o exige).
+ * Sem operadores o PDV fica bloqueado até o administrador os criar. Ao
+ * voltar o foco à janela volta a verificar: um operador criado ou
+ * desativado no admin entretanto conta.
  */
 function useTurno() {
   const [turno, setTurno] = useState<Turno>({ tipo: "a-carregar" });
@@ -110,18 +113,31 @@ function AppPrincipal({ config }: { config: usecase.EstadoConfig }) {
         {/* Logótipo escolhido no admin (Configurações da loja); sem ele, só o nome. */}
         {config.Logo && <img src={config.Logo} alt="" className="app-header-logo" />}
         <h1>{config.Negocio.Nome}</h1>
-        <span className="app-header-tipo">{config.Negocio.TipoNegocio}</span>
+        <span className="app-header-tipo">{rotuloTipoNegocio(config.Negocio.TipoNegocio)}</span>
         {turno.tipo === "ativo" && (
           <div className="app-turno">
             <span>
               A vender: <strong>{turno.operador.Nome}</strong>
             </span>
-            <button onClick={trocar}>Trocar operador</button>
+            <button onClick={trocar}>
+              <ArrowsRightLeftIcon className="btn-icone" aria-hidden="true" />
+              Trocar operador
+            </button>
           </div>
+        )}
+        {/* No terminal o PDV é o ecrã principal; a administração fica atrás
+            deste botão e pede sempre a password. No desktop é outra janela. */}
+        {noAndroid && turno.tipo === "escolher" && (
+          <button className="app-admin" onClick={abrirAdministracao}>
+            <LockClosedIcon className="btn-icone" aria-hidden="true" />
+            Administração
+          </button>
         )}
       </div>
 
-      {turno.tipo === "a-carregar" ? null : turno.tipo === "escolher" ? (
+      {turno.tipo === "a-carregar" ? null : turno.tipo === "sem-operadores" ? (
+        <SemOperadores />
+      ) : turno.tipo === "escolher" ? (
         <EscolherOperador
           operadores={turno.operadores}
           onIniciado={(operador) => setTurno({ tipo: "ativo", operador })}

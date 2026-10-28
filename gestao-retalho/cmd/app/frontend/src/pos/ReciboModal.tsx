@@ -4,6 +4,7 @@ import { ObterRecibo, GerarRecibo } from "../../wailsjs/go/api/App";
 import { usecase } from "../../wailsjs/go/models";
 import { mt, qtd } from "./formato";
 import "./ReciboModal.css";
+import { XMarkIcon, DocumentArrowDownIcon, PrinterIcon } from "@heroicons/react/24/outline";
 
 /**
  * Recibo da venda num modal com o aspeto do talão (na largura do papel
@@ -155,12 +156,15 @@ export default function ReciboModal({
 
         <div className="recibo-acoes">
           <button className="recibo-btn" onClick={onFechar}>
+            <XMarkIcon className="btn-icone" aria-hidden="true" />
             Fechar
           </button>
           <button className="recibo-btn" onClick={guardarPDF} disabled={!d}>
+            <DocumentArrowDownIcon className="btn-icone" aria-hidden="true" />
             Guardar PDF
           </button>
           <button className="recibo-btn recibo-btn-imprimir" onClick={() => window.print()} disabled={!d}>
+            <PrinterIcon className="btn-icone" aria-hidden="true" />
             Imprimir
           </button>
         </div>

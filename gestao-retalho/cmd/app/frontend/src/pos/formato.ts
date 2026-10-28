@@ -32,6 +32,17 @@ export const ROTULO_METODO: Record<string, string> = {
 // Aceita "12,5" e "12.5" — no teclado português a vírgula é o separador.
 export const lerNumero = (s: string) => Number(s.trim().replace(",", "."));
 
+const ROTULO_TIPO_NEGOCIO: Record<string, string> = {
+  ferragem: "Ferragem",
+  mercearia: "Mercearia",
+  farmacia: "Farmácia",
+  bottlestore: "Bottlestore",
+  personalizado: "Personalizado",
+};
+
+/** Nome do tipo de negócio para mostrar ("farmacia" → "Farmácia"). */
+export const rotuloTipoNegocio = (tipo: string) => ROTULO_TIPO_NEGOCIO[tipo] ?? tipo;
+
 // Sem acentos nem maiúsculas: "paracetamol" encontra "Paracetamól".
 export const normalizar = (s: string) =>
   s

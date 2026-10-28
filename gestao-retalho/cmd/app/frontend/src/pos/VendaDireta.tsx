@@ -4,6 +4,9 @@ import {
   MagnifyingGlassIcon as MagnifyingGlassOutline,
   ShoppingCartIcon as ShoppingCartOutline,
   CheckCircleIcon as CheckCircleOutline,
+  DocumentTextIcon,
+  PlusIcon,
+  PrinterIcon,
 } from "@heroicons/react/24/outline";
 import {
   MagnifyingGlassIcon as MagnifyingGlassSolid,
@@ -82,6 +85,10 @@ export default function VendaDireta({ tipoNegocio }: { tipoNegocio: string }) {
   const [historicoDia, setHistoricoDia] = useState<domain.Venda[]>([]);
   const [erro, setErro] = useState<string | null>(null);
   const [aFinalizar, setAFinalizar] = useState(false);
+  // Ecrã estreito (terminal Android): o carrinho é um painel por cima do
+  // catálogo, aberto pela barra de resumo no fundo. No desktop o carrinho
+  // está sempre à vista e isto não muda nada.
+  const [carrinhoAberto, setCarrinhoAberto] = useState(false);
 
   const catalogoRef = useRef<CatalogoHandle>(null);
 
@@ -208,7 +215,9 @@ export default function VendaDireta({ tipoNegocio }: { tipoNegocio: string }) {
           .then(setHistoricoDia)
           .catch(() => {});
         catalogoRef.current?.recarregar();
-        catalogoRef.current?.focarPesquisa();
+        // Com o carrinho em painel (terminal Android), a pesquisa está por
+        // trás: focá-la só abria o teclado por cima do "venda concluída".
+        if (!carrinhoAberto) catalogoRef.current?.focarPesquisa();
       })
       .catch((e) => setErro(String(e).replace(/^Error:\s*/, "")))
       .finally(() => setAFinalizar(false));
@@ -216,6 +225,7 @@ export default function VendaDireta({ tipoNegocio }: { tipoNegocio: string }) {
 
   // Recomeça do zero: limpa o carrinho (e o ecrã de venda concluída).
   function novaVenda() {
+    setCarrinhoAberto(false);
     setUltimaVenda(null);
     setCarrinho([]);
     setDescontoGlobal("");
@@ -280,7 +290,10 @@ export default function VendaDireta({ tipoNegocio }: { tipoNegocio: string }) {
               {historicoDia.map((v) => (
                 <li key={v.ID}>
                   #{v.ID} — {mt(v.Total)}
-                  <button onClick={() => gerarRecibo(v.ID)}>Recibo</button>
+                  <button onClick={() => gerarRecibo(v.ID)}>
+                    <DocumentTextIcon className="btn-icone" aria-hidden="true" />
+                    Recibo
+                  </button>
                 </li>
               ))}
             </ul>
@@ -288,14 +301,41 @@ export default function VendaDireta({ tipoNegocio }: { tipoNegocio: string }) {
         )}
       </div>
 
-      <aside className="pos-carrinho">
+      {/* Só no ecrã estreito: resumo da venda em curso, abre o carrinho. */}
+      <button
+        className={`pos-resumo-movel${carrinho.length === 0 && !ultimaVenda ? " vazio" : ""}`}
+        onClick={() => setCarrinhoAberto(true)}
+      >
+        <IconeCarrinho className="pos-carrinho-icon" aria-hidden="true" />
+        <span className="pos-resumo-movel-itens">
+          {carrinho.length > 0
+            ? `${carrinho.length} ${carrinho.length === 1 ? "item" : "itens"}`
+            : ultimaVenda
+              ? `Venda #${ultimaVenda.id} concluída`
+              : "Carrinho vazio"}
+        </span>
+        <span className="pos-resumo-movel-total">
+          {mt(carrinho.length === 0 && ultimaVenda ? ultimaVenda.total : total)}
+        </span>
+        <span className="pos-resumo-movel-ver">Ver venda ›</span>
+      </button>
+
+      <aside className={`pos-carrinho${carrinhoAberto ? " aberto" : ""}`}>
         <div className="pos-carrinho-header">
+          <button
+            className="pos-carrinho-fechar-movel"
+            onClick={() => setCarrinhoAberto(false)}
+            aria-label="Voltar aos produtos"
+          >
+            ‹
+          </button>
           <span className="pos-carrinho-titulo">
             <IconeCarrinho className="pos-carrinho-icon" aria-hidden="true" />
             Venda
           </span>
           {carrinho.length > 0 ? (
             <button className="pos-nova-venda-topo" onClick={cancelarVendaAtual} title="Limpar o carrinho">
+              <PlusIcon className="btn-icone" aria-hidden="true" />
               Nova venda
             </button>
           ) : (
@@ -317,9 +357,11 @@ export default function VendaDireta({ tipoNegocio }: { tipoNegocio: string }) {
               </div>
             )}
             <button className="pos-concluida-recibo" onClick={() => gerarRecibo(ultimaVenda.id, ultimaVenda.troco)}>
+              <PrinterIcon className="btn-icone" aria-hidden="true" />
               Imprimir recibo
             </button>
             <button className="pos-concluida-nova" onClick={novaVenda}>
+              <PlusIcon className="btn-icone" aria-hidden="true" />
               Nova venda
             </button>
             <div className="pos-concluida-dica">Ou toque já num produto para começar a próxima.</div>
@@ -404,7 +446,8 @@ export default function VendaDireta({ tipoNegocio }: { tipoNegocio: string }) {
                 className="pos-add-pagamento"
                 onClick={() => setPagamentos((prev) => [...prev, { metodo: "mpesa", valor: "" }])}
               >
-                + forma de pagamento
+                <PlusIcon className="btn-icone" aria-hidden="true" />
+                forma de pagamento
               </button>
             </div>
 
@@ -429,7 +472,13 @@ export default function VendaDireta({ tipoNegocio }: { tipoNegocio: string }) {
               onClick={finalizar}
             >
               <IconeFinalizar className="pos-finalizar-icon" aria-hidden="true" />
-              {aFinalizar ? "A finalizar…" : "Finalizar venda (F12)"}
+              {aFinalizar ? (
+                "A finalizar…"
+              ) : (
+                <>
+                  Finalizar venda<span className="pos-atalho"> (F12)</span>
+                </>
+              )}
             </button>
           </div>
           </>

@@ -1,8 +1,10 @@
 import React from 'react'
 import {createRoot} from 'react-dom/client'
+import './themes/fontes'
 import './themes/index.css'
 import './style.css'
 import App from './App'
+import './mobile.css'
 
 const container = document.getElementById('root')
 

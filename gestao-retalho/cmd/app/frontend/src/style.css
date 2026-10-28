@@ -8,3 +8,13 @@ body,
   margin: 0;
   min-height: 100vh;
 }
+
+/* Ícone à esquerda do texto de um botão (Heroicons outline). Funciona em
+   botões inline (alinha pela linha de texto) e flex (margem fixa). */
+.btn-icone {
+  width: 1.15em;
+  height: 1.15em;
+  flex-shrink: 0;
+  vertical-align: -0.22em;
+  margin-right: 0.45em;
+}

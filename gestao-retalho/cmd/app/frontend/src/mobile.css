@@ -1,0 +1,672 @@
+/* PDV em ecrãs estreitos — terminal Sunmi V2 Pro (5,99", 360 px CSS em
+   retrato). Só entra abaixo de 600 px: o desktop fica igual.
+
+   No telemóvel o catálogo ocupa o ecrã; o carrinho é um painel por cima,
+   aberto pela barra de resumo no fundo (VendaDireta.tsx). */
+
+/* Elementos que só existem no layout estreito. */
+.pos-resumo-movel,
+.pos-carrinho-fechar-movel {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  /* Uma só fonte: os campos e seletores herdavam a do sistema. */
+  button,
+  input,
+  select,
+  textarea {
+    font-family: inherit;
+  }
+
+  /* --- Cabeçalho ----------------------------------------------------------- */
+
+  #App {
+    padding: 0;
+    min-height: 100vh;
+  }
+
+  /* gap convertido em margem no build android: o #App passa a não ter
+     espaço entre o cabeçalho e o PDV. */
+  #App > * + * {
+    margin-top: 0;
+  }
+
+  .app-header {
+    height: 52px;
+    flex-shrink: 0;
+    padding: 0 12px;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-surface-border);
+  }
+
+  #App h1 {
+    font-size: 17px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+
+  .app-header-logo {
+    width: 30px;
+    height: 30px;
+  }
+
+  .app-header-tipo {
+    display: none;
+  }
+
+  .app-admin {
+    height: 38px;
+    padding: 0 10px;
+    font-size: 13px;
+  }
+
+  .turno-sem-operadores {
+    margin: 16px 12px 0;
+    width: auto;
+    padding: 24px 16px;
+  }
+
+  .app-turno {
+    margin-left: auto;
+    font-size: 12px;
+  }
+
+  /* --- Área de venda ------------------------------------------------------- */
+
+  .pos {
+    flex-direction: column;
+    height: calc(100vh - 52px);
+    min-height: 0;
+    border: none;
+    border-radius: 0;
+  }
+
+  .pos-vendas {
+    flex: 1;
+    min-height: 0;
+    padding: 10px 10px 0;
+  }
+
+  /* Pesquisa numa linha; armazém e cliente lado a lado por baixo. */
+  .cat-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .cat-toolbar > * {
+    margin-right: 0;
+  }
+
+  .cat-busca-wrap {
+    flex: 1 1 100%;
+    margin-bottom: 8px;
+  }
+
+  .cat-toolbar select {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 9px 10px;
+  }
+
+  .cat-toolbar select + select {
+    margin-left: 8px;
+  }
+
+  .cat-busca {
+    font-size: 16px;
+  }
+
+  .cat-separador {
+    padding: 8px 14px;
+  }
+
+  .cat-grelha {
+    grid-template-columns: 1fr 1fr;
+    grid-auto-rows: 96px;
+    grid-gap: 8px;
+    padding-bottom: 10px;
+  }
+
+  .pos-historico {
+    display: none;
+  }
+
+  /* --- Barra de resumo (fundo) -------------------------------------------- */
+
+  .pos-resumo-movel {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    height: 60px;
+    padding: 0 16px;
+    border: none;
+    background: var(--color-accent);
+    color: var(--color-accent-contrast);
+    font: inherit;
+    font-size: 15px;
+    text-align: left;
+  }
+
+  .pos-resumo-movel.vazio {
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    border-top: 1px solid var(--color-surface-border);
+  }
+
+  .pos-resumo-movel .pos-carrinho-icon {
+    width: 22px;
+    height: 22px;
+    margin-right: 10px;
+  }
+
+  .pos-resumo-movel-itens {
+    flex: 1;
+  }
+
+  .pos-resumo-movel-total {
+    font-size: 17px;
+    font-weight: 700;
+    margin-right: 12px;
+  }
+
+  .pos-resumo-movel-ver {
+    font-size: 13px;
+    opacity: 0.9;
+  }
+
+  .pos-resumo-movel.vazio .pos-resumo-movel-total,
+  .pos-resumo-movel.vazio .pos-resumo-movel-ver {
+    display: none;
+  }
+
+  /* --- Carrinho como painel em ecrã inteiro ------------------------------- */
+
+  .pos-carrinho {
+    display: none;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    z-index: 40;
+    border-left: none;
+  }
+
+  .pos-carrinho.aberto {
+    display: flex;
+  }
+
+  .pos-carrinho-header {
+    height: 52px;
+    flex-shrink: 0;
+    padding: 0 12px 0 4px;
+  }
+
+  .pos-carrinho-fechar-movel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: none;
+    background: none;
+    color: var(--color-text);
+    font-size: 30px;
+    line-height: 1;
+  }
+
+  .pos-carrinho-titulo {
+    margin-right: auto;
+  }
+
+  .pos-carrinho-itens {
+    padding: 4px 14px;
+  }
+
+  .pos-carrinho-item-nome {
+    font-size: 14px;
+  }
+
+  .pos-carrinho-item-total {
+    font-size: 14px;
+  }
+
+  /* Botões de quantidade do tamanho de um dedo. */
+  .pos-qtd-stepper button {
+    width: 38px;
+    height: 38px;
+    font-size: 20px;
+  }
+
+  .pos-qtd-stepper span {
+    width: 30px;
+    font-size: 14px;
+  }
+
+  .pos-carrinho-footer {
+    padding: 12px 14px 14px;
+  }
+
+  .pos-desconto input,
+  .pos-pagamento-linha select,
+  .pos-pagamento-linha input {
+    font-size: 15px;
+    padding: 9px 10px;
+  }
+
+  .pos-desconto input {
+    width: 120px;
+  }
+
+  .pos-pagamento-linha select {
+    background-color: var(--color-surface);
+    color: var(--color-text);
+  }
+
+  .pos-tudo {
+    padding: 0 14px;
+    font-size: 14px;
+  }
+
+  .pos-add-pagamento {
+    font-size: 14px;
+    padding: 6px 0;
+  }
+
+  .pos-finalizar {
+    padding: 17px;
+    font-size: 16px;
+  }
+
+  /* No terminal não há tecla F12, e o catálogo está por trás do painel. */
+  .pos-atalho,
+  .pos-concluida-dica {
+    display: none;
+  }
+
+  /* --- Bar (Bottlestore.tsx): contas e balcão ------------------------------ */
+
+  .bs-raiz {
+    gap: 0;
+  }
+
+  .bs-raiz > * + * {
+    margin-top: 0;
+  }
+
+  .bs-modos {
+    align-self: stretch;
+    margin: 10px 12px 0;
+  }
+
+  .bs-modos button {
+    flex: 1 1 0;
+    padding: 10px 8px;
+    font-size: 15px;
+  }
+
+  .bs-raiz.modo-balcao .pos {
+    height: calc(100vh - 52px - 62px);
+  }
+
+  .bs {
+    border: none;
+    border-radius: 0;
+    padding: 12px;
+    min-height: calc(100vh - 52px - 62px);
+  }
+
+  .bs-topo {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .bs-topo > * {
+    margin-right: 0;
+  }
+
+  .bs-topo > * + * {
+    margin-top: 10px;
+  }
+
+  .bs-kpis {
+    justify-content: space-between;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-surface-border);
+  }
+
+  .bs-kpi-valor {
+    font-size: 22px;
+  }
+
+  .bs-abrir {
+    min-height: 50px;
+    font-size: 16px;
+  }
+
+  .bs-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-gap: 10px;
+  }
+
+  .bs-card {
+    min-height: 124px;
+    padding: 12px 13px;
+  }
+
+  .bs-card-cabeca {
+    flex-direction: column;
+  }
+
+  .bs-card-cabeca > * {
+    margin-right: 0;
+  }
+
+  .bs-card-tempo {
+    order: -1;
+    margin-bottom: 4px;
+  }
+
+  .bs-card-total {
+    font-size: 19px;
+  }
+
+  /* Conta aberta: bebidas em ecrã inteiro, barra de resumo no fundo e a
+     comanda num painel que abre por cima. */
+  .bs.bs-detalhe {
+    height: calc(100vh - 52px);
+    min-height: 0;
+    padding: 0;
+    border-radius: 0;
+    border: none;
+  }
+
+  .bs-detalhe-body {
+    min-height: 0;
+  }
+
+  .bs-detalhe-header {
+    padding: 6px 8px;
+  }
+
+  .bs-detalhe-body {
+    flex-direction: column;
+  }
+
+  .bs-catalogo {
+    padding: 10px 10px 0;
+  }
+
+  .bs-toast {
+    bottom: 12px;
+  }
+
+  .bs-resumo-movel {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 10px 12px;
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-surface-border);
+    box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.3);
+  }
+
+  .bs-resumo-ver {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+    margin-right: 10px;
+    padding: 4px 0;
+    border: none;
+    background: none;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+  }
+
+  .bs-resumo-ver > .bs-icon {
+    margin-right: 8px;
+    color: var(--color-accent);
+  }
+
+  .bs-resumo-ver:disabled > .bs-icon {
+    visibility: hidden;
+  }
+
+  .bs-resumo-ver > span {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .bs-resumo-total {
+    font-family: var(--font-display);
+    font-size: 22px;
+    line-height: 1.15;
+    color: var(--color-accent);
+    white-space: nowrap;
+  }
+
+  .bs-resumo-qtd {
+    font-size: 12.5px;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .bs-resumo-movel .bs-fechar {
+    flex-shrink: 0;
+    padding: 14px 20px;
+  }
+
+  .bs-comanda {
+    display: none;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 50;
+    width: auto;
+    border-left: none;
+  }
+
+  .bs-comanda.aberta {
+    display: flex;
+  }
+
+  .bs-comanda-header {
+    padding: 8px 14px 8px 6px;
+    font-size: 16px;
+  }
+
+  .bs-comanda-fechar-movel {
+    display: inline-flex;
+  }
+
+  .bs-comanda-itens {
+    padding: 0 14px;
+  }
+
+  .bs-linha {
+    padding: 12px 0;
+  }
+
+  .bs-linha-nome {
+    font-size: 15px;
+  }
+
+  .bs-stepper button {
+    width: 40px;
+    height: 40px;
+  }
+
+  .bs-linha-total {
+    font-size: 15px;
+  }
+
+  .bs-comanda-footer {
+    padding: 12px 14px 14px;
+  }
+
+  .bs-comanda-footer .bs-fechar {
+    min-height: 52px;
+    font-size: 16px;
+  }
+
+  /* Folhas: sobem do fundo, à largura do ecrã. */
+  .bs-folha-fundo {
+    align-items: flex-end;
+  }
+
+  .bs-folha,
+  .bs-folha.larga {
+    width: 100%;
+    max-height: 94vh;
+    border-radius: 18px 18px 0 0;
+    border-bottom: none;
+  }
+
+  .bs-folha-pega {
+    display: block;
+    width: 40px;
+    height: 4px;
+    margin: 8px auto 0;
+    border-radius: 2px;
+    background: var(--color-surface-border);
+  }
+
+  .bs-folha-cabeca {
+    padding: 8px 8px 0 16px;
+    font-size: 17px;
+  }
+
+  .bs-folha-corpo {
+    padding: 10px 16px 16px;
+  }
+
+  .bs-folha-acoes > * {
+    min-height: 52px;
+  }
+
+  .bs-notas {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .bs-rapidos {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .bs-destinos,
+  .bs-rapidos.motivos {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .bs-fecho-total strong {
+    font-size: 34px;
+  }
+  /* --- Operador (PIN) -------------------------------------------------------- */
+
+  .turno {
+    margin: 0;
+    max-width: none;
+    min-height: calc(100vh - 52px);
+    border: none;
+    border-radius: 0;
+    padding: 24px 20px;
+    justify-content: center;
+  }
+
+  .turno-operadores {
+    grid-template-columns: 1fr 1fr;
+    grid-gap: 10px;
+  }
+
+  .turno-operador {
+    padding: 20px 10px;
+  }
+
+  .turno-pin {
+    width: 100%;
+    max-width: 260px;
+  }
+
+  /* Teclado numérico à largura do ecrã, teclas do tamanho de um dedo. */
+  .turno-teclado {
+    width: 100%;
+    max-width: 320px;
+    grid-template-columns: repeat(3, 1fr);
+    grid-gap: 10px;
+  }
+
+  .turno-tecla {
+    height: 64px;
+    font-size: 26px;
+  }
+
+  .turno-acoes {
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .turno-acoes > * {
+    flex: 1;
+  }
+
+  .turno-voltar,
+  .turno-entrar {
+    padding: 15px 10px;
+  }
+
+  /* Cabeçalho: só o nome do operador e um botão de ícone para trocar. */
+  .app-turno {
+    font-size: 13px;
+    min-width: 0;
+  }
+
+  /* Só o nome do operador (sem "A vender:"): no cabeçalho de 360 px o nome
+     da loja e o do operador ficavam ambos cortados. */
+  .app-turno > span {
+    font-size: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+  }
+
+  .app-turno > span strong {
+    font-size: 13px;
+  }
+
+  .app-turno button {
+    font-size: 0;
+    padding: 8px;
+  }
+
+  .app-turno button .btn-icone {
+    width: 20px;
+    height: 20px;
+    margin: 0;
+  }
+
+  /* --- Recibo -------------------------------------------------------------- */
+
+  .recibo-overlay {
+    padding: 0;
+  }
+
+  /* `min(560px, 100%)` não existe no Chrome 62. */
+  .recibo-janela {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    border-radius: 0;
+  }
+}

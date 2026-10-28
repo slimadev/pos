@@ -6,6 +6,7 @@ import {
   RegistarReceitaMedica,
 } from "../wailsjs/go/api/App";
 import { domain, usecase } from "../wailsjs/go/models";
+import { CheckIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 
 /**
  * Farmácia — lotes/validade (FEFO) e receitas médicas (SDD 9.4, Fase 6).
@@ -143,14 +144,20 @@ export default function FarmaciaSection({
             <input type="date" value={validade} onChange={(e) => setValidade(e.target.value)} />
             <input placeholder="Quantidade" type="number" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} />
             <input placeholder="Custo unitário" type="number" value={custo} onChange={(e) => setCusto(e.target.value)} />
-            <button onClick={registarEntrada}>Registar entrada com lote</button>
+            <button onClick={registarEntrada}>
+              <CheckIcon className="btn-icone" aria-hidden="true" />
+              Registar entrada com lote
+            </button>
           </div>
         </>
       )}
 
       <div className="fase1-form">
         <input placeholder="Dias até vencer" type="number" value={dias} onChange={(e) => setDias(e.target.value)} />
-        <button onClick={consultarAVencer}>Consultar lotes a vencer</button>
+        <button onClick={consultarAVencer}>
+          <MagnifyingGlassIcon className="btn-icone" aria-hidden="true" />
+          Consultar lotes a vencer
+        </button>
       </div>
       {aVencer.length > 0 && (
         <table>
@@ -181,7 +188,10 @@ export default function FarmaciaSection({
         <input placeholder="ID do cliente (vazio = anónimo)" value={clienteIdReceita} onChange={(e) => setClienteIdReceita(e.target.value)} />
         <input placeholder="Médico" value={medico} onChange={(e) => setMedico(e.target.value)} />
         <input placeholder="Número da receita" value={numeroReceita} onChange={(e) => setNumeroReceita(e.target.value)} />
-        <button onClick={registarReceita}>Registar receita</button>
+        <button onClick={registarReceita}>
+          <CheckIcon className="btn-icone" aria-hidden="true" />
+          Registar receita
+        </button>
       </div>
     </section>
   );

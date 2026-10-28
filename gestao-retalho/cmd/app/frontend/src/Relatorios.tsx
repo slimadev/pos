@@ -15,6 +15,7 @@ import {
   ExportarTabelaPDF,
 } from "../wailsjs/go/api/App";
 import { api, domain, repository, usecase } from "../wailsjs/go/models";
+import { ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 
 type Relatorio =
   | "vendas"
@@ -168,8 +169,14 @@ function TabelaRelatorio({
   return (
     <div>
       <div className="fase1-form">
-        <button onClick={() => exportar("excel")}>Exportar Excel</button>
-        <button onClick={() => exportar("pdf")}>Exportar PDF</button>
+        <button onClick={() => exportar("excel")}>
+          <ArrowDownTrayIcon className="btn-icone" aria-hidden="true" />
+          Exportar Excel
+        </button>
+        <button onClick={() => exportar("pdf")}>
+          <ArrowDownTrayIcon className="btn-icone" aria-hidden="true" />
+          Exportar PDF
+        </button>
       </div>
       <table>
         <thead>

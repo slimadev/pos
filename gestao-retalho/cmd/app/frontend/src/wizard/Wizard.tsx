@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CheckIcon } from "@heroicons/react/24/outline";
+import { CheckIcon, ArrowLeftIcon, ArrowRightIcon } from "@heroicons/react/24/outline";
 import { ObterPresetsNegocio, ObterTodosModulos, FinalizarWizard } from "../../wailsjs/go/api/App";
 import { domain, usecase } from "../../wailsjs/go/models";
 import { useTheme, type Theme } from "../hooks/useTheme";
@@ -258,10 +258,12 @@ export default function Wizard({ onConcluido }: { onConcluido: () => void }) {
 
         <div className="wizard-nav">
           <button className="wizard-nav-back" disabled={passo === 1} onClick={() => setPasso((p) => p - 1)}>
-            ← Voltar
+            <ArrowLeftIcon className="btn-icone" aria-hidden="true" />
+            Voltar
           </button>
           {passo < 4 ? (
             <button className="wizard-nav-next" disabled={!podeAvancar()} onClick={() => setPasso((p) => p + 1)}>
+              <ArrowRightIcon className="btn-icone" aria-hidden="true" />
               Continuar
             </button>
           ) : (
@@ -270,6 +272,7 @@ export default function Wizard({ onConcluido }: { onConcluido: () => void }) {
               disabled={aGuardar || !adminNome || !adminUsername || !adminPassword}
               onClick={concluir}
             >
+              <CheckIcon className="btn-icone" aria-hidden="true" />
               {aGuardar ? "A concluir…" : "Concluir"}
             </button>
           )}

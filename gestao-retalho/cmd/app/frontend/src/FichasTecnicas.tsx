@@ -9,6 +9,13 @@ import {
 } from "../wailsjs/go/api/App";
 import { domain, usecase } from "../wailsjs/go/models";
 
+import {
+  TrashIcon,
+  PlusIcon,
+  CheckIcon,
+  CalculatorIcon,
+  DocumentDuplicateIcon,
+} from "@heroicons/react/24/outline";
 // Rótulo amigável para o valor interno de TipoProduto — ver a mesma
 // constante em Administracao.tsx.
 const ROTULO_TIPO_PRODUTO: Record<string, string> = {
@@ -186,7 +193,10 @@ export default function FichasTecnicasSection({
                     <input type="number" value={l.perda} onChange={(e) => atualizarLinha(i, "perda", e.target.value)} />
                   </td>
                   <td>
-                    <button onClick={() => removerLinha(i)}>Remover</button>
+                    <button onClick={() => removerLinha(i)}>
+                      <TrashIcon className="btn-icone" aria-hidden="true" />
+                      Remover
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -194,9 +204,18 @@ export default function FichasTecnicasSection({
           </table>
 
           <div className="fase1-form">
-            <button onClick={adicionarLinha}>+ ingrediente</button>
-            <button onClick={guardarReceita}>Guardar receita</button>
-            <button onClick={calcularCusto}>Calcular custo / disponibilidade</button>
+            <button onClick={adicionarLinha}>
+              <PlusIcon className="btn-icone" aria-hidden="true" />
+              ingrediente
+            </button>
+            <button onClick={guardarReceita}>
+              <CheckIcon className="btn-icone" aria-hidden="true" />
+              Guardar receita
+            </button>
+            <button onClick={calcularCusto}>
+              <CalculatorIcon className="btn-icone" aria-hidden="true" />
+              Calcular custo / disponibilidade
+            </button>
           </div>
 
           {custoTeorico !== null && (
@@ -229,6 +248,7 @@ export default function FichasTecnicasSection({
                 ))}
             </select>
             <button disabled={produtoDuplicarDestino === ""} onClick={duplicar}>
+              <DocumentDuplicateIcon className="btn-icone" aria-hidden="true" />
               Duplicar
             </button>
           </div>
@@ -236,7 +256,10 @@ export default function FichasTecnicasSection({
           {produtoSelecionado?.TipoProduto === "semi_elaborado" && (
             <div className="fase1-form">
               <input placeholder="Quantidade a produzir" type="number" value={producaoQtd} onChange={(e) => setProducaoQtd(e.target.value)} />
-              <button onClick={produzir}>Registar produção em lote</button>
+              <button onClick={produzir}>
+                <CheckIcon className="btn-icone" aria-hidden="true" />
+                Registar produção em lote
+              </button>
             </div>
           )}
         </>

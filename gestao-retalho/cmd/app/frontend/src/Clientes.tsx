@@ -12,6 +12,13 @@ import {
 } from "../wailsjs/go/api/App";
 import { domain, usecase } from "../wailsjs/go/models";
 
+import {
+  PencilSquareIcon,
+  CheckIcon,
+  PowerIcon,
+  EyeIcon,
+  PlusIcon,
+} from "@heroicons/react/24/outline";
 const METODOS = ["dinheiro", "mpesa", "emola", "cartao", "transferencia"];
 const DIAS_ANTIGA = 30;
 
@@ -83,9 +90,16 @@ export default function ClientesSection({ onErro }: { onErro: (e: string) => voi
               <td>{c.LimiteCredito != null ? `${c.LimiteCredito} MT` : "sem limite"}</td>
               <td>{c.Ativo ? "sim" : "não"}</td>
               <td className="fase1-form">
-                <button onClick={() => setClienteEmEdicao(c)}>Editar</button>
-                <button onClick={() => alternarAtivo(c)}>{c.Ativo ? "Desativar" : "Ativar"}</button>
+                <button onClick={() => setClienteEmEdicao(c)}>
+                  <PencilSquareIcon className="btn-icone" aria-hidden="true" />
+                  Editar
+                </button>
+                <button onClick={() => alternarAtivo(c)}>
+                  <PowerIcon className="btn-icone" aria-hidden="true" />
+                  {c.Ativo ? "Desativar" : "Ativar"}
+                </button>
                 <button onClick={() => setClienteSelecionadoId(c.ID === clienteSelecionadoId ? null : c.ID)}>
+                  <EyeIcon className="btn-icone" aria-hidden="true" />
                   {c.ID === clienteSelecionadoId ? "Fechar detalhe" : "Ver detalhe"}
                 </button>
               </td>
@@ -144,7 +158,8 @@ function ClienteForm({
         onChange={(e) => setLimiteCredito(e.target.value)}
       />
       <button disabled={!nome.trim()} onClick={guardar}>
-        {cliente ? "Guardar alterações" : "+ Criar cliente"}
+        <PlusIcon className="btn-icone" aria-hidden="true" />
+        {cliente ? "Guardar alterações" : "Criar cliente"}
       </button>
     </div>
   );
@@ -290,7 +305,10 @@ function DividaLinha({
                 </option>
               ))}
             </select>
-            <button onClick={pagar}>Registar pagamento</button>
+            <button onClick={pagar}>
+              <CheckIcon className="btn-icone" aria-hidden="true" />
+              Registar pagamento
+            </button>
           </div>
         )}
       </td>

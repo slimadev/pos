@@ -10,6 +10,15 @@ import {
   BeakerIcon,
   UserGroupIcon,
   ChartBarIcon,
+  PlusIcon,
+  PencilSquareIcon,
+  XMarkIcon,
+  DocumentDuplicateIcon,
+  TrashIcon,
+  CheckIcon,
+  ArrowsRightLeftIcon,
+  PlayIcon,
+  PowerIcon,
 } from "@heroicons/react/24/outline";
 import {
   ListarArmazens,
@@ -207,7 +216,10 @@ function ArmazensSection({
               <td>{a.Tipo}</td>
               <td>{a.Ativo ? "sim" : "não"}</td>
               <td>
-                <button onClick={() => alternarAtivo(a)}>{a.Ativo ? "Desativar" : "Ativar"}</button>
+                <button onClick={() => alternarAtivo(a)}>
+                  <PowerIcon className="btn-icone" aria-hidden="true" />
+                  {a.Ativo ? "Desativar" : "Ativar"}
+                </button>
               </td>
             </tr>
           ))}
@@ -221,7 +233,8 @@ function ArmazensSection({
           <option value="deposito">deposito</option>
         </select>
         <button disabled={!nome} onClick={criar}>
-          + Criar armazém
+          <PlusIcon className="btn-icone" aria-hidden="true" />
+          Criar armazém
         </button>
       </div>
     </section>
@@ -266,8 +279,14 @@ function CategoriasSection({
               <td>{c.CategoriaPaiID != null ? nomeCategoria(c.CategoriaPaiID) : "—"}</td>
               <td>{c.Ativo ? "sim" : "não"}</td>
               <td>
-                <button onClick={() => setEmEdicao(c)}>Editar</button>{" "}
-                <button onClick={() => alternarAtivo(c)}>{c.Ativo ? "Desativar" : "Ativar"}</button>
+                <button onClick={() => setEmEdicao(c)}>
+                  <PencilSquareIcon className="btn-icone" aria-hidden="true" />
+                  Editar
+                </button>{" "}
+                <button onClick={() => alternarAtivo(c)}>
+                  <PowerIcon className="btn-icone" aria-hidden="true" />
+                  {c.Ativo ? "Desativar" : "Ativar"}
+                </button>
               </td>
             </tr>
           ))}
@@ -332,9 +351,13 @@ function CategoriaForm({
           ))}
       </select>
       <button disabled={!nome} onClick={guardar}>
-        {categoria ? "Guardar alterações" : "+ Criar categoria"}
+        <PlusIcon className="btn-icone" aria-hidden="true" />
+        {categoria ? "Guardar alterações" : "Criar categoria"}
       </button>
-      {categoria && <button onClick={onCancelar}>Cancelar</button>}
+      {categoria && <button onClick={onCancelar}>
+        <XMarkIcon className="btn-icone" aria-hidden="true" />
+        Cancelar
+      </button>}
     </div>
   );
 }
@@ -411,9 +434,18 @@ function ProdutosSection({
               <td>{p.LoteControlado ? "sim" : "não"}</td>
               <td>{p.Ativo ? "sim" : "não"}</td>
               <td>
-                <button onClick={() => setEmEdicao(p)}>Editar</button>{" "}
-                <button onClick={() => duplicar(p)}>Duplicar</button>{" "}
-                <button onClick={() => alternarAtivo(p)}>{p.Ativo ? "Desativar" : "Ativar"}</button>
+                <button onClick={() => setEmEdicao(p)}>
+                  <PencilSquareIcon className="btn-icone" aria-hidden="true" />
+                  Editar
+                </button>{" "}
+                <button onClick={() => duplicar(p)}>
+                  <DocumentDuplicateIcon className="btn-icone" aria-hidden="true" />
+                  Duplicar
+                </button>{" "}
+                <button onClick={() => alternarAtivo(p)}>
+                  <PowerIcon className="btn-icone" aria-hidden="true" />
+                  {p.Ativo ? "Desativar" : "Ativar"}
+                </button>
               </td>
             </tr>
           ))}
@@ -658,12 +690,16 @@ function ProdutoForm({
                 padrão compra
               </label>
               {unidadesNovas.length > 1 && (
-                <button onClick={() => setUnidadesNovas((prev) => prev.filter((_, idx) => idx !== i))}>Remover</button>
+                <button onClick={() => setUnidadesNovas((prev) => prev.filter((_, idx) => idx !== i))}>
+                  <TrashIcon className="btn-icone" aria-hidden="true" />
+                  Remover
+                </button>
               )}
             </div>
           ))}
           <button onClick={() => setUnidadesNovas((prev) => [...prev, unidadeVazia(false)])}>
-            + Adicionar variação/grupo
+            <PlusIcon className="btn-icone" aria-hidden="true" />
+            Adicionar variação/grupo
           </button>
         </div>
       )}
@@ -728,7 +764,8 @@ function ProdutoForm({
               onChange={(e) => setNovaUnidade({ ...novaUnidade, codigoBarras: e.target.value })}
             />
             <button disabled={!novaUnidade.nomeUnidade.trim() || aAdicionarUnidade} onClick={adicionarUnidadeExistente}>
-              {aAdicionarUnidade ? "A adicionar…" : "+ Adicionar unidade"}
+              <PlusIcon className="btn-icone" aria-hidden="true" />
+              {aAdicionarUnidade ? "A adicionar…" : "Adicionar unidade"}
             </button>
           </div>
         </div>
@@ -738,7 +775,10 @@ function ProdutoForm({
         <button disabled={!nome.trim() || aGuardar} onClick={guardar}>
           {aGuardar ? "A guardar…" : produto ? "Guardar alterações" : "+ Criar produto"}
         </button>
-        {produto && <button onClick={onCancelar}>Cancelar</button>}
+        {produto && <button onClick={onCancelar}>
+          <XMarkIcon className="btn-icone" aria-hidden="true" />
+          Cancelar
+        </button>}
       </div>
     </div>
   );
@@ -837,7 +877,10 @@ function StockSection({
           value={custoUnitario}
           onChange={(e) => setCustoUnitario(e.target.value)}
         />
-        <button onClick={entrada}>Registar entrada</button>
+        <button onClick={entrada}>
+          <CheckIcon className="btn-icone" aria-hidden="true" />
+          Registar entrada
+        </button>
       </div>
 
       <div className="fase1-form">
@@ -851,12 +894,18 @@ function StockSection({
               </option>
             ))}
         </select>
-        <button onClick={transferir}>Transferir</button>
+        <button onClick={transferir}>
+          <ArrowsRightLeftIcon className="btn-icone" aria-hidden="true" />
+          Transferir
+        </button>
       </div>
 
       <div className="fase1-form">
         <input placeholder="Motivo da perda" value={motivo} onChange={(e) => setMotivo(e.target.value)} />
-        <button onClick={perda}>Registar perda</button>
+        <button onClick={perda}>
+          <CheckIcon className="btn-icone" aria-hidden="true" />
+          Registar perda
+        </button>
       </div>
     </section>
   );
@@ -921,6 +970,7 @@ function InventarioSection({
           ))}
         </select>
         <button disabled={inventarioID !== null} onClick={iniciar}>
+          <PlayIcon className="btn-icone" aria-hidden="true" />
           Iniciar inventário
         </button>
       </div>
@@ -953,7 +1003,10 @@ function InventarioSection({
               ))}
             </tbody>
           </table>
-          <button onClick={fechar}>Fechar inventário e gerar ajustes</button>
+          <button onClick={fechar}>
+            <XMarkIcon className="btn-icone" aria-hidden="true" />
+            Fechar inventário e gerar ajustes
+          </button>
         </>
       )}
 

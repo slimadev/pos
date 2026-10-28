@@ -3,6 +3,7 @@ import type { ComponentType, SVGProps } from "react";
 import { CatalogoPDV, ListarCategorias } from "../../wailsjs/go/api/App";
 import { domain, usecase } from "../../wailsjs/go/models";
 import { mt, normalizar, qtd } from "./formato";
+import { noAndroid } from "../plataforma";
 import "./Catalogo.css";
 
 type IconeSvg = ComponentType<SVGProps<SVGSVGElement>>;
@@ -39,8 +40,15 @@ const Catalogo = forwardRef<
   const [versao, setVersao] = useState(0);
   const buscaRef = useRef<HTMLInputElement>(null);
 
+  // No terminal Android o leitor de códigos não escreve na pesquisa (manda o
+  // código por evento, ver abaixo) e focá-la só abria o teclado virtual por
+  // cima da grelha — por isso lá a pesquisa só ganha foco quando se toca.
+  const focar = () => {
+    if (!noAndroid) buscaRef.current?.focus();
+  };
+
   useImperativeHandle(ref, () => ({
-    focarPesquisa: () => buscaRef.current?.focus(),
+    focarPesquisa: focar,
     recarregar: () => setVersao((v) => v + 1),
   }));
 
@@ -58,8 +66,27 @@ const Catalogo = forwardRef<
     ListarCategorias()
       .then(setCategorias)
       .catch(() => {});
-    buscaRef.current?.focus();
+    focar();
   }, []);
+
+  // Leitor de códigos do terminal (Sunmi): o lado nativo emite
+  // `codigo-lido` com o código em `detail`, sem precisar de campo focado.
+  useEffect(() => {
+    function onCodigo(e: Event) {
+      const codigo = String((e as CustomEvent<string>).detail ?? "").trim();
+      if (!codigo) return;
+      for (const i of lista) {
+        const u = i.Unidades.find((x) => x.CodigoBarras === codigo);
+        if (u) {
+          escolher(i, u);
+          return;
+        }
+      }
+      setAviso(`Código ${codigo} não corresponde a nenhum produto.`);
+    }
+    window.addEventListener("codigo-lido", onCodigo);
+    return () => window.removeEventListener("codigo-lido", onCodigo);
+  });
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
