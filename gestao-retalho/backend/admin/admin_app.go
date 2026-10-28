@@ -926,11 +926,25 @@ func (a *AdminApp) ExportarDocumentosMes(ano, mes int) (string, error) {
 
 // --- Importação de produtos do Excel -------------------------------------------
 
+// escolhedorFicheiros substitui o diálogo do Wails quando definido: fora do
+// Wails (app Android) o runtime.OpenFileDialog termina o processo, e lá quem
+// escolhe é o seletor de ficheiros do Android.
+var escolhedorFicheiros func(titulo, extensoes string) (string, error)
+
+// DefinirEscolhedorFicheiros troca o diálogo de escolha de ficheiros (nil
+// volta ao do Wails). `extensoes` vem como "xlsx;xlsm".
+func DefinirEscolhedorFicheiros(f func(titulo, extensoes string) (string, error)) {
+	escolhedorFicheiros = f
+}
+
 // EscolherFicheiroExcel abre o diálogo do sistema para escolher o .xlsx;
 // devolve "" se o utilizador cancelar.
 func (a *AdminApp) EscolherFicheiroExcel() (string, error) {
 	if err := a.exigirSessao(); err != nil {
 		return "", err
+	}
+	if escolhedorFicheiros != nil {
+		return escolhedorFicheiros("Escolher o ficheiro Excel com os produtos", "xlsx;xlsm")
 	}
 	return runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
 		Title:   "Escolher o ficheiro Excel com os produtos",

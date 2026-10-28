@@ -21,6 +21,35 @@ type AdminDBPath string
 const appDirName = "gestao-retalho"
 const adminDirName = "gestao-retalho-admin"
 
+// baseFixa substitui os.UserConfigDir() quando definida — no Android não há
+// pasta de configuração do utilizador e a app passa a sua pasta privada
+// (Context.getFilesDir) por DefinirDiretorioBase antes de abrir qualquer base.
+var baseFixa string
+
+// DefinirDiretorioBase fixa a pasta onde ficam os dados (admin.db, lojas,
+// config.json, recibos, relatórios). "" volta ao comportamento por omissão.
+func DefinirDiretorioBase(caminho string) {
+	baseFixa = caminho
+}
+
+func diretorioBase() (string, error) {
+	if baseFixa != "" {
+		return baseFixa, nil
+	}
+	return os.UserConfigDir()
+}
+
+// DiretoriosDados devolve as duas pastas com dados do sistema: a do admin
+// (admin.db + lojas/*.db) e a da app da loja (config.json, recibos,
+// relatórios). Usado pelas cópias de segurança, que guardam/repõem ambas.
+func DiretoriosDados() (dirAdmin, dirApp string, err error) {
+	base, err := diretorioBase()
+	if err != nil {
+		return "", "", err
+	}
+	return filepath.Join(base, adminDirName), filepath.Join(base, appDirName), nil
+}
+
 // ResolveLocalDBPath returns the path to the current loja's database file,
 // creating the containing directory if needed. It lives under the OS user
 // config directory so the app works the same on a fresh machine without any
@@ -77,7 +106,7 @@ func ResolveRelatoriosDir() (string, error) {
 }
 
 func dataDir() (string, error) {
-	base, err := os.UserConfigDir()
+	base, err := diretorioBase()
 	if err != nil {
 		return "", err
 	}
@@ -89,7 +118,7 @@ func dataDir() (string, error) {
 // per loja in a "lojas" subfolder next to the admin's own data, named after
 // a slug of nome with a numeric suffix if that slug is already taken.
 func ResolveNovaLojaDBPath(nome string) (DBPath, error) {
-	base, err := os.UserConfigDir()
+	base, err := diretorioBase()
 	if err != nil {
 		return "", err
 	}
@@ -146,7 +175,7 @@ func slugify(s string) string {
 // admin can run on the same machine as a loja without the two databases
 // colliding.
 func ResolveAdminDBPath() (AdminDBPath, error) {
-	base, err := os.UserConfigDir()
+	base, err := diretorioBase()
 	if err != nil {
 		return "", err
 	}
