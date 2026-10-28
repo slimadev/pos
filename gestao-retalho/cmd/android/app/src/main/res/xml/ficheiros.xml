@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pastas cujos ficheiros podem ser abertos/partilhados com outras apps:
+     os dados do backend (recibos, relatórios) e a cache. -->
+<paths>
+    <files-path name="dados" path="." />
+    <cache-path name="cache" path="." />
+</paths>

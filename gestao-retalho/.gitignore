@@ -23,3 +23,14 @@ cmd/*/build/windows/installer/tmp/
 
 # Instaladores e pacotes gerados para entregar
 /dist/
+
+# Build do frontend para a WebView do Android (vite --mode android)
+cmd/*/frontend/dist-android/
+
+# Android (cmd/android)
+cmd/android/.gradle/
+cmd/android/**/build/
+cmd/android/local.properties
+cmd/android/app/src/main/assets/web/
+cmd/android/app/libs/*.aar
+*.jks

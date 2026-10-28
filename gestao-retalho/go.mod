@@ -8,8 +8,10 @@ require (
 	github.com/wailsapp/wails/v2 v2.15.0
 	github.com/xuri/excelize/v2 v2.11.0
 	go.uber.org/fx v1.24.0
-	golang.org/x/crypto v0.53.0
+	golang.org/x/crypto v0.55.0
+	golang.org/x/mobile v0.0.0-20260813181013-1960c775504c
 	golang.org/x/sys v0.47.0
+	modernc.org/libc v1.75.7
 	modernc.org/sqlite v1.59.0
 )
 
@@ -49,9 +51,11 @@ require (
 	go.uber.org/dig v1.19.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
-	golang.org/x/net v0.56.0 // indirect
-	golang.org/x/text v0.39.0 // indirect
-	modernc.org/libc v1.75.7 // indirect
+	golang.org/x/mod v0.39.0 // indirect
+	golang.org/x/net v0.58.0 // indirect
+	golang.org/x/sync v0.22.0 // indirect
+	golang.org/x/text v0.41.0 // indirect
+	golang.org/x/tools v0.49.0 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.1 // indirect
 )
