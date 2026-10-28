@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Ícone do launcher Android (ic_launcher_round e base do quadrado):
+       círculo claro a encher a área, como os ícones do sistema, e o talão
+       com o gráfico nas cores dos quatro tipos de negócio, em grande.
+       O ícone dos .exe continua a ser admin.svg. -->
+  <defs>
+    <linearGradient id="disco" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#eceff4"/>
+    </linearGradient>
+    <linearGradient id="talao" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2b3142"/>
+      <stop offset="1" stop-color="#171a24"/>
+    </linearGradient>
+    <filter id="sombra" x="-10%" y="-10%" width="120%" height="125%">
+      <feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#000" flood-opacity="0.32"/>
+    </filter>
+  </defs>
+  <circle cx="512" cy="500" r="472" fill="url(#disco)" filter="url(#sombra)"/>
+  <g transform="translate(512 512) scale(1.16) translate(-512 -512)">
+    <!-- talão -->
+    <path d="M340 232 H684 Q712 232 712 260 V792 L687 767 L662 792 L637 767 L612 792 L587 767 L562 792 L537 767 L512 792 L487 767 L462 792 L437 767 L412 792 L387 767 L362 792 L337 767 L312 792 V260 Q312 232 340 232 Z" fill="url(#talao)"/>
+    <!-- linhas de texto -->
+    <rect x="364" y="292" width="200" height="26" rx="13" fill="#8a91a3"/>
+    <rect x="364" y="340" width="132" height="26" rx="13" fill="#5b6275"/>
+    <!-- gráfico -->
+    <rect x="364" y="508" width="56" height="140" rx="10" fill="#E0AE58"/>
+    <rect x="444" y="440" width="56" height="208" rx="10" fill="#F06A24"/>
+    <rect x="524" y="476" width="56" height="172" rx="10" fill="#4CAF6E"/>
+    <rect x="604" y="400" width="56" height="248" rx="10" fill="#14BDBD"/>
+    <rect x="364" y="672" width="296" height="10" rx="5" fill="#5b6275"/>
+  </g>
+</svg>

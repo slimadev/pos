@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Gestão de Retalho — Administração: talão com gráfico de barras nas
+       cores dos quatro tipos de negócio (bottlestore, ferragem, mercearia,
+       farmácia). Fonte única dos ícones do .exe e do Android (gerar.mjs). -->
+  <defs>
+    <linearGradient id="fundo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#262b37"/>
+      <stop offset="1" stop-color="#11131a"/>
+    </linearGradient>
+    <linearGradient id="papel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#eef0f4"/>
+    </linearGradient>
+  </defs>
+  <rect x="32" y="32" width="960" height="960" rx="216" fill="url(#fundo)"/>
+  <g transform="translate(512 520) scale(1.18) translate(-512 -512)">
+  <!-- sombra do talão -->
+  <path d="M352 252 H696 Q724 252 724 280 V812 L699 787 L674 812 L649 787 L624 812 L599 787 L574 812 L549 787 L524 812 L499 787 L474 812 L449 787 L424 812 L399 787 L374 812 L349 787 L324 812 V280 Q324 252 352 252 Z" fill="#000" opacity="0.35"/>
+  <!-- talão -->
+  <path d="M340 232 H684 Q712 232 712 260 V792 L687 767 L662 792 L637 767 L612 792 L587 767 L562 792 L537 767 L512 792 L487 767 L462 792 L437 767 L412 792 L387 767 L362 792 L337 767 L312 792 V260 Q312 232 340 232 Z" fill="url(#papel)"/>
+  <!-- linhas de texto -->
+  <rect x="364" y="292" width="200" height="24" rx="12" fill="#c5cad4"/>
+  <rect x="364" y="338" width="132" height="24" rx="12" fill="#dde1e8"/>
+  <!-- gráfico -->
+  <rect x="364" y="508" width="56" height="140" rx="10" fill="#D4A24E"/>
+  <rect x="444" y="440" width="56" height="208" rx="10" fill="#E8611C"/>
+  <rect x="524" y="476" width="56" height="172" rx="10" fill="#3E8E5A"/>
+  <rect x="604" y="400" width="56" height="248" rx="10" fill="#0EA5A5"/>
+  <rect x="364" y="668" width="296" height="10" rx="5" fill="#d3d7df"/>
+  </g>
+</svg>

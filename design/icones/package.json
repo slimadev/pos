@@ -1,0 +1,13 @@
+{
+  "name": "icones-gestao-retalho",
+  "private": true,
+  "type": "module",
+  "description": "Gera os ícones das apps (exe e Android) a partir de admin.svg e pdv.svg",
+  "scripts": {
+    "gerar": "node gerar.mjs"
+  },
+  "devDependencies": {
+    "png-to-ico": "^2.1.8",
+    "sharp": "^0.33.5"
+  }
+}
