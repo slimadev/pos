@@ -16,12 +16,21 @@ import (
 
 	"gestao-retalho/backend/admin"
 	"gestao-retalho/backend/config"
+	"gestao-retalho/backend/copias"
 )
 
 //go:embed all:frontend/dist
 var assets embed.FS
 
 func main() {
+	// Uma cópia de segurança escolhida para restaurar só troca os dados
+	// agora, antes de qualquer base estar aberta.
+	if aplicado, err := copias.AplicarRestauroPendente(); err != nil {
+		log.Printf("restauro da cópia de segurança falhou: %v", err)
+	} else if aplicado {
+		log.Print("cópia de segurança restaurada")
+	}
+
 	var adminApp *admin.AdminApp
 
 	container := fx.New(

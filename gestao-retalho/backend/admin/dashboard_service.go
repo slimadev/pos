@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gestao-retalho/backend/api"
+	"gestao-retalho/backend/copias"
 	"gestao-retalho/backend/export"
 	"gestao-retalho/backend/repository"
 )
@@ -224,6 +225,21 @@ func (s *DashboardService) ObterDashboard(ctx context.Context) (Dashboard, error
 	})
 	if len(d.MaisVendidosHoje) > 8 {
 		d.MaisVendidosHoje = d.MaisVendidosHoje[:8]
+	}
+
+	// Sem cópia recente, um terminal avariado ou roubado leva a loja inteira.
+	if ultima, ok := copias.Ultima(); !ok {
+		d.Alertas = append(d.Alertas, Alerta{
+			Severidade: "media",
+			Titulo:     "Ainda não há cópia de segurança",
+			Detalhe:    "Gestão → Cópias de segurança",
+		})
+	} else if dias := int(time.Since(ultima).Hours() / 24); dias >= diasAvisoCopia {
+		d.Alertas = append(d.Alertas, Alerta{
+			Severidade: "media",
+			Titulo:     fmt.Sprintf("Última cópia de segurança há %d dias", dias),
+			Detalhe:    "Gestão → Cópias de segurança",
+		})
 	}
 
 	sort.SliceStable(d.Alertas, func(i, j int) bool {
