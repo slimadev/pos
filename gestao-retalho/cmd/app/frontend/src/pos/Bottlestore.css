@@ -1,421 +1,1135 @@
+/* PDV do bar (Bottlestore.tsx): contas por mesa/grupo e venda ao balcão.
+   Linhas de botões que quebram usam grid (grid-gap), não flex-wrap: no
+   Chrome 62 do terminal o gap de um flex com quebra deixa margens tortas. */
+
+.bs-raiz {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bs-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.bs-icon-mini {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+.bs-icon-grande {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+/* --- Separadores Contas | Balcão ----------------------------------------- */
+
+.bs-modos {
+  display: flex;
+  align-self: flex-start;
+  padding: 4px;
+  gap: 4px;
+  border-radius: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-border);
+}
+
+.bs-modos button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 20px;
+  border: none;
+  border-radius: 9px;
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.bs-modos button.ativo {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+}
+
+.bs-modos-badge {
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 12px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.bs-modos button.ativo .bs-modos-badge {
+  background: rgba(0, 0, 0, 0.18);
+  color: inherit;
+}
+
+/* O Balcão é a venda direta: ocupa o espaço que sobra por baixo dos
+   separadores. */
+.bs-raiz.modo-balcao .pos {
+  height: calc(100vh - 210px);
+}
+
+/* --- Lista de contas ------------------------------------------------------ */
+
 .bs {
   display: flex;
   flex-direction: column;
   gap: 16px;
   background: var(--color-bg);
   color: var(--color-text);
-  border-radius: 10px;
+  border-radius: 12px;
   border: 1px solid var(--color-surface-border);
   padding: 20px 22px;
   min-height: 70vh;
   font-family: var(--font-body);
+  box-sizing: border-box;
 }
 
 .bs-erro {
-  background: #fcecec;
-  color: #a33;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: rgba(217, 83, 79, 0.14);
+  color: var(--color-error);
+  border: 1px solid rgba(217, 83, 79, 0.4);
   padding: 10px 14px;
-  border-radius: 6px;
-  font-size: 13px;
+  border-radius: 10px;
+  font-size: 13.5px;
+}
+
+.bs-erro button {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.bs-topo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .bs-kpis {
   display: flex;
+  flex: 1;
   gap: 30px;
+  min-width: 0;
 }
 
 .bs-kpis > div {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .bs-kpi-valor {
   font-family: var(--font-display);
-  font-size: 24px;
+  font-size: 26px;
+  line-height: 1.15;
   color: var(--color-accent);
+  white-space: nowrap;
 }
 
 .bs-kpi-label {
-  font-size: 13px;
+  font-size: 12.5px;
   color: var(--color-text-muted);
 }
 
-.bs-nova {
-  display: flex;
-  gap: 10px;
-}
-
-.bs-nova input {
-  flex: 1;
-  padding: 11px 14px;
-  border-radius: 8px;
-  border: 1px solid var(--color-surface-border);
-  background: var(--color-surface);
-  color: var(--color-text);
-}
-
-.bs-nova select {
-  padding: 11px 14px;
-  border-radius: 8px;
-  border: 1px solid var(--color-surface-border);
-  background: var(--color-surface);
-  color: var(--color-text);
-}
-
-.bs-nova button {
+.bs-abrir,
+.bs-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 11px 18px;
-  font-weight: 600;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--color-accent);
   color: var(--color-accent-contrast);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
   cursor: pointer;
 }
 
-.bs-icon {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
+.bs-btn:disabled,
+.bs-abrir:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
-.bs-nova button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.bs-btn.perigo {
+  background: var(--color-error);
+  color: #fff;
+}
+
+.bs-btn-sec {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border: 1px solid var(--color-surface-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.bs-btn:active,
+.bs-btn-sec:active,
+.bs-abrir:active {
+  opacity: 0.8;
+}
+
+.bs-pesquisa {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid var(--color-surface-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+
+.bs-pesquisa input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 0;
+  border: none;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 15px;
+  outline: none;
 }
 
 .bs-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 14px;
-}
-
-.bs-vazio {
-  color: var(--color-text-muted);
-  font-size: 13px;
-  grid-column: 1 / -1;
-  text-align: center;
-  padding: 30px 0;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  grid-gap: 12px;
 }
 
 .bs-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-surface-border);
-  border-radius: 11px;
-  padding: 16px 17px;
   display: flex;
   flex-direction: column;
-  gap: 13px;
+  gap: 6px;
+  min-width: 0;
+  min-height: 118px;
+  padding: 14px 15px;
+  border: 1px solid var(--color-surface-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
   cursor: pointer;
-  min-height: 100px;
+  box-sizing: border-box;
 }
 
 .bs-card:hover {
   border-color: var(--color-accent);
 }
 
-.bs-card-top {
+.bs-card:active {
+  transform: scale(0.98);
+}
+
+.bs-card.longa {
+  border-color: rgba(212, 162, 78, 0.55);
+}
+
+.bs-card-cabeca {
   display: flex;
-  flex-direction: column;
-  gap: 3px;
+  align-items: flex-start;
+  gap: 8px;
 }
 
 .bs-card-id {
-  font-size: 15px;
-  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: break-word;
+}
+
+.bs-card-tempo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.bs-card.longa .bs-card-tempo {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  font-weight: 700;
 }
 
 .bs-card-cliente {
-  font-size: 12px;
+  font-size: 12.5px;
   color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .bs-card-bottom {
   margin-top: auto;
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  flex-direction: column;
 }
 
 .bs-card-total {
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: 21px;
   color: var(--color-accent);
+  white-space: nowrap;
 }
 
 .bs-card-itens {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--color-text-muted);
+}
+
+.bs-vazio {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 36px 16px;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  text-align: center;
+  line-height: 1.45;
+}
+
+.bs-vazio strong {
+  color: var(--color-text);
+  font-size: 17px;
+}
+
+.bs-vazio .bs-abrir {
+  margin-top: 8px;
+}
+
+.bs-vazio-icone {
+  width: 44px;
+  height: 44px;
+  color: var(--color-accent);
+}
+
+/* --- Conta aberta ---------------------------------------------------------- */
+
+.bs-detalhe {
+  height: calc(100vh - 150px);
+  min-height: 480px;
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+}
+
+/* gap 0 também no build android (que converte o gap do .bs em margens). */
+.bs-detalhe > * + * {
+  margin-top: 0;
 }
 
 .bs-detalhe-header {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
+  flex-shrink: 0;
+  padding: 10px 14px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-surface-border);
 }
 
-.bs-voltar {
+.bs-voltar,
+.bs-menu-botao,
+.bs-comanda-fechar-movel {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: none;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
   border: none;
-  color: var(--color-text-muted);
+  border-radius: 10px;
+  background: none;
+  color: var(--color-text);
   cursor: pointer;
-  font-size: 13.5px;
+}
+
+.bs-voltar:active,
+.bs-menu-botao:active {
+  background: var(--color-bg);
 }
 
 .bs-detalhe-titulo {
-  display: flex;
-  flex-direction: column;
-  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+}
+
+.bs-detalhe-nome {
+  font-size: 18px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .bs-detalhe-sub {
-  font-size: 11.5px;
-  color: var(--color-text-muted);
-  font-weight: 400;
-}
-
-.bs-detalhe-header select {
-  margin-left: auto;
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid var(--color-surface-border);
-  background: var(--color-surface);
-  color: var(--color-text);
-}
-
-.bs-cancelar {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 6px;
-  border: 1px solid var(--color-error);
-  background: none;
-  color: var(--color-error);
-  cursor: pointer;
   font-size: 12.5px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bs-menu {
+  position: relative;
+}
+
+.bs-menu-fundo {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 40;
+}
+
+.bs-menu-lista {
+  position: absolute;
+  top: 46px;
+  right: 0;
+  z-index: 41;
+  width: 240px;
+  padding: 6px;
+  border: 1px solid var(--color-surface-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.bs-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 14.5px;
+  text-align: left;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+label.bs-menu-item {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  cursor: default;
+}
+
+label.bs-menu-item span {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.bs-menu-item select {
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--color-surface-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.bs-menu-item.perigo {
+  color: var(--color-error);
+}
+
+.bs-menu-item:not(label):active {
+  background: var(--color-bg);
+}
+
+.bs-detalhe .bs-erro {
+  margin: 10px 14px 0;
 }
 
 .bs-detalhe-body {
   display: flex;
-  gap: 16px;
   flex: 1;
   min-height: 0;
 }
 
+.bs-catalogo {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  padding: 14px 16px;
+}
+
+/* "+1 2M 550ml": confirma cada toque sem ter de abrir a comanda. */
+.bs-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 86%;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transform: translateX(-50%);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  animation: bs-toast-entra 0.15s ease-out;
+}
+
+@keyframes bs-toast-entra {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.bs-resumo-movel,
+.bs-comanda-fechar-movel {
+  display: none;
+}
+
+/* Comanda: coluna à direita no desktop. */
 .bs-comanda {
-  width: 320px;
-  flex-shrink: 0;
-  background: var(--color-surface);
-  border: 1px solid var(--color-surface-border);
-  border-radius: 10px;
   display: flex;
   flex-direction: column;
+  width: 350px;
+  flex-shrink: 0;
+  background: var(--color-surface);
+  border-left: 1px solid var(--color-surface-border);
 }
 
 .bs-comanda-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   padding: 14px 18px;
   border-bottom: 1px solid var(--color-surface-border);
-  display: flex;
-  justify-content: space-between;
-  font-weight: 600;
+  font-weight: 700;
+}
+
+.bs-comanda-titulo {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bs-comanda-n {
+  min-width: 26px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--color-bg);
+  color: var(--color-accent);
+  font-size: 13px;
+  text-align: center;
+  box-sizing: border-box;
 }
 
 .bs-comanda-itens {
   flex: 1;
   overflow-y: auto;
-  padding: 6px 18px;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 14px;
 }
 
 .bs-comanda-vazia {
+  padding: 28px 8px;
   color: var(--color-text-muted);
-  font-size: 12.5px;
+  font-size: 13.5px;
   text-align: center;
-  padding: 20px 0;
+  line-height: 1.45;
 }
 
-.bs-comanda-item {
+/* Cada bebida em duas filas: nome e total; preço, − qtd + e transferir. */
+.bs-linha {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-surface-border);
+}
+
+.bs-linha-topo,
+.bs-linha-baixo {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--color-surface-border);
-  font-size: 12.5px;
+  gap: 10px;
 }
 
-.bs-comanda-item-nome {
+.bs-linha-nome {
   flex: 1;
   min-width: 0;
-}
-
-.bs-comanda-item-total {
+  font-size: 15px;
   font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: break-word;
 }
 
-.bs-transferir {
-  font-size: 11px;
-  padding: 3px 5px;
-  border-radius: 4px;
+.bs-linha-preco {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.bs-stepper {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
   border: 1px solid var(--color-surface-border);
+  border-radius: 10px;
   background: var(--color-bg);
+}
+
+.bs-stepper button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: none;
   color: var(--color-text);
+  cursor: pointer;
+}
+
+.bs-stepper button:active {
+  color: var(--color-accent);
+}
+
+.bs-stepper span {
+  min-width: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.bs-linha-total {
+  flex-shrink: 0;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.bs-linha-transferir {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.bs-linha-transferir:active {
+  background: var(--color-bg);
+  color: var(--color-accent);
 }
 
 .bs-comanda-footer {
-  padding: 14px 18px 18px;
-  border-top: 1px solid var(--color-surface-border);
   display: flex;
   flex-direction: column;
   gap: 12px;
+  padding: 14px 18px 18px;
+  border-top: 1px solid var(--color-surface-border);
 }
 
 .bs-comanda-total {
   display: flex;
   justify-content: space-between;
+  align-items: baseline;
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 24px;
   color: var(--color-accent);
+}
+
+.bs-comanda-total span:first-child {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--color-text-muted);
 }
 
 .bs-fechar {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 13px;
-  font-weight: 700;
+  gap: 8px;
+  padding: 14px 18px;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--color-accent);
   color: var(--color-accent-contrast);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
   cursor: pointer;
 }
 
 .bs-fechar:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
-.bs-modal-overlay {
+/* --- Folhas (abrir, fechar, cancelar, transferir) --------------------------- */
+
+.bs-folha-fundo {
   position: fixed;
-  inset: 0;
-  background: rgba(10, 8, 14, 0.72);
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 60;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 50;
+  background: rgba(8, 6, 12, 0.72);
 }
 
-.bs-modal {
-  width: 460px;
+.bs-folha {
+  display: flex;
+  flex-direction: column;
+  width: 440px;
+  max-width: 100%;
+  max-height: 90vh;
+  border: 1px solid var(--color-surface-border);
+  border-radius: 16px;
   background: var(--color-surface);
-  border: 1px solid var(--color-surface-border);
-  border-radius: 13px;
-  padding: 26px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.bs-modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  font-weight: 600;
-}
-
-.bs-modal-total {
-  font-family: var(--font-display);
-  font-size: 26px;
-  color: var(--color-accent);
-}
-
-.bs-modal-pagamentos {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.bs-modal-linha {
-  display: flex;
-  gap: 8px;
-}
-
-.bs-modal-linha select,
-.bs-modal-linha input {
-  padding: 8px 10px;
-  border-radius: 6px;
-  border: 1px solid var(--color-surface-border);
-  background: var(--color-bg);
   color: var(--color-text);
-}
-
-.bs-modal-linha input {
-  flex: 1;
-}
-
-.bs-modal-pagamentos > button {
-  align-self: flex-start;
-  background: none;
-  border: none;
-  color: var(--color-accent);
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.bs-modal-falta {
-  background: var(--color-bg);
-  border-radius: 8px;
-  padding: 12px 14px;
-  font-size: 13px;
-  color: var(--color-success);
-}
-
-.bs-modal-falta--divida {
-  color: var(--color-warning);
-}
-
-.bs-modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-.bs-modal-actions button {
-  padding: 12px 20px;
-  border-radius: 8px;
-  border: 1px solid var(--color-surface-border);
-  background: none;
-  color: var(--color-text);
-  cursor: pointer;
-}
-
-.bs-modal-confirmar {
-  border: none !important;
-  background: var(--color-accent) !important;
-  color: var(--color-accent-contrast) !important;
-  font-weight: 700;
-}
-
-.bs-modal-confirmar:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-/* A conta ocupa a altura da janela: o catálogo faz scroll por dentro e a
-   comanda fica sempre visível. */
-.bs-detalhe {
-  height: calc(100vh - 150px);
-  min-height: 480px;
+  font-family: var(--font-body);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
   box-sizing: border-box;
 }
 
-.bs-modal-falta--troco {
+.bs-folha.larga {
+  width: 500px;
+}
+
+.bs-folha-pega {
+  display: none;
+}
+
+.bs-folha-cabeca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 12px 4px 20px;
   font-size: 18px;
   font-weight: 700;
+}
+
+.bs-folha-cabeca span {
+  flex: 1;
+  min-width: 0;
+}
+
+.bs-folha-cabeca button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.bs-folha-corpo {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 12px 20px 20px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.bs-folha-texto {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.bs-folha-texto strong {
+  color: var(--color-text);
+}
+
+.bs-folha-nota {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.bs-folha-acoes {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.bs-folha-acoes > * {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.bs-folha-acoes > .bs-btn {
+  flex-grow: 1.6;
+}
+
+.bs-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bs-campo > span {
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.bs-campo input,
+.bs-campo select,
+.bs-dividir-linha input,
+.bs-dividir-linha select {
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--color-surface-border);
+  border-radius: 10px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.bs-campo input:focus,
+.bs-dividir-linha input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.bs-campo-linha {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bs-campo-linha input {
+  width: 140px;
+  text-align: right;
+}
+
+.bs-aviso {
+  padding: 9px 12px;
+  border-radius: 9px;
+  background: rgba(224, 166, 43, 0.12);
+  color: var(--color-warning);
+  font-size: 13px;
+}
+
+.bs-aviso.erro {
+  background: rgba(217, 83, 79, 0.14);
+  color: var(--color-error);
+}
+
+/* Chips: nomes rápidos, motivos, notas, formas de pagamento. */
+.bs-rapidos,
+.bs-notas,
+.bs-metodos,
+.bs-destinos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  grid-gap: 8px;
+}
+
+.bs-rapidos button,
+.bs-notas button,
+.bs-metodos button,
+.bs-destinos button {
+  min-height: 42px;
+  padding: 6px 10px;
+  border: 1px solid var(--color-surface-border);
+  border-radius: 10px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bs-rapidos button.ativo,
+.bs-notas button.ativo,
+.bs-metodos button.ativo {
+  border-color: var(--color-accent);
+  background: rgba(212, 162, 78, 0.16);
+  color: var(--color-accent);
+}
+
+.bs-rapidos {
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.bs-destinos button {
+  min-height: 52px;
+  font-size: 15px;
+}
+
+.bs-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  padding: 6px 0;
+  border: none;
+  background: none;
+  color: var(--color-accent);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* --- Fecho ----------------------------------------------------------------- */
+
+.bs-fecho-total {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 0 2px;
+}
+
+.bs-fecho-total span {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.bs-fecho-total strong {
+  font-family: var(--font-display);
+  font-size: 38px;
+  font-weight: 400;
+  line-height: 1.15;
+  color: var(--color-accent);
+}
+
+.bs-fecho-total small {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.bs-metodos {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.bs-dinheiro {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bs-dinheiro input {
+  font-size: 22px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.bs-notas {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.bs-dividir {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bs-dividir-linha {
+  display: flex;
+  gap: 8px;
+}
+
+.bs-dividir-linha select {
+  flex: 0 0 34%;
+  min-width: 0;
+  padding: 0 8px;
+}
+
+.bs-dividir-linha input {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+}
+
+.bs-resto {
+  padding: 0 10px;
+  font-size: 13px;
+}
+
+.bs-remover {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.bs-estado {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--color-bg);
+  color: var(--color-success);
+  font-size: 14.5px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.bs-estado.troco {
+  color: var(--color-text);
+}
+
+.bs-estado.troco strong {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 400;
+  color: var(--color-success);
+}
+
+.bs-estado.divida {
+  color: var(--color-warning);
+}
+
+.bs-estado.erro {
+  color: var(--color-error);
+}
+
+/* --- Conta fechada ----------------------------------------------------------- */
+
+.bs-fechada {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 18px 0 6px;
+  text-align: center;
+}
+
+.bs-fechada-icone {
+  width: 56px;
+  height: 56px;
+  color: var(--color-success);
+}
+
+.bs-fechada-titulo {
+  margin-top: 6px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.bs-fechada-total {
+  font-size: 15px;
+  color: var(--color-text-muted);
+}
+
+.bs-fechada-troco {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 12px;
+  padding: 12px 28px;
+  border-radius: 14px;
+  background: var(--color-bg);
+}
+
+.bs-fechada-troco span {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.bs-fechada-troco strong {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 400;
+  color: var(--color-accent);
+}
+
+.bs-fechada-divida {
+  margin-top: 10px;
+  color: var(--color-warning);
+  font-weight: 600;
 }
