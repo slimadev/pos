@@ -1,5 +1,14 @@
 import { useEffect, useState } from "react";
-import { BanknotesIcon, CalculatorIcon, PrinterIcon, XCircleIcon } from "@heroicons/react/24/outline";
+import {
+  BanknotesIcon,
+  CalculatorIcon,
+  PrinterIcon,
+  XCircleIcon,
+  MagnifyingGlassIcon,
+  EyeIcon,
+  ArrowLeftIcon,
+  CheckIcon,
+} from "@heroicons/react/24/outline";
 import { ListarVendas, ObterDetalheVenda, AbrirRecibo, AnularVenda } from "../wailsjs/go/admin/AdminApp";
 import { admin } from "../wailsjs/go/models";
 import Breadcrumb from "./Breadcrumb";
@@ -123,7 +132,7 @@ export default function VendasScreen({ onNavegar, onErro }: { onNavegar: Navegar
         </div>
       </div>
 
-      <div className="admin-form">
+      <div className="admin-form admin-vendas-filtros">
         <label>
           De <input type="date" value={desde} max={ate} onChange={(e) => setDesde(e.target.value)} />
         </label>
@@ -149,6 +158,7 @@ export default function VendasScreen({ onNavegar, onErro }: { onNavegar: Navegar
           </select>
         )}
         <button className="admin-btn" disabled={!desde || !ate} onClick={() => consultar(desde, ate)}>
+          <MagnifyingGlassIcon className="btn-icone" aria-hidden="true" />
           Consultar
         </button>
         {ATALHOS.map((a) => (
@@ -219,6 +229,7 @@ export default function VendasScreen({ onNavegar, onErro }: { onNavegar: Navegar
               <td style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{mt(v.Total)}</td>
               <td className="admin-form">
                 <button className="admin-btn-secundario" onClick={() => setAberta(v.ID)}>
+                  <EyeIcon className="btn-icone" aria-hidden="true" />
                   Detalhe
                 </button>
               </td>
@@ -392,9 +403,11 @@ function DetalheVenda({
           </label>
           <div className="admin-form">
             <button className="admin-btn admin-btn-perigo" disabled={!motivo.trim() || aConfirmar} onClick={anular}>
+              <CheckIcon className="btn-icone" aria-hidden="true" />
               {aConfirmar ? "A anular…" : "Confirmar anulação"}
             </button>
             <button className="admin-btn-secundario" onClick={() => setAAnular(false)}>
+              <ArrowLeftIcon className="btn-icone" aria-hidden="true" />
               Voltar
             </button>
           </div>

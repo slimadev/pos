@@ -1,5 +1,17 @@
 import { useEffect, useState } from "react";
-import { BanknotesIcon, ExclamationTriangleIcon, MagnifyingGlassIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
+import {
+  BanknotesIcon,
+  ExclamationTriangleIcon,
+  MagnifyingGlassIcon,
+  PencilSquareIcon,
+  ArrowDownTrayIcon,
+  PlusIcon,
+  ArrowTopRightOnSquareIcon,
+  XMarkIcon,
+  ListBulletIcon,
+  PowerIcon,
+  CheckIcon,
+} from "@heroicons/react/24/outline";
 import {
   ListarClientes,
   ObterFichaCliente,
@@ -132,10 +144,12 @@ function Lista({
             title="Lista de dívidas em aberto, para exportar em Excel ou PDF"
             onClick={() => onNavegar({ ecra: "relatorios", relatorio: "dividas" })}
           >
+            <ArrowDownTrayIcon className="btn-icone" aria-hidden="true" />
             Exportar dívidas
           </button>
           <button className="admin-btn" onClick={() => setNovo(true)}>
-            + Novo cliente
+            <PlusIcon className="btn-icone" aria-hidden="true" />
+            Novo cliente
           </button>
         </div>
       </div>
@@ -220,6 +234,7 @@ function Lista({
               </td>
               <td className="admin-form">
                 <button className="admin-btn-secundario" onClick={() => onAbrir(r.Cliente)}>
+                  <ArrowTopRightOnSquareIcon className="btn-icone" aria-hidden="true" />
                   Abrir
                 </button>
               </td>
@@ -328,6 +343,7 @@ function ClienteForm({
           {aGuardar ? "A guardar…" : cliente ? "Guardar alterações" : "Criar cliente"}
         </button>
         <button className="admin-btn-secundario" onClick={onCancelar}>
+          <XMarkIcon className="btn-icone" aria-hidden="true" />
           Cancelar
         </button>
       </div>
@@ -406,6 +422,7 @@ function Ficha({
             Editar
           </button>
           <button className="admin-btn-secundario" onClick={alternarAtivo}>
+            <PowerIcon className="btn-icone" aria-hidden="true" />
             {c.Ativo ? "Desativar" : "Ativar"}
           </button>
         </div>
@@ -470,11 +487,13 @@ function Ficha({
                 <td className="admin-form admin-acoes">
                   {d.Status !== "paga" && (
                     <button className="admin-btn" onClick={() => setModal({ tipo: "pagar", divida: d })}>
+                      <BanknotesIcon className="btn-icone" aria-hidden="true" />
                       Pagar
                     </button>
                   )}
                   {d.ValorPago > 0 && (
                     <button className="admin-btn-secundario" onClick={() => setModal({ tipo: "pagamentos", divida: d })}>
+                      <ListBulletIcon className="btn-icone" aria-hidden="true" />
                       Pagamentos
                     </button>
                   )}
@@ -625,9 +644,11 @@ function PagarDivida({
       )}
       <div className="admin-form">
         <button className="admin-btn" disabled={!valido || aGuardar} onClick={pagar}>
+          <CheckIcon className="btn-icone" aria-hidden="true" />
           {aGuardar ? "A registar…" : "Registar pagamento"}
         </button>
         <button className="admin-btn-secundario" onClick={onCancelar}>
+          <XMarkIcon className="btn-icone" aria-hidden="true" />
           Cancelar
         </button>
       </div>

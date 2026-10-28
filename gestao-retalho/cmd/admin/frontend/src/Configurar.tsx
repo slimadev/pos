@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
-import { ConfigurarPrimeiroArranque, ObterPresetsNegocio } from "../wailsjs/go/admin/AdminApp";
+import {
+  ConfigurarPrimeiroArranque,
+  ObterPresetsNegocio,
+  EscolherCopiaParaRestaurar,
+  PrepararRestauroCopia,
+} from "../wailsjs/go/admin/AdminApp";
 import { admin, domain } from "../wailsjs/go/models";
+import { FolderOpenIcon, CheckIcon, ArrowUturnLeftIcon } from "@heroicons/react/24/outline";
+import { noAndroid, reiniciarApp } from "./plataforma";
 
 const TAMANHO_MAXIMO_LOGO = 1.5 * 1024 * 1024;
 
@@ -80,6 +87,27 @@ export default function Configurar({ onConcluido }: { onConcluido: () => void })
       .finally(() => setAGuardar(false));
   }
 
+  // Mensagem do restauro em curso (substitui o link enquanto existe).
+  const [aRestaurar, setARestaurar] = useState<string | null>(null);
+
+  async function restaurar() {
+    setErro(null);
+    try {
+      const caminho = await EscolherCopiaParaRestaurar();
+      if (!caminho) return;
+      const m = await PrepararRestauroCopia(caminho);
+      const data = new Date(String(m.CriadaEm)).toLocaleString("pt-PT");
+      if (noAndroid) {
+        setARestaurar(`Cópia de ${data} pronta. A aplicação vai reiniciar…`);
+        setTimeout(reiniciarApp, 1500);
+      } else {
+        setARestaurar(`Cópia de ${data} pronta. Feche e volte a abrir a administração para concluir.`);
+      }
+    } catch (e) {
+      setErro(String(e).replace(/^Error:\s*/, ""));
+    }
+  }
+
   const podeSubmeter =
     negocioNome.trim() !== "" &&
     tipoNegocio !== "" &&
@@ -131,6 +159,7 @@ export default function Configurar({ onConcluido }: { onConcluido: () => void })
             <div className="config-logo-preview config-logo-preview--vazio" />
           )}
           <button type="button" className="config-logo-botao" onClick={() => ficheiroRef.current?.click()}>
+            <FolderOpenIcon className="btn-icone" aria-hidden="true" />
             {logo ? "Trocar logótipo" : "Escolher logótipo (opcional)"}
           </button>
           <input ref={ficheiroRef} type="file" accept="image/*" hidden onChange={escolherLogo} />
@@ -166,8 +195,23 @@ export default function Configurar({ onConcluido }: { onConcluido: () => void })
         </label>
 
         <button className="login-botao" type="submit" disabled={!podeSubmeter}>
+          <CheckIcon className="btn-icone" aria-hidden="true" />
           {aGuardar ? "A configurar…" : "Concluir"}
         </button>
+
+        {/* Terminal novo ou reposto: a loja volta de uma cópia de segurança,
+            sem criar primeiro uma loja vazia. */}
+        <div className="config-restaurar">
+          {aRestaurar ?? (
+            <>
+              Já tem uma cópia de segurança?{" "}
+              <button type="button" className="config-restaurar-link" onClick={restaurar}>
+                <ArrowUturnLeftIcon className="btn-icone" aria-hidden="true" />
+                Restaurar
+              </button>
+            </>
+          )}
+        </div>
       </form>
     </div>
   );

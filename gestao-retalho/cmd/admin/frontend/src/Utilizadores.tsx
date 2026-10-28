@@ -10,6 +10,7 @@ import {
 import { usecase } from "../wailsjs/go/models";
 import Breadcrumb from "./Breadcrumb";
 import Modal from "./Modal";
+import { PlusIcon, PencilIcon, KeyIcon, XMarkIcon, PowerIcon } from "@heroicons/react/24/outline";
 
 const PIN_VALIDO = /^[0-9]{4,6}$/;
 
@@ -21,17 +22,30 @@ type ModalEstado =
 
 /**
  * Operadores do PDV: quem vende e o PIN com que se identifica ao abrir o
- * PDV. Com pelo menos um operador ativo, o PDV pergunta sempre quem está a
- * vender, e cada venda fica com o seu nome. O login completo continua a ser
- * só o do administrador, aqui no cmd/admin.
+ * PDV. O PDV pergunta sempre quem está a vender, e cada venda fica com o
+ * seu nome — sem operadores ativos, não vende. O login completo continua a
+ * ser só o do administrador, aqui no cmd/admin.
  */
-export default function UtilizadoresScreen({ onErro }: { onErro: (e: string) => void }) {
+export default function UtilizadoresScreen({
+  onErro,
+  onAtivosMudaram,
+}: {
+  onErro: (e: string) => void;
+  /** Chamado com o nº de operadores ativos sempre que a lista muda. */
+  onAtivosMudaram?: (n: number) => void;
+}) {
   const [operadores, setOperadores] = useState<usecase.Operador[] | null>(null);
   const [modal, setModal] = useState<ModalEstado>({ tipo: "nenhum" });
 
-  function carregar() {
+  function carregar(primeiraVez = false) {
     ListarOperadores()
-      .then(setOperadores)
+      .then((ops) => {
+        setOperadores(ops);
+        const n = ops.filter((o) => o.Ativo).length;
+        onAtivosMudaram?.(n);
+        // Loja sem ninguém para vender: o formulário abre logo.
+        if (primeiraVez && ops.length === 0) setModal({ tipo: "novo" });
+      })
       .catch((e) => {
         setOperadores([]);
         onErro(String(e));
@@ -39,7 +53,7 @@ export default function UtilizadoresScreen({ onErro }: { onErro: (e: string) => 
   }
 
   useEffect(() => {
-    carregar();
+    carregar(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- carga inicial
   }, []);
 
@@ -50,7 +64,16 @@ export default function UtilizadoresScreen({ onErro }: { onErro: (e: string) => 
   };
 
   function alternar(op: usecase.Operador) {
-    (op.Ativo ? DesativarOperador(op.ID) : AtivarOperador(op.ID)).then(carregar).catch((e) => onErro(String(e)));
+    if (
+      op.Ativo &&
+      ativos === 1 &&
+      !window.confirm(`${op.Nome} é o último operador ativo. Sem operadores, o PDV deixa de vender. Desativar mesmo assim?`)
+    ) {
+      return;
+    }
+    (op.Ativo ? DesativarOperador(op.ID) : AtivarOperador(op.ID))
+      .then(() => carregar())
+      .catch((e) => onErro(String(e)));
   }
 
   const lista = [...(operadores ?? [])].sort(
@@ -69,14 +92,15 @@ export default function UtilizadoresScreen({ onErro }: { onErro: (e: string) => 
           </div>
         </div>
         <button className="admin-btn" onClick={() => setModal({ tipo: "novo" })}>
-          + Novo operador
+          <PlusIcon className="btn-icone" aria-hidden="true" />
+          Novo operador
         </button>
       </div>
 
       <p className={`admin-inventario-aviso ${ativos > 0 ? "ok" : "warn"}`} style={{ margin: 0 }}>
         {ativos > 0
           ? `O PDV pede o operador e o PIN antes de vender (${ativos} operador${ativos === 1 ? "" : "es"} ativo${ativos === 1 ? "" : "s"}).`
-          : "Sem operadores ativos, o PDV vende sem pedir quem é, e tudo fica atribuído ao administrador."}
+          : "Sem operadores ativos o PDV não vende. Crie pelo menos um, com o PIN que essa pessoa vai usar no PDV."}
       </p>
 
       <table className="admin-tabela">
@@ -108,12 +132,15 @@ export default function UtilizadoresScreen({ onErro }: { onErro: (e: string) => 
               </td>
               <td className="admin-fichas-acoes">
                 <button className="admin-btn-secundario" onClick={() => setModal({ tipo: "renomear", operador: op })}>
+                  <PencilIcon className="btn-icone" aria-hidden="true" />
                   Mudar nome
                 </button>
                 <button className="admin-btn-secundario" onClick={() => setModal({ tipo: "pin", operador: op })}>
+                  <KeyIcon className="btn-icone" aria-hidden="true" />
                   Novo PIN
                 </button>
                 <button className="admin-btn-secundario" onClick={() => alternar(op)}>
+                  <PowerIcon className="btn-icone" aria-hidden="true" />
                   {op.Ativo ? "Desativar" : "Ativar"}
                 </button>
               </td>
@@ -248,6 +275,7 @@ function FormOperador({
           {aGuardar ? "A guardar…" : textoBotao}
         </button>
         <button className="admin-btn-secundario" onClick={onCancelar}>
+          <XMarkIcon className="btn-icone" aria-hidden="true" />
           Cancelar
         </button>
       </div>

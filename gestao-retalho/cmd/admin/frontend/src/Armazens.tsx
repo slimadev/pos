@@ -8,6 +8,10 @@ import {
   PauseCircleIcon,
   ShoppingCartIcon,
   NoSymbolIcon,
+  PlusIcon,
+  PencilSquareIcon,
+  XMarkIcon,
+  PowerIcon,
 } from "@heroicons/react/24/outline";
 import { ListarArmazens, CriarArmazem, AtualizarArmazem, AtivarArmazem, DesativarArmazem } from "../wailsjs/go/admin/AdminApp";
 import { domain } from "../wailsjs/go/models";
@@ -71,7 +75,8 @@ export default function ArmazensScreen({ onErro }: { onErro: (e: string) => void
           <div className="admin-ecra-header">
             <h2 style={{ margin: 0 }}>Armazéns</h2>
             <button className="admin-btn" onClick={() => setVista({ tipo: "form", armazem: null })}>
-              + Criar armazém
+              <PlusIcon className="btn-icone" aria-hidden="true" />
+              Criar armazém
             </button>
           </div>
 
@@ -110,9 +115,11 @@ export default function ArmazensScreen({ onErro }: { onErro: (e: string) => void
                     </div>
                     <div className="admin-armazem-card-acoes">
                       <button className="admin-btn-secundario" onClick={() => setVista({ tipo: "form", armazem: a })}>
+                        <PencilSquareIcon className="btn-icone" aria-hidden="true" />
                         Editar
                       </button>
                       <button className="admin-btn-secundario" onClick={() => alternarAtivo(a)}>
+                        <PowerIcon className="btn-icone" aria-hidden="true" />
                         {a.Ativo ? "Desativar" : "Ativar"}
                       </button>
                     </div>
@@ -216,6 +223,7 @@ function ArmazemForm({
           {aGuardar ? "A guardar…" : armazem ? "Guardar alterações" : "+ Criar armazém"}
         </button>
         <button className="admin-btn-secundario" onClick={onCancelar}>
+          <XMarkIcon className="btn-icone" aria-hidden="true" />
           Cancelar
         </button>
       </div>

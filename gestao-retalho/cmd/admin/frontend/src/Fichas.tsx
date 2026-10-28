@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
-import { ExclamationTriangleIcon, TrashIcon } from "@heroicons/react/24/outline";
+import {
+  ExclamationTriangleIcon,
+  TrashIcon,
+  BoltIcon,
+  DocumentDuplicateIcon,
+  PlusIcon,
+  XMarkIcon,
+  CheckIcon,
+} from "@heroicons/react/24/outline";
 import {
   ListarArmazens,
   ListarProdutos,
@@ -205,15 +213,18 @@ function ListaFichas({
                 </td>
                 <td className="admin-fichas-acoes">
                   <button className="admin-btn-secundario" onClick={() => onEditar(f)}>
+                    <CheckIcon className="btn-icone" aria-hidden="true" />
                     {temReceita ? "Editar receita" : "Criar receita"}
                   </button>
                   {!composto && temReceita && (
                     <button className="admin-btn" onClick={() => setModal({ tipo: "produzir", ficha: f })}>
+                      <BoltIcon className="btn-icone" aria-hidden="true" />
                       Produzir
                     </button>
                   )}
                   {temReceita && (
                     <button className="admin-btn-secundario" onClick={() => setModal({ tipo: "duplicar", ficha: f })}>
+                      <DocumentDuplicateIcon className="btn-icone" aria-hidden="true" />
                       Duplicar
                     </button>
                   )}
@@ -414,7 +425,8 @@ function EditorReceita({
           className="admin-btn-secundario"
           onClick={() => setLinhas((ls) => [...ls, { chave: ++proximaChave, ingredienteID: "", quantidade: "", perda: "" }])}
         >
-          + Adicionar ingrediente
+          <PlusIcon className="btn-icone" aria-hidden="true" />
+          Adicionar ingrediente
         </button>
       </div>
       <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.85rem" }}>
@@ -443,9 +455,11 @@ function EditorReceita({
 
       <div className="admin-form">
         <button className="admin-btn" disabled={!podeGuardar} onClick={guardar}>
+          <CheckIcon className="btn-icone" aria-hidden="true" />
           {aGuardar ? "A guardar…" : "Guardar receita"}
         </button>
         <button className="admin-btn-secundario" onClick={onGuardada}>
+          <XMarkIcon className="btn-icone" aria-hidden="true" />
           Cancelar
         </button>
       </div>
@@ -501,9 +515,11 @@ function Produzir({
       )}
       <div className="admin-form">
         <button className="admin-btn" disabled={!valido || aGuardar} onClick={produzir}>
+          <BoltIcon className="btn-icone" aria-hidden="true" />
           {aGuardar ? "A produzir…" : "Produzir"}
         </button>
         <button className="admin-btn-secundario" onClick={onCancelar}>
+          <XMarkIcon className="btn-icone" aria-hidden="true" />
           Cancelar
         </button>
       </div>
@@ -563,9 +579,11 @@ function Duplicar({
       )}
       <div className="admin-form">
         <button className="admin-btn" disabled={destinoID === "" || aGuardar} onClick={duplicar}>
+          <DocumentDuplicateIcon className="btn-icone" aria-hidden="true" />
           {aGuardar ? "A copiar…" : "Duplicar receita"}
         </button>
         <button className="admin-btn-secundario" onClick={onCancelar}>
+          <XMarkIcon className="btn-icone" aria-hidden="true" />
           Cancelar
         </button>
       </div>

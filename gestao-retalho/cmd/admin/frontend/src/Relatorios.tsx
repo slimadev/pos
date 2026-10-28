@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { ArrowDownTrayIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowDownTrayIcon,
+  ExclamationTriangleIcon,
+  MagnifyingGlassIcon,
+  CalendarDaysIcon,
+  CalendarIcon,
+} from "@heroicons/react/24/outline";
 import {
   ListarArmazens,
   RelatorioVendasPorPeriodo,
@@ -221,15 +227,19 @@ export default function RelatoriosScreen({
                 </select>
               )}
               <button className="admin-btn" disabled={!desde || !ate} onClick={() => consultar()}>
+                <MagnifyingGlassIcon className="btn-icone" aria-hidden="true" />
                 Consultar
               </button>
               <button className="admin-btn-secundario" onClick={() => atalho(0)}>
+                <CalendarDaysIcon className="btn-icone" aria-hidden="true" />
                 Hoje
               </button>
               <button className="admin-btn-secundario" onClick={() => atalho(6)}>
+                <CalendarIcon className="btn-icone" aria-hidden="true" />
                 7 dias
               </button>
               <button className="admin-btn-secundario" onClick={() => atalho(29)}>
+                <CalendarIcon className="btn-icone" aria-hidden="true" />
                 30 dias
               </button>
             </div>

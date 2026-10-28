@@ -1,5 +1,14 @@
 import { useEffect, useState } from "react";
-import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import {
+  MagnifyingGlassIcon,
+  ArrowUpTrayIcon,
+  PlusIcon,
+  PencilSquareIcon,
+  DocumentDuplicateIcon,
+  TrashIcon,
+  XMarkIcon,
+  PowerIcon,
+} from "@heroicons/react/24/outline";
 import {
   ListarProdutos,
   ListarCategorias,
@@ -13,6 +22,7 @@ import {
   AdicionarUnidadeProduto,
   AtualizarUnidadeProduto,
 } from "../wailsjs/go/admin/AdminApp";
+import { useLeitorCodigo } from "./useLeitorCodigo";
 import { api, domain } from "../wailsjs/go/models";
 import Breadcrumb from "./Breadcrumb";
 import Modal from "./Modal";
@@ -59,6 +69,8 @@ export default function ProdutosScreen({ onErro }: { onErro: (e: string) => void
   const [importar, setImportar] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
   const [pesquisa, setPesquisa] = useState("");
+  // Ler um código no terminal procura o produto (a pesquisa aceita códigos).
+  useLeitorCodigo(setPesquisa);
   const [categoriaFiltro, setCategoriaFiltro] = useState<number | "" | "sem">("");
   const [estado, setEstado] = useState<FiltroEstado>("ativos");
 
@@ -113,10 +125,12 @@ export default function ProdutosScreen({ onErro }: { onErro: (e: string) => void
         <h2 style={{ margin: 0 }}>Produtos</h2>
         <div className="admin-form">
           <button className="admin-btn-secundario" onClick={() => setImportar(true)}>
+            <ArrowUpTrayIcon className="btn-icone" aria-hidden="true" />
             Importar do Excel
           </button>
           <button className="admin-btn" onClick={() => setModal({ aberto: true, produto: null })}>
-            + Criar produto
+            <PlusIcon className="btn-icone" aria-hidden="true" />
+            Criar produto
           </button>
         </div>
       </div>
@@ -217,12 +231,15 @@ export default function ProdutosScreen({ onErro }: { onErro: (e: string) => void
                 <td>
                   <div className="admin-acoes">
                     <button className="admin-btn-secundario" onClick={() => setModal({ aberto: true, produto: p })}>
+                      <PencilSquareIcon className="btn-icone" aria-hidden="true" />
                       Editar
                     </button>
                     <button className="admin-btn-secundario" onClick={() => duplicar(p)}>
+                      <DocumentDuplicateIcon className="btn-icone" aria-hidden="true" />
                       Duplicar
                     </button>
                     <button className="admin-btn-secundario" onClick={() => alternarAtivo(p)}>
+                      <PowerIcon className="btn-icone" aria-hidden="true" />
                       {p.Ativo ? "Desativar" : "Ativar"}
                     </button>
                   </div>
@@ -495,13 +512,17 @@ function ProdutoForm({
         <table className="admin-tabela admin-unidades-tabela">
           <thead>
             <tr>
-              <th>Nome</th>
+              <th data-rotulo="Nome da unidade">Nome</th>
               <th>Contém ({base})</th>
               <th>Preço de custo</th>
               <th>Preço de venda</th>
               <th>Código de barras</th>
-              <th title="Unidade usada por defeito na venda">Venda</th>
-              <th title="Unidade usada por defeito na compra">Compra</th>
+              <th title="Unidade usada por defeito na venda" data-rotulo="Padrão na venda">
+                Venda
+              </th>
+              <th title="Unidade usada por defeito na compra" data-rotulo="Padrão na compra">
+                Compra
+              </th>
               <th></th>
             </tr>
           </thead>
@@ -572,6 +593,7 @@ function ProdutoForm({
                       className="admin-btn-secundario"
                       onClick={() => setLinhas((prev) => prev.filter((x) => x.chave !== u.chave))}
                     >
+                      <TrashIcon className="btn-icone" aria-hidden="true" />
                       Remover
                     </button>
                   )}
@@ -587,7 +609,8 @@ function ProdutoForm({
         </table>
         <div>
           <button className="admin-btn-secundario" onClick={() => setLinhas((prev) => [...prev, unidadeVazia(false)])}>
-            + Adicionar unidade
+            <PlusIcon className="btn-icone" aria-hidden="true" />
+            Adicionar unidade
           </button>
         </div>
       </div>
@@ -603,6 +626,7 @@ function ProdutoForm({
           {aGuardar ? "A guardar…" : produto ? "Guardar alterações" : "+ Criar produto"}
         </button>
         <button className="admin-btn-secundario" onClick={onCancelar}>
+          <XMarkIcon className="btn-icone" aria-hidden="true" />
           Cancelar
         </button>
       </div>

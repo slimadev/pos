@@ -13,6 +13,14 @@ import Breadcrumb from "./Breadcrumb";
 import Modal from "./Modal";
 import ImportarProdutosAssistente from "./ImportarProdutos";
 
+import {
+  PlusIcon,
+  PencilSquareIcon,
+  ArrowsPointingInIcon,
+  ArrowUpTrayIcon,
+  XMarkIcon,
+  PowerIcon,
+} from "@heroicons/react/24/outline";
 type ModalEstado =
   | { aberto: false }
   | { aberto: true; categoria: domain.Categoria | null }
@@ -77,7 +85,8 @@ export default function CategoriasScreen({ onErro }: { onErro: (e: string) => vo
       <div className="admin-ecra-header">
         <h2 style={{ margin: 0 }}>Categorias</h2>
         <button className="admin-btn" onClick={() => setModal({ aberto: true, categoria: null })}>
-          + Criar categoria
+          <PlusIcon className="btn-icone" aria-hidden="true" />
+          Criar categoria
         </button>
       </div>
 
@@ -112,19 +121,23 @@ export default function CategoriasScreen({ onErro }: { onErro: (e: string) => vo
               <td>
                 <div className="admin-acoes">
                   <button className="admin-btn-secundario" onClick={() => setModal({ aberto: true, categoria: c })}>
+                    <PencilSquareIcon className="btn-icone" aria-hidden="true" />
                     Editar
                   </button>
                   {c.Ativo && ativas.length > 1 && (
                     <button className="admin-btn-secundario" onClick={() => setModal({ aberto: true, juntar: c })}>
+                      <ArrowsPointingInIcon className="btn-icone" aria-hidden="true" />
                       Juntar com…
                     </button>
                   )}
                   {c.Ativo && (
                     <button className="admin-btn-secundario" onClick={() => setModal({ aberto: true, importar: c })}>
+                      <ArrowUpTrayIcon className="btn-icone" aria-hidden="true" />
                       Importar Excel
                     </button>
                   )}
                   <button className="admin-btn-secundario" onClick={() => alternarAtivo(c)}>
+                    <PowerIcon className="btn-icone" aria-hidden="true" />
                     {c.Ativo ? "Desativar" : "Ativar"}
                   </button>
                 </div>
@@ -257,6 +270,7 @@ function CategoriaForm({
           {aGuardar ? "A guardar…" : categoria ? "Guardar alterações" : "+ Criar categoria"}
         </button>
         <button className="admin-btn-secundario" onClick={onCancelar}>
+          <XMarkIcon className="btn-icone" aria-hidden="true" />
           Cancelar
         </button>
       </div>
@@ -326,9 +340,11 @@ function JuntarForm({
       </label>
       <div className="admin-form">
         <button className="admin-btn" disabled={destinoID === "" || aJuntar} onClick={juntar}>
+          <ArrowsPointingInIcon className="btn-icone" aria-hidden="true" />
           {aJuntar ? "A juntar…" : "Juntar"}
         </button>
         <button className="admin-btn-secundario" onClick={onCancelar}>
+          <XMarkIcon className="btn-icone" aria-hidden="true" />
           Cancelar
         </button>
       </div>

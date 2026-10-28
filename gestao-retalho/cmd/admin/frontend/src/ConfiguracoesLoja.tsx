@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { AtualizarIdentidadeLoja } from "../wailsjs/go/admin/AdminApp";
 import { admin, usecase } from "../wailsjs/go/models";
+import { TrashIcon, XMarkIcon, FolderOpenIcon, CheckIcon } from "@heroicons/react/24/outline";
 
 const TAMANHO_MAXIMO_LOGO = 1.5 * 1024 * 1024;
 const lerNumero = (s: string) => Number(s.trim().replace(",", "."));
@@ -98,10 +99,12 @@ export default function ConfiguracoesLoja({
           )}
           <div className="admin-form">
             <button className="admin-btn-secundario" onClick={() => ficheiroRef.current?.click()}>
+              <FolderOpenIcon className="btn-icone" aria-hidden="true" />
               {logo ? "Trocar logótipo" : "Escolher logótipo"}
             </button>
             {logo && (
               <button className="admin-btn-secundario" onClick={() => setLogo("")}>
+                <TrashIcon className="btn-icone" aria-hidden="true" />
                 Remover
               </button>
             )}
@@ -152,9 +155,11 @@ export default function ConfiguracoesLoja({
 
       <div className="admin-form">
         <button className="admin-btn" disabled={!podeGuardar} onClick={guardar}>
+          <CheckIcon className="btn-icone" aria-hidden="true" />
           {aGuardar ? "A guardar…" : "Guardar"}
         </button>
         <button className="admin-btn-secundario" onClick={onCancelar}>
+          <XMarkIcon className="btn-icone" aria-hidden="true" />
           Cancelar
         </button>
       </div>

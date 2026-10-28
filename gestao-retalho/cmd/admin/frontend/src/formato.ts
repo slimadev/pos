@@ -27,3 +27,14 @@ export const num = (n: number, casas = 3) => formatar(n, 0, casas);
 
 /** Percentagem com uma casa: "35,7%". */
 export const pct = (n: number) => `${formatar(n, 1, 1)}%`;
+
+const ROTULO_TIPO_NEGOCIO: Record<string, string> = {
+  ferragem: "Ferragem",
+  mercearia: "Mercearia",
+  farmacia: "Farmácia",
+  bottlestore: "Bottlestore",
+  personalizado: "Personalizado",
+};
+
+/** Nome do tipo de negócio para mostrar ("farmacia" → "Farmácia"). */
+export const rotuloTipoNegocio = (tipo: string) => ROTULO_TIPO_NEGOCIO[tipo] ?? tipo;

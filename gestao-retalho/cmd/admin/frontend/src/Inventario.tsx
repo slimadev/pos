@@ -7,12 +7,22 @@ import {
   ListarInventarioItens,
   RegistarContagemInventario,
   FecharInventario,
+  ListarTodasUnidades,
 } from "../wailsjs/go/admin/AdminApp";
 import { domain } from "../wailsjs/go/models";
 import Breadcrumb from "./Breadcrumb";
 import Modal from "./Modal";
 import { num } from "./formato";
+import { useLeitorCodigo } from "./useLeitorCodigo";
 
+import {
+  PlayIcon,
+  LockClosedIcon,
+  ArrowLeftIcon,
+  PlusIcon,
+  ArrowRightIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 const dataHora = (d: unknown) => new Date(String(d)).toLocaleString("pt-PT", { dateStyle: "short", timeStyle: "short" });
 
 type Vista = { tipo: "lista" } | { tipo: "contagem"; inventario: domain.Inventario };
@@ -130,11 +140,13 @@ function ListaInventarios({
           </label>
           {abertoNoArmazem ? (
             <button className="admin-btn" onClick={() => onAbrir(abertoNoArmazem)}>
+              <PlayIcon className="btn-icone" aria-hidden="true" />
               Continuar inventário em curso
             </button>
           ) : (
             <button className="admin-btn" disabled={armazemID === "" || aIniciar} onClick={iniciar}>
-              {aIniciar ? "A iniciar…" : "+ Iniciar inventário"}
+              <PlusIcon className="btn-icone" aria-hidden="true" />
+              {aIniciar ? "A iniciar…" : "Iniciar inventário"}
             </button>
           )}
         </div>
@@ -173,6 +185,7 @@ function ListaInventarios({
               </td>
               <td className="admin-form">
                 <button className="admin-btn-secundario" onClick={() => onAbrir(inv)}>
+                  <ArrowRightIcon className="btn-icone" aria-hidden="true" />
                   {inv.Status === "aberto" ? "Continuar" : "Ver"}
                 </button>
               </td>
@@ -235,6 +248,32 @@ function Contagem({
     setItens((atual) => (atual ?? []).map((i) => (i.ID === novo.ID ? novo : i)));
   }
 
+  // Contar com o leitor: cada código lido soma à contagem do produto — a
+  // unidade lida (ex: caixa de 12) soma as suas unidades base.
+  const [unidades, setUnidades] = useState<domain.UnidadeProduto[]>([]);
+  const [lido, setLido] = useState<string | null>(null);
+  useEffect(() => {
+    if (aberto) ListarTodasUnidades().then(setUnidades).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- uma vez por contagem
+  }, []);
+  useLeitorCodigo((codigo) => {
+    if (!aberto) return;
+    const u = unidades.find((x) => x.CodigoBarras === codigo);
+    const item = u && lista.find((i) => i.ProdutoID === u.ProdutoID);
+    if (!u || !item) {
+      onErro(`O código ${codigo} não corresponde a nenhum produto deste inventário.`);
+      return;
+    }
+    const nova = (item.QuantidadeContada ?? 0) + (u.QtdEmUnidadeBase || 1);
+    RegistarContagemInventario(item.ID, nova)
+      .then((i) => {
+        atualizarItem(i);
+        const p = produtoDe(i.ProdutoID);
+        setLido(`${p?.Nome ?? "Produto"}: ${num(nova)} ${p?.UnidadeBase ?? ""} contado(s)`);
+      })
+      .catch((e) => onErro(String(e)));
+  });
+
   function fechar() {
     setAFechar(true);
     FecharInventario(inventario.ID)
@@ -264,6 +303,7 @@ function Contagem({
         </div>
         {aberto && (
           <button className="admin-btn" disabled={itens === null || contados === 0} onClick={() => setConfirmarFecho(true)}>
+            <LockClosedIcon className="btn-icone" aria-hidden="true" />
             Fechar inventário
           </button>
         )}
@@ -274,6 +314,8 @@ function Contagem({
           Inventário fechado — {ajustesGerados === 0 ? "sem diferenças a ajustar" : `${ajustesGerados} movimento(s) de ajuste gerado(s)`}.
         </div>
       )}
+
+      {lido && <div className="admin-inventario-aviso ok">{lido}</div>}
 
       <div className="admin-inventario-resumo">
         <span>
@@ -331,7 +373,14 @@ function Contagem({
                 </td>
                 <td>
                   {aberto ? (
-                    <CampoContagem item={item} onGuardado={atualizarItem} onErro={onErro} />
+                    // A chave muda com a contagem: uma leitura pelo leitor
+                    // atualiza o valor mostrado no campo.
+                    <CampoContagem
+                      key={`${item.ID}-${item.QuantidadeContada ?? ""}`}
+                      item={item}
+                      onGuardado={atualizarItem}
+                      onErro={onErro}
+                    />
                   ) : item.QuantidadeContada != null ? (
                     num(item.QuantidadeContada)
                   ) : (
@@ -361,9 +410,11 @@ function Contagem({
             )}
             <div className="admin-form">
               <button className="admin-btn" disabled={aFechar} onClick={fechar}>
+                <XMarkIcon className="btn-icone" aria-hidden="true" />
                 {aFechar ? "A fechar…" : "Fechar e ajustar stock"}
               </button>
               <button className="admin-btn-secundario" onClick={() => setConfirmarFecho(false)}>
+                <ArrowLeftIcon className="btn-icone" aria-hidden="true" />
                 Voltar à contagem
               </button>
             </div>

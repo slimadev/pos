@@ -1,6 +1,8 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { Login as EntrarBinding } from "../wailsjs/go/admin/AdminApp";
+import { ArrowRightEndOnRectangleIcon } from "@heroicons/react/24/outline";
+import { rotuloTipoNegocio } from "./formato";
 
 /**
  * Login do cmd/admin — o único de todo o sistema (decisão pós-Fase 10, a
@@ -38,7 +40,7 @@ export default function Login({
       <form className="login-card" onSubmit={entrar}>
         {loja?.Logo ? <img src={loja.Logo} alt="" className="login-logo login-logo-imagem" /> : <div className="login-logo" />}
         <h1 className="login-titulo">{loja?.Nome ?? "Administração"}</h1>
-        {loja && <div className="login-tipo">{loja.TipoNegocio}</div>}
+        {loja && <div className="login-tipo">{rotuloTipoNegocio(loja.TipoNegocio)}</div>}
         <p className="login-sub">Inicie sessão para continuar</p>
 
         {erro && <div className="login-erro">{erro}</div>}
@@ -63,6 +65,7 @@ export default function Login({
         </label>
 
         <button className="login-botao" type="submit" disabled={aEntrar || !username.trim() || !password}>
+          <ArrowRightEndOnRectangleIcon className="btn-icone" aria-hidden="true" />
           {aEntrar ? "A entrar…" : "Entrar"}
         </button>
       </form>

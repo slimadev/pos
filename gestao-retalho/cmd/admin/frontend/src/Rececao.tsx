@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { MagnifyingGlassIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { MagnifyingGlassIcon, TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { ListarTodasUnidades, RegistarRececaoMercadoria } from "../wailsjs/go/admin/AdminApp";
+import { useLeitorCodigo } from "./useLeitorCodigo";
 import { domain, usecase } from "../wailsjs/go/models";
 import { mt, num } from "./formato";
 
@@ -70,6 +71,14 @@ export default function Rececao({
     ]);
     setPesquisa("");
   }
+
+  // Leitor do terminal (sem campo focado): o código lido acrescenta a linha.
+  useLeitorCodigo((codigo) => {
+    const u = unidades.find((x) => (x.CodigoBarras ?? "").toLowerCase() === codigo.toLowerCase());
+    const p = u && elegiveis.find((x) => x.ID === u.ProdutoID);
+    if (p && u) adicionar(p, u);
+    else onErro(`O código ${codigo} não corresponde a nenhum produto com controlo de stock.`);
+  });
 
   // Enter com um código de barras exato (leitor) acrescenta logo a linha.
   function aoTeclar(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -262,6 +271,7 @@ export default function Rececao({
           {aGuardar ? "A registar…" : `Registar receção${linhas.length ? ` (${linhas.length} produto(s))` : ""}`}
         </button>
         <button className="admin-btn-secundario" onClick={onCancelar}>
+          <XMarkIcon className="btn-icone" aria-hidden="true" />
           Cancelar
         </button>
       </div>

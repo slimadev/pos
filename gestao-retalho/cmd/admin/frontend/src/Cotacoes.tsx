@@ -1,5 +1,16 @@
 import { useEffect, useState } from "react";
-import { DocumentArrowDownIcon, MagnifyingGlassIcon, TrashIcon } from "@heroicons/react/24/outline";
+import {
+  DocumentArrowDownIcon,
+  MagnifyingGlassIcon,
+  TrashIcon,
+  PlusIcon,
+  ArrowTopRightOnSquareIcon,
+  XMarkIcon,
+  NoSymbolIcon,
+  ShoppingCartIcon,
+  EyeIcon,
+  CheckIcon,
+} from "@heroicons/react/24/outline";
 import {
   ListarCotacoes,
   ObterCotacao,
@@ -103,7 +114,8 @@ function Lista({
           <div className="admin-texto-fraco">Orçamentos para o cliente — não mexem no stock até virarem venda.</div>
         </div>
         <button className="admin-btn" onClick={onNova}>
-          + Nova cotação
+          <PlusIcon className="btn-icone" aria-hidden="true" />
+          Nova cotação
         </button>
       </div>
       <div className="admin-form">
@@ -141,6 +153,7 @@ function Lista({
               <td>
                 <div className="admin-acoes">
                   <button className="admin-btn-secundario" onClick={() => onAbrir(c.Cotacao.ID)}>
+                    <ArrowTopRightOnSquareIcon className="btn-icone" aria-hidden="true" />
                     Abrir
                   </button>
                 </div>
@@ -442,9 +455,11 @@ function NovaCotacao({
 
       <div className="admin-form">
         <button className="admin-btn" disabled={!podeGuardar} onClick={guardar}>
+          <CheckIcon className="btn-icone" aria-hidden="true" />
           {aGuardar ? "A criar…" : "Criar cotação"}
         </button>
         <button className="admin-btn-secundario" onClick={onCancelar}>
+          <XMarkIcon className="btn-icone" aria-hidden="true" />
           Cancelar
         </button>
       </div>
@@ -500,9 +515,11 @@ function VerCotacao({ id, onNavegar, onErro }: { id: number; onNavegar: Navegar;
           {aberta && (
             <>
               <button className="admin-btn-secundario admin-btn-perigo-contorno" onClick={cancelar}>
+                <NoSymbolIcon className="btn-icone" aria-hidden="true" />
                 Cancelar cotação
               </button>
               <button className="admin-btn" onClick={() => setConverter(true)}>
+                <ShoppingCartIcon className="btn-icone" aria-hidden="true" />
                 Converter em venda
               </button>
             </>
@@ -513,7 +530,10 @@ function VerCotacao({ id, onNavegar, onErro }: { id: number; onNavegar: Navegar;
       {aviso && (
         <div className="admin-aviso-ok">
           {aviso}
-          <button onClick={() => onNavegar({ ecra: "vendas" })}>Ver em Vendas</button>
+          <button onClick={() => onNavegar({ ecra: "vendas" })}>
+            <EyeIcon className="btn-icone" aria-hidden="true" />
+            Ver em Vendas
+          </button>
         </div>
       )}
 
@@ -698,9 +718,11 @@ function ConverterForm({
       ) : null}
       <div className="admin-form">
         <button className="admin-btn" disabled={!podeConverter} onClick={converter}>
+          <CheckIcon className="btn-icone" aria-hidden="true" />
           {aConverter ? "A registar…" : "Registar venda"}
         </button>
         <button className="admin-btn-secundario" onClick={onCancelar}>
+          <XMarkIcon className="btn-icone" aria-hidden="true" />
           Cancelar
         </button>
       </div>

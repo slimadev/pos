@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { DocumentArrowDownIcon, TableCellsIcon } from "@heroicons/react/24/outline";
+import {
+  DocumentArrowDownIcon,
+  TableCellsIcon,
+  DocumentCheckIcon,
+  PowerIcon,
+} from "@heroicons/react/24/outline";
 import {
   EstadoFaturacao,
   DefinirFaturacaoAtiva,
@@ -105,6 +110,7 @@ export default function FaturasScreen({ onErro }: { onErro: (e: string) => void 
             disabled={aMudar}
             onClick={() => mudarEstado(!estado.Ativa)}
           >
+            <PowerIcon className="btn-icone" aria-hidden="true" />
             {estado.Ativa ? "Desligar" : "Ligar emissão"}
           </button>
         </div>
@@ -118,6 +124,7 @@ export default function FaturasScreen({ onErro }: { onErro: (e: string) => void 
               <span key={v.VendaID}>
                 Venda #{v.VendaID} · {mt(v.Total)}{" "}
                 <button className="admin-btn-secundario" onClick={() => emitir(v.VendaID)}>
+                  <DocumentCheckIcon className="btn-icone" aria-hidden="true" />
                   Emitir
                 </button>
               </span>

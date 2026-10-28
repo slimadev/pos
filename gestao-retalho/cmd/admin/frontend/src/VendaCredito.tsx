@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { CheckCircleIcon, ExclamationTriangleIcon, PrinterIcon, TrashIcon } from "@heroicons/react/24/outline";
+import {
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  PrinterIcon,
+  TrashIcon,
+  UserIcon,
+  CreditCardIcon,
+} from "@heroicons/react/24/outline";
 import {
   ListarArmazens,
   ListarClientes,
@@ -474,10 +481,12 @@ function Concluida({
         </button>
         {v.ClienteID != null && (
           <button className="admin-btn-secundario" onClick={() => onVerCliente({ ID: v.ClienteID!, Nome: nome })}>
+            <UserIcon className="btn-icone" aria-hidden="true" />
             Ver ficha do cliente
           </button>
         )}
         <button className="admin-btn" onClick={onNova}>
+          <CreditCardIcon className="btn-icone" aria-hidden="true" />
           Nova venda a crédito
         </button>
       </div>

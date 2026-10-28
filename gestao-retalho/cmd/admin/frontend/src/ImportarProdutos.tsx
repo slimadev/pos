@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { ArrowUpTrayIcon, DocumentArrowDownIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowUpTrayIcon,
+  DocumentArrowDownIcon,
+  CheckIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 import {
   EscolherFicheiroExcel,
   AnalisarExcelProdutos,
@@ -262,6 +267,7 @@ export default function ImportarProdutosAssistente({
               Preço = custo +
               <input inputMode="decimal" value={margem} onChange={(e) => setMargem(e.target.value)} />%
               <button className="admin-btn-secundario" onClick={aplicarMargem}>
+                <CheckIcon className="btn-icone" aria-hidden="true" />
                 Aplicar aos sem preço
               </button>
             </span>
@@ -365,6 +371,7 @@ export default function ImportarProdutosAssistente({
           {aImportar ? "A importar…" : `Importar ${aImportarLinhas.length} produto(s)`}
         </button>
         <button className="admin-btn-secundario" onClick={onCancelar}>
+          <XMarkIcon className="btn-icone" aria-hidden="true" />
           Cancelar
         </button>
         {semPreco.length > 0 && (

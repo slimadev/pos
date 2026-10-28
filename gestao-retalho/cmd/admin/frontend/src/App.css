@@ -256,6 +256,39 @@ body {
   min-width: 0;
 }
 
+/* "Último passo": loja sem operadores, o PDV não vende (App.tsx). */
+.admin-ultimo-passo {
+  margin: 16px 24px 0;
+  padding: 12px 16px;
+  border: 1px solid var(--warn);
+  border-radius: 10px;
+  background: var(--warn-bg);
+  color: var(--text);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.admin-ultimo-passo > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.admin-ultimo-passo span {
+  color: var(--text-tertiary);
+}
+.admin-ultimo-passo-icone {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  color: var(--warn);
+}
+.admin-ultimo-passo .admin-btn {
+  flex: none;
+}
+
 .admin-erro {
   margin: 16px 24px 0;
   padding: 10px 14px;
@@ -286,7 +319,7 @@ body {
 .admin-kpis {
   display: grid;
   /* 4 lado a lado em ecrãs largos, 2×2 quando o valor já não cabia. */
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
   gap: 12px;
 }
 
@@ -917,6 +950,79 @@ body {
   width: 14px;
   height: 14px;
   flex-shrink: 0;
+}
+
+/* Configurar.tsx — restaurar uma cópia num terminal/PC novo */
+.config-restaurar {
+  width: 100%;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+.config-restaurar-link {
+  border: none;
+  background: none;
+  padding: 4px;
+  color: var(--accent-hover);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* CopiasSeguranca.tsx (sem flex-wrap: no build do terminal o gap com wrap
+   vira margem negativa e o cartão passava da margem; o layout estreito
+   empilha tudo em mobile.css). */
+.admin-copias-estado,
+.admin-copias-restaurar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.admin-copias-estado {
+  border-color: var(--ok);
+  background: var(--ok-bg);
+}
+.admin-copias-estado.atrasada {
+  border-color: var(--warn);
+  background: var(--warn-bg);
+}
+.admin-copias-estado-icone {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  color: var(--ok);
+}
+.admin-copias-estado.atrasada .admin-copias-estado-icone {
+  color: var(--warn);
+}
+.admin-copias-estado-texto,
+.admin-copias-restaurar > div {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 13px;
+}
+.admin-copias-estado-texto span,
+.admin-copias-restaurar span {
+  color: var(--text-secondary);
+}
+
+/* Ícone à esquerda do texto de um botão (Heroicons outline). Funciona em
+   botões inline (alinha pela linha de texto) e flex (margem fixa). */
+.btn-icone {
+  width: 1.15em;
+  height: 1.15em;
+  flex-shrink: 0;
+  vertical-align: -0.22em;
+  margin-right: 0.45em;
+}
+.btn-icone.a-girar {
+  animation: admin-girar 0.8s linear infinite;
 }
 .admin-btn-icon.a-girar {
   animation: admin-girar 0.8s linear infinite;

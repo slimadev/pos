@@ -8,6 +8,10 @@ import {
   ClockIcon,
   ExclamationTriangleIcon,
   MagnifyingGlassIcon,
+  BanknotesIcon,
+  PlusIcon,
+  XMarkIcon,
+  CheckIcon,
 } from "@heroicons/react/24/outline";
 import {
   ListarArmazens,
@@ -95,7 +99,7 @@ export default function StockScreen({ onNavegar, onErro }: { onNavegar: Navegar;
 
   return (
     <div className="admin-lojas-screen">
-      <nav className="admin-breadcrumb" aria-label="breadcrumb">
+      <nav className="admin-breadcrumb unico" aria-label="breadcrumb">
         <span className="admin-breadcrumb-atual">Stock</span>
       </nav>
 
@@ -117,16 +121,19 @@ export default function StockScreen({ onNavegar, onErro }: { onNavegar: Navegar;
             title="Valor do stock ao custo, para exportar em Excel ou PDF"
             onClick={() => onNavegar({ ecra: "relatorios", relatorio: "stock" })}
           >
+            <BanknotesIcon className="btn-icone" aria-hidden="true" />
             Valor do stock / exportar
           </button>
           {produtos.some((p) => p.LoteControlado) && armazemID !== "" && (
             <button className="admin-btn-secundario" onClick={() => setModal({ aberto: true, entradaEmLote: true })}>
-              + Entrada em lote
+              <PlusIcon className="btn-icone" aria-hidden="true" />
+              Entrada em lote
             </button>
           )}
           {armazemID !== "" && (
             <button className="admin-btn" onClick={() => setModal({ aberto: true, rececao: true })}>
-              + Receção de mercadoria
+              <PlusIcon className="btn-icone" aria-hidden="true" />
+              Receção de mercadoria
             </button>
           )}
         </div>
@@ -315,7 +322,8 @@ function TabelaStock({
                 </td>
                 <td className="admin-acoes">
                   <button className="admin-btn-secundario" onClick={() => onAbrirMovimento(produto)}>
-                    + Movimento
+                    <PlusIcon className="btn-icone" aria-hidden="true" />
+                    Movimento
                   </button>
                   <button className="admin-btn-secundario" onClick={() => onAbrirHistorico(produto)}>
                     <ClockIcon className="admin-btn-icon-inline" aria-hidden="true" />
@@ -506,65 +514,83 @@ function MovimentoForm({
       </div>
       {produto.LoteControlado && lotes !== null && <TabelaLotes lotes={lotes} />}
 
+      {/* Rótulos sempre visíveis: os campos vêm preenchidos (1, 0) e um
+          placeholder sozinho desaparecia, deixando números sem nome. */}
       <div className="admin-form">
         {saiDeLote && (
-          <select value={loteID} onChange={(e) => setLoteID(e.target.value ? Number(e.target.value) : "")}>
-            <option value="">Lote…</option>
-            {(lotes ?? []).map((l) => (
-              <option key={l.ID} value={l.ID}>
-                {l.NumeroLote} — validade {String(l.DataValidade).slice(0, 10)} — {num(l.Quantidade)} disponível
-              </option>
-            ))}
-          </select>
+          <label className="admin-campo">
+            Lote
+            <select value={loteID} onChange={(e) => setLoteID(e.target.value ? Number(e.target.value) : "")}>
+              <option value="">Escolher lote…</option>
+              {(lotes ?? []).map((l) => (
+                <option key={l.ID} value={l.ID}>
+                  {l.NumeroLote} — validade {String(l.DataValidade).slice(0, 10)} — {num(l.Quantidade)} disponível
+                </option>
+              ))}
+            </select>
+          </label>
         )}
-        <input
-          placeholder="Quantidade"
-          type="number"
-          min="0"
-          value={quantidade}
-          onChange={(e) => setQuantidade(e.target.value)}
-        />
+        <label className="admin-campo">
+          Quantidade ({produto.UnidadeBase})
+          <input
+            type="number"
+            inputMode="decimal"
+            min="0"
+            value={quantidade}
+            onChange={(e) => setQuantidade(e.target.value)}
+          />
+        </label>
 
         {(tipo === "entrada" || tipo === "entrada_com_lote") && (
-          <input
-            placeholder="Custo unitário"
-            type="number"
-            min="0"
-            value={custoUnitario}
-            onChange={(e) => setCustoUnitario(e.target.value)}
-          />
+          <label className="admin-campo">
+            Custo unitário (MT)
+            <input
+              type="number"
+              inputMode="decimal"
+              min="0"
+              value={custoUnitario}
+              onChange={(e) => setCustoUnitario(e.target.value)}
+            />
+          </label>
         )}
 
         {tipo === "entrada_com_lote" && (
           <>
-            <input placeholder="Número de lote" value={numeroLote} onChange={(e) => setNumeroLote(e.target.value)} />
-            <input
-              placeholder="Validade"
-              type="date"
-              value={validade}
-              onChange={(e) => setValidade(e.target.value)}
-            />
+            <label className="admin-campo">
+              Número de lote
+              <input value={numeroLote} onChange={(e) => setNumeroLote(e.target.value)} />
+            </label>
+            <label className="admin-campo">
+              Validade
+              <input type="date" value={validade} onChange={(e) => setValidade(e.target.value)} />
+            </label>
           </>
         )}
 
         {tipo === "transferencia" && (
-          <select
-            value={armazemDestinoID}
-            onChange={(e) => setArmazemDestinoID(e.target.value ? Number(e.target.value) : "")}
-          >
-            <option value="">Armazém destino…</option>
-            {armazens
-              .filter((a) => a.ID !== armazemAtualID)
-              .map((a) => (
-                <option key={a.ID} value={a.ID}>
-                  {a.Nome}
-                </option>
-              ))}
-          </select>
+          <label className="admin-campo">
+            Armazém de destino
+            <select
+              value={armazemDestinoID}
+              onChange={(e) => setArmazemDestinoID(e.target.value ? Number(e.target.value) : "")}
+            >
+              <option value="">Escolher…</option>
+              {armazens
+                .filter((a) => a.ID !== armazemAtualID)
+                .map((a) => (
+                  <option key={a.ID} value={a.ID}>
+                    {a.Nome}
+                  </option>
+                ))}
+            </select>
+          </label>
         )}
 
         {(tipo === "perda" || tipo === "consumo_interno") && (
-          <input placeholder="Motivo" value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+          <label className="admin-campo">
+            Motivo
+            <input placeholder="ex: partido no transporte" value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+          </label>
         )}
       </div>
 
@@ -574,9 +600,11 @@ function MovimentoForm({
           disabled={Number(quantidade) <= 0 || aGuardar || (saiDeLote && loteID === "")}
           onClick={guardar}
         >
+          <CheckIcon className="btn-icone" aria-hidden="true" />
           {aGuardar ? "A guardar…" : "Registar movimento"}
         </button>
         <button className="admin-btn-secundario" onClick={onCancelar}>
+          <XMarkIcon className="btn-icone" aria-hidden="true" />
           Cancelar
         </button>
       </div>
@@ -701,8 +729,14 @@ function EntradaLoteEmMassa({
   return (
     <div className="admin-armazem-form">
       <div className="admin-form">
-        <input placeholder="Número de lote" value={numeroLote} onChange={(e) => setNumeroLote(e.target.value)} />
-        <input placeholder="Validade" type="date" value={validade} onChange={(e) => setValidade(e.target.value)} />
+        <label className="admin-campo">
+          Número de lote
+          <input value={numeroLote} onChange={(e) => setNumeroLote(e.target.value)} />
+        </label>
+        <label className="admin-campo">
+          Validade
+          <input type="date" value={validade} onChange={(e) => setValidade(e.target.value)} />
+        </label>
       </div>
 
       <table className="admin-tabela">
@@ -776,15 +810,18 @@ function EntradaLoteEmMassa({
 
       <div className="admin-form">
         <button className="admin-btn-secundario" onClick={() => setLinhas((ls) => [...ls, novaLinhaEntradaLote()])}>
-          + Adicionar produto
+          <PlusIcon className="btn-icone" aria-hidden="true" />
+          Adicionar produto
         </button>
       </div>
 
       <div className="admin-form">
         <button className="admin-btn" disabled={aGuardar} onClick={guardar}>
+          <CheckIcon className="btn-icone" aria-hidden="true" />
           {aGuardar ? "A registar…" : "Registar entradas"}
         </button>
         <button className="admin-btn-secundario" onClick={algumSucesso ? onConcluido : onCancelar}>
+          <XMarkIcon className="btn-icone" aria-hidden="true" />
           {algumSucesso ? "Concluir" : "Cancelar"}
         </button>
       </div>

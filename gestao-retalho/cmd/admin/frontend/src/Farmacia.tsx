@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import {
+  ExclamationTriangleIcon,
+  MagnifyingGlassIcon,
+  ClipboardDocumentListIcon,
+  XMarkIcon,
+  LinkIcon,
+} from "@heroicons/react/24/outline";
 import {
   ListarArmazens,
   ListarProdutos,
@@ -38,7 +44,7 @@ export default function FarmaciaScreen({ onErro }: { onErro: (e: string) => void
 
   return (
     <div className="admin-lojas-screen">
-      <nav className="admin-breadcrumb" aria-label="breadcrumb">
+      <nav className="admin-breadcrumb unico" aria-label="breadcrumb">
         <span className="admin-breadcrumb-atual">Farmácia</span>
       </nav>
       <h2 style={{ margin: 0 }}>Farmácia</h2>
@@ -85,6 +91,7 @@ function LotesAVencer({
             dias
           </label>
           <button className="admin-btn-secundario" onClick={() => consultar(Number(dias) || 0)}>
+            <MagnifyingGlassIcon className="btn-icone" aria-hidden="true" />
             Consultar
           </button>
         </div>
@@ -182,6 +189,7 @@ function ReceitasDoDia({ onErro }: { onErro: (e: string) => void }) {
               <td>{mt(v.Total)}</td>
               <td className="admin-form">
                 <button className="admin-btn-secundario" onClick={() => setVendaAberta(v)}>
+                  <ClipboardDocumentListIcon className="btn-icone" aria-hidden="true" />
                   Receitas
                 </button>
               </td>
@@ -274,9 +282,11 @@ function ReceitasDaVenda({
       </div>
       <div className="admin-form">
         <button className="admin-btn" disabled={!medico || !numeroReceita || aGuardar} onClick={guardar}>
+          <LinkIcon className="btn-icone" aria-hidden="true" />
           {aGuardar ? "A guardar…" : "Associar receita"}
         </button>
         <button className="admin-btn-secundario" onClick={onFechar}>
+          <XMarkIcon className="btn-icone" aria-hidden="true" />
           Fechar
         </button>
       </div>

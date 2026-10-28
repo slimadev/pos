@@ -18,8 +18,18 @@ import {
   Cog6ToothIcon,
   DocumentTextIcon,
   ReceiptPercentIcon,
+  Bars3Icon,
+  ShieldCheckIcon,
+  UserPlusIcon,
 } from "@heroicons/react/24/outline";
-import { PrecisaConfigurarAdmin, Logout, ObterLojaAtual, AbrirPDV } from "../wailsjs/go/admin/AdminApp";
+import {
+  PrecisaConfigurarAdmin,
+  Logout,
+  ObterLojaAtual,
+  AbrirPDV,
+  ObterEstadoArranque,
+} from "../wailsjs/go/admin/AdminApp";
+import { noAndroid } from "./plataforma";
 import { admin } from "../wailsjs/go/models";
 import Configurar from "./Configurar";
 import Login from "./Login";
@@ -39,10 +49,12 @@ import CotacoesScreen from "./Cotacoes";
 import FaturasScreen from "./Faturas";
 import FichasScreen from "./Fichas";
 import UtilizadoresScreen from "./Utilizadores";
+import CopiasSegurancaScreen from "./CopiasSeguranca";
 import ConfiguracoesLoja from "./ConfiguracoesLoja";
 import Modal from "./Modal";
+import { rotuloTipoNegocio } from "./formato";
 
-type Ecra = "dashboard" | "produtos" | "categorias" | "armazens" | "stock" | "inventario" | "vendas" | "cotacoes" | "faturas" | "relatorios" | "clientes" | "credito" | "fichas" | "utilizadores" | "farmacia" | "stub";
+type Ecra = "dashboard" | "produtos" | "categorias" | "armazens" | "stock" | "inventario" | "vendas" | "cotacoes" | "faturas" | "relatorios" | "clientes" | "credito" | "fichas" | "utilizadores" | "farmacia" | "copias" | "stub";
 type IconeSvg = ComponentType<SVGProps<SVGSVGElement>>;
 
 /** Destino de navegação entre ecrãs (ex: "Vendas" → "Fecho de caixa"). */
@@ -95,6 +107,7 @@ const NAV: { grupo?: string; itens: ItemNav[] }[] = [
     itens: [
       { chave: "relatorios", nome: "Relatórios", Icone: ChartBarIcon },
       { chave: "utilizadores", nome: "Utilizadores", Icone: UserCircleIcon },
+      { chave: "copias", nome: "Cópias de segurança", Icone: ShieldCheckIcon },
     ],
   },
 ];
@@ -187,21 +200,59 @@ function AdminPrincipal({
   const [configAberta, setConfigAberta] = useState(false);
   const [destino, setDestino] = useState<Destino & { n: number }>({ ecra: "dashboard", n: 0 });
   const ecra = destino.ecra;
-  const navegar: Navegar = (d) => setDestino((atual) => ({ ...d, n: atual.n + 1 }));
+  // Em ecrãs estreitos (terminal Android) a sidebar é uma gaveta que se abre
+  // pelo botão ☰ da barra superior; no desktop isto não tem efeito visível.
+  const [menuAberto, setMenuAberto] = useState(false);
+  const navegar: Navegar = (d) => {
+    setMenuAberto(false);
+    setDestino((atual) => ({ ...d, n: atual.n + 1 }));
+  };
   const [stubNome, setStubNome] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [aAbrirPDV, setAAbrirPDV] = useState(false);
+  // "Venda a crédito" não está no menu (abre-se a partir de Vendas/Clientes).
+  const tituloEcra =
+    ecra === "credito" ? "Venda a crédito" : (NAV.flatMap((g) => g.itens).find((i) => i.chave === ecra)?.nome ?? "");
+
+  // O PDV só vende com operadores: enquanto não houver nenhum, o admin
+  // entra direto em Utilizadores e mostra o "último passo" em todos os ecrãs.
+  const [operadoresAtivos, setOperadoresAtivos] = useState<number | null>(null);
+  useEffect(() => {
+    ObterEstadoArranque()
+      .then((e) => {
+        setOperadoresAtivos(e.OperadoresAtivos);
+        if (e.OperadoresAtivos === 0) navegar({ ecra: "utilizadores" });
+      })
+      .catch(() => setOperadoresAtivos(null));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- só ao entrar
+  }, []);
+  const semOperadores = operadoresAtivos === 0;
 
   function abrirPDV() {
     if (aAbrirPDV) return;
+    if (semOperadores) {
+      navegar({ ecra: "utilizadores" });
+      return;
+    }
     setAAbrirPDV(true);
     AbrirPDV()
       .catch((e) => setErro(String(e)))
       .finally(() => setAAbrirPDV(false));
   }
 
+  // No terminal, sair da administração é voltar ao PDV (com a sessão
+  // terminada). Sem operadores não há PDV para onde voltar: fica no login.
+  const sair = noAndroid && !semOperadores ? abrirPDV : onSair;
+
   return (
-    <div className="admin-shell">
+    <div className={`admin-shell${menuAberto ? " menu-aberto" : ""}`}>
+      <header className="admin-appbar">
+        <button className="admin-appbar-menu" aria-label="Abrir menu" onClick={() => setMenuAberto(true)}>
+          <Bars3Icon className="admin-appbar-menu-icon" aria-hidden="true" />
+        </button>
+        <div className="admin-appbar-titulo">{tituloEcra || loja?.Nome || "Administração"}</div>
+      </header>
+      <div className="admin-gaveta-fundo" onClick={() => setMenuAberto(false)} />
       <aside className="admin-sidebar">
         <div className="admin-sidebar-brand">
           {loja?.Logo ? (
@@ -213,14 +264,17 @@ function AdminPrincipal({
             <div className="admin-sidebar-brand-nome" title={loja?.Nome}>
               {loja?.Nome ?? "Administração"}
             </div>
-            {loja && <div className="admin-sidebar-brand-tag">{loja.TipoNegocio}</div>}
+            {loja && <div className="admin-sidebar-brand-tag">{rotuloTipoNegocio(loja.TipoNegocio)}</div>}
           </div>
           {loja && (
             <button
               className="admin-sidebar-config"
               title="Configurações da loja"
               aria-label="Configurações da loja"
-              onClick={() => setConfigAberta(true)}
+              onClick={() => {
+                setMenuAberto(false);
+                setConfigAberta(true);
+              }}
             >
               <Cog6ToothIcon className="admin-sidebar-config-icon" aria-hidden="true" />
             </button>
@@ -253,9 +307,9 @@ function AdminPrincipal({
             );
           })}
         </nav>
-        <button className="admin-sidebar-item admin-sidebar-sair" onClick={onSair}>
+        <button className="admin-sidebar-item admin-sidebar-sair" onClick={sair}>
           <ArrowRightStartOnRectangleIcon className="admin-sidebar-icon" aria-hidden="true" />
-          Sair
+          {sair === onSair ? "Sair" : "Sair para o PDV"}
         </button>
       </aside>
 
@@ -264,6 +318,22 @@ function AdminPrincipal({
           <div className="admin-erro">
             {erro}
             <button onClick={() => setErro(null)}>×</button>
+          </div>
+        )}
+        {semOperadores && (
+          <div className="admin-ultimo-passo" role="status">
+            <UserPlusIcon className="admin-ultimo-passo-icone" aria-hidden="true" />
+            <div>
+              <strong>Último passo: crie pelo menos um operador.</strong>
+              <span>
+                O PDV só vende com operadores — cada um entra com o seu PIN e as vendas ficam no seu nome.
+              </span>
+            </div>
+            {ecra !== "utilizadores" && (
+              <button className="admin-btn" onClick={() => navegar({ ecra: "utilizadores" })}>
+                Criar operador
+              </button>
+            )}
           </div>
         )}
         <div key={destino.n} className="admin-ecra">
@@ -286,11 +356,12 @@ function AdminPrincipal({
             />
           )}
           {ecra === "fichas" && <FichasScreen onErro={setErro} />}
-          {ecra === "utilizadores" && <UtilizadoresScreen onErro={setErro} />}
+          {ecra === "utilizadores" && <UtilizadoresScreen onErro={setErro} onAtivosMudaram={setOperadoresAtivos} />}
           {ecra === "relatorios" && (
             <RelatoriosScreen tipoNegocio={loja?.TipoNegocio} relatorioInicial={destino.relatorio} onErro={setErro} />
           )}
           {ecra === "farmacia" && <FarmaciaScreen onErro={setErro} />}
+          {ecra === "copias" && <CopiasSegurancaScreen onErro={setErro} />}
         </div>
         {ecra === "stub" && (
           <div className="admin-lojas-screen">
