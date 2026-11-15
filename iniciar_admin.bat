@@ -8,3 +8,4 @@ echo  Iniciando Painel de Administracao (cmd/admin)...
 echo ========================================================
 wails dev
 pause
+

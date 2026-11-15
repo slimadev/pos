@@ -8,3 +8,4 @@ echo  Iniciando Ponto de Venda / PDV (cmd/app)...
 echo ========================================================
 wails dev
 pause
+
