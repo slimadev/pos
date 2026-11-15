@@ -3,6 +3,9 @@ package admin
 import (
 	"context"
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"gestao-retalho/backend/config"
@@ -86,16 +89,17 @@ func (s *LojasService) CriarComWizard(ctx context.Context, p CriarLojaWizardPara
 // vez do azul neutro genérico, e para mostrar o nome real em vez de
 // "Administração".
 type LojaAtual struct {
-	Nome        string
-	TipoNegocio string
-	Tema        string
-	Logo        string // data URL, "" = sem logótipo
-	PapelRecibo string // "80", "58" ou "a5"
-	NUIT        string
-	Endereco    string
-	Telefone    string
-	Email       string
-	TaxaIVA     float64 // em %, 0 = isento
+	Nome          string
+	TipoNegocio   string
+	Tema          string
+	Logo          string // data URL, "" = sem logótipo
+	PapelRecibo   string // "80", "58" ou "a5"
+	NUIT          string
+	Endereco      string
+	Telefone      string
+	Email         string
+	TaxaIVA       float64 // em %, 0 = isento
+	ModulosAtivos []string
 }
 
 func (s *LojasService) ObterAtual(ctx context.Context) (LojaAtual, error) {
@@ -109,18 +113,71 @@ func (s *LojasService) ObterAtual(ctx context.Context) (LojaAtual, error) {
 	if err != nil {
 		return LojaAtual{}, err
 	}
+
+	mods := make([]string, len(estado.ModulosAtivos))
+	for i, m := range estado.ModulosAtivos {
+		mods[i] = string(m)
+	}
+
 	return LojaAtual{
-		Nome:        estado.Negocio.Nome,
-		TipoNegocio: string(estado.Negocio.TipoNegocio),
-		Tema:        string(estado.Tema),
-		Logo:        estado.Logo,
-		PapelRecibo: estado.PapelRecibo,
-		NUIT:        estado.NUIT,
-		Endereco:    estado.Endereco,
-		Telefone:    estado.Telefone,
-		Email:       estado.Email,
-		TaxaIVA:     estado.TaxaIVA,
+		Nome:          estado.Negocio.Nome,
+		TipoNegocio:   string(estado.Negocio.TipoNegocio),
+		Tema:          string(estado.Tema),
+		Logo:          estado.Logo,
+		PapelRecibo:   estado.PapelRecibo,
+		NUIT:          estado.NUIT,
+		Endereco:      estado.Endereco,
+		Telefone:      estado.Telefone,
+		Email:         estado.Email,
+		TaxaIVA:       estado.TaxaIVA,
+		ModulosAtivos: mods,
 	}, nil
+}
+
+// TrocarTipoNegocio alterna a base ativa para a base de dados dedicada do negócio
+// (bottlestore.db, ferragem.db, mercearia.db, farmacia.db), trazendo o catálogo e módulos reais desse negócio.
+func (s *LojasService) TrocarTipoNegocio(ctx context.Context, tipo string) (LojaAtual, error) {
+	loja, existe, err := s.repo.ObterUnica(ctx)
+	if err != nil {
+		return LojaAtual{}, err
+	}
+	if !existe {
+		return LojaAtual{}, fmt.Errorf("nenhuma loja configurada")
+	}
+
+	appData, err := os.UserConfigDir()
+	if err == nil {
+		dirLojas := filepath.Join(appData, "gestao-retalho-admin", "lojas")
+		candidato := filepath.Join(dirLojas, tipo+".db")
+		if _, err := os.Stat(candidato); err == nil {
+			// Nome bonito por omissão
+			nomes := map[string]string{
+				"bottlestore": "Bottlestore & Bar Central",
+				"ferragem":    "Ferragem Cossa & Materiais",
+				"mercearia":   "Mercearia & Frescos Central",
+				"farmacia":    "Farmácia Moderna Central",
+			}
+			nome := nomes[tipo]
+			if nome == "" {
+				nome = tipo
+			}
+			if err := s.repo.DefinirCaminhoENome(ctx, loja.ID, nome, candidato); err != nil {
+				return LojaAtual{}, err
+			}
+			// Sincronizar com loja.db para o PDV isolado
+			dirApp := filepath.Join(appData, "gestao-retalho")
+			if err := os.MkdirAll(dirApp, 0o755); err == nil {
+				_ = copiarFicheiro(candidato, filepath.Join(dirApp, "loja.db"))
+			}
+			return s.ObterAtual(ctx)
+		}
+	}
+
+	// Fallback: se não tiver db separada, atualiza através de AtualizarIdentidade
+	return s.AtualizarIdentidade(ctx, usecase.DadosLoja{
+		Nome:        loja.Nome,
+		TipoNegocio: tipo,
+	})
 }
 
 // AtualizarIdentidade muda o nome e o logótipo da loja (dentro da base da
@@ -133,6 +190,19 @@ func (s *LojasService) AtualizarIdentidade(ctx context.Context, d usecase.DadosL
 	if !existe {
 		return LojaAtual{}, fmt.Errorf("nenhuma loja configurada")
 	}
+
+	// Se pediu troca de tipo de negócio e existe a base dedicada, usar a base dedicada desse negócio
+	if d.TipoNegocio != "" {
+		appData, err := os.UserConfigDir()
+		if err == nil {
+			dirLojas := filepath.Join(appData, "gestao-retalho-admin", "lojas")
+			candidato := filepath.Join(dirLojas, d.TipoNegocio+".db")
+			if _, err := os.Stat(candidato); err == nil && candidato != loja.CaminhoDB {
+				return s.TrocarTipoNegocio(ctx, d.TipoNegocio)
+			}
+		}
+	}
+
 	app, fechar, err := abrirLojaUnica(ctx, s.repo)
 	if err != nil {
 		return LojaAtual{}, err
@@ -146,4 +216,21 @@ func (s *LojasService) AtualizarIdentidade(ctx context.Context, d usecase.DadosL
 		return LojaAtual{}, err
 	}
 	return s.ObterAtual(ctx)
+}
+
+func copiarFicheiro(origem, destino string) error {
+	in, err := os.Open(origem)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	out, err := os.Create(destino)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, in)
+	return err
 }

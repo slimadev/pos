@@ -62,6 +62,12 @@ func (r *LojaRepository) AtualizarNome(ctx context.Context, id int64, nome strin
 	return err
 }
 
+// DefinirCaminhoENome atualiza o caminho da base e o nome da loja ativa em admin.db.
+func (r *LojaRepository) DefinirCaminhoENome(ctx context.Context, id int64, nome, caminhoDB string) error {
+	_, err := r.db.ExecContext(ctx, `UPDATE lojas SET nome = ?, caminho_db = ? WHERE id = ?`, nome, caminhoDB, id)
+	return err
+}
+
 // scanner cobre tanto *sql.Rows como *sql.Row — ambos implementam Scan.
 type scanner interface {
 	Scan(dest ...any) error

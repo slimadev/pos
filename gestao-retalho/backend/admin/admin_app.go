@@ -168,6 +168,15 @@ func (a *AdminApp) AtualizarIdentidadeLoja(d usecase.DadosLoja) (LojaAtual, erro
 	return a.Lojas.AtualizarIdentidade(a.ctx, d)
 }
 
+// TrocarTipoNegocio alterna para a base de dados dedicada do negócio escolhido
+// (bottlestore, ferragem, mercearia, farmacia), com catálogo, módulos e tema completos.
+func (a *AdminApp) TrocarTipoNegocio(tipo string) (LojaAtual, error) {
+	if err := a.exigirSessao(); err != nil {
+		return LojaAtual{}, err
+	}
+	return a.Lojas.TrocarTipoNegocio(a.ctx, tipo)
+}
+
 // --- Dashboard ---------------------------------------------------------------
 //
 // Ao contrário do cmd/app (onde utilizador_id só serve para atribuição em

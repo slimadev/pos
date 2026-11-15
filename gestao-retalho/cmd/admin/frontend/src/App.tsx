@@ -20,8 +20,11 @@ import {
   ReceiptPercentIcon,
   Bars3Icon,
   XMarkIcon,
+  WrenchScrewdriverIcon,
+  SparklesIcon,
+  BuildingStorefrontIcon,
 } from "@heroicons/react/24/outline";
-import { PrecisaConfigurarAdmin, Logout, ObterLojaAtual, AbrirPDV } from "../wailsjs/go/admin/AdminApp";
+import { PrecisaConfigurarAdmin, Logout, ObterLojaAtual, AbrirPDV, TrocarTipoNegocio } from "../wailsjs/go/admin/AdminApp";
 import { admin } from "../wailsjs/go/models";
 import Configurar from "./Configurar";
 import Login from "./Login";
@@ -60,7 +63,7 @@ export type Navegar = (d: Destino) => void;
 // — Heroicons segue a mesma linguagem visual e cobre também as variantes
 // sólidas que o tema ferragem precisa em cmd/app, por isso ficou só uma
 // dependência de ícones no projeto todo em vez de duas).
-type ItemNav = { chave: Ecra; nome: string; Icone: IconeSvg; stub?: boolean; soFarmacia?: boolean };
+type ItemNav = { chave: Ecra; nome: string; Icone: IconeSvg; stub?: boolean; soFarmacia?: boolean; negocios?: string[] };
 
 // Menu agrupado pelo trabalho do dia a dia. "Venda a crédito" não tem
 // entrada própria — abre-se a partir de Vendas ou da ficha do cliente.
@@ -70,8 +73,8 @@ const NAV: { grupo?: string; itens: ItemNav[] }[] = [
     grupo: "Vendas",
     itens: [
       { chave: "vendas", nome: "Vendas", Icone: ShoppingCartIcon },
-      { chave: "cotacoes", nome: "Cotações", Icone: DocumentTextIcon },
-      { chave: "faturas", nome: "Faturas", Icone: ReceiptPercentIcon },
+      { chave: "cotacoes", nome: "Cotações", Icone: DocumentTextIcon, negocios: ["ferragem"] },
+      { chave: "faturas", nome: "Faturas", Icone: ReceiptPercentIcon, negocios: ["ferragem"] },
       { chave: "clientes", nome: "Clientes e dívidas", Icone: UserGroupIcon },
     ],
   },
@@ -80,7 +83,7 @@ const NAV: { grupo?: string; itens: ItemNav[] }[] = [
     itens: [
       { chave: "stock", nome: "Stock", Icone: ArchiveBoxIcon },
       { chave: "inventario", nome: "Inventário", Icone: ClipboardDocumentCheckIcon },
-      { chave: "farmacia", nome: "Farmácia", Icone: BeakerIcon, soFarmacia: true },
+      { chave: "farmacia", nome: "Farmácia", Icone: BeakerIcon, negocios: ["farmacia"] },
       { chave: "armazens", nome: "Armazéns", Icone: BuildingOffice2Icon },
     ],
   },
@@ -89,7 +92,7 @@ const NAV: { grupo?: string; itens: ItemNav[] }[] = [
     itens: [
       { chave: "produtos", nome: "Produtos", Icone: CubeIcon },
       { chave: "categorias", nome: "Categorias", Icone: TagIcon },
-      { chave: "fichas", nome: "Fichas técnicas", Icone: ClipboardDocumentListIcon },
+      { chave: "fichas", nome: "Fichas técnicas", Icone: ClipboardDocumentListIcon, negocios: ["bottlestore"] },
     ],
   },
   {
@@ -100,6 +103,34 @@ const NAV: { grupo?: string; itens: ItemNav[] }[] = [
     ],
   },
 ];
+
+function ecraPermitido(ecra: Ecra, tipoNegocio: string): boolean {
+  if (
+    ecra === "dashboard" ||
+    ecra === "produtos" ||
+    ecra === "categorias" ||
+    ecra === "armazens" ||
+    ecra === "stock" ||
+    ecra === "inventario" ||
+    ecra === "vendas" ||
+    ecra === "clientes" ||
+    ecra === "relatorios" ||
+    ecra === "utilizadores" ||
+    ecra === "credito"
+  ) {
+    return true;
+  }
+  if (ecra === "cotacoes" || ecra === "faturas") {
+    return tipoNegocio === "ferragem";
+  }
+  if (ecra === "farmacia") {
+    return tipoNegocio === "farmacia";
+  }
+  if (ecra === "fichas") {
+    return tipoNegocio === "bottlestore";
+  }
+  return true;
+}
 
 type Estado = { tipo: "a-carregar" } | { tipo: "configurar" } | { tipo: "login" } | { tipo: "pronto" };
 type LojaAtual = admin.LojaAtual;
@@ -202,6 +233,27 @@ function AdminPrincipal({
   const [stubNome, setStubNome] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [aAbrirPDV, setAAbrirPDV] = useState(false);
+  const [aTrocarNegocio, setATrocarNegocio] = useState(false);
+
+  function trocarNegocio(novoTipo: string) {
+    if (aTrocarNegocio || novoTipo === loja?.TipoNegocio) return;
+    setATrocarNegocio(true);
+    setErro(null);
+    TrocarTipoNegocio(novoTipo)
+      .then((novaLoja) => {
+        onLojaAtualizada(novaLoja);
+        setDestino((atual) => {
+          const destinoEcra = ecraPermitido(atual.ecra, novaLoja.TipoNegocio) ? atual.ecra : "dashboard";
+          return { ...atual, ecra: destinoEcra, n: atual.n + 1 };
+        });
+      })
+      .catch((err) => {
+        setErro("Erro ao alternar negócio: " + String(err));
+      })
+      .finally(() => {
+        setATrocarNegocio(false);
+      });
+  }
 
   function abrirPDV() {
     if (aAbrirPDV) return;
@@ -222,19 +274,35 @@ function AdminPrincipal({
         >
           <Bars3Icon className="admin-sidebar-icon" aria-hidden="true" />
         </button>
-        <div
-          className="admin-mobile-header-brand"
-          onClick={() => setConfigAberta(true)}
-          style={{ cursor: "pointer" }}
-          title="Toque para trocar o tipo de negócio ou dados da loja"
-        >
-          <div className="admin-mobile-header-nome">{loja?.Nome ?? "Administração"}</div>
-          {loja && <span className="admin-mobile-header-tag">{loja.TipoNegocio} ▾</span>}
+        <div className="admin-mobile-header-brand">
+          <div className="admin-mobile-header-nome" title={loja?.Nome}>{loja?.Nome ?? "Administração"}</div>
+          <select
+            className="admin-mobile-negocio-select"
+            value={loja?.TipoNegocio || "farmacia"}
+            disabled={aTrocarNegocio}
+            onChange={(e) => trocarNegocio(e.target.value)}
+            aria-label="Alternar tipo de negócio"
+          >
+            <option value="farmacia">Farmácia</option>
+            <option value="ferragem">Ferragem</option>
+            <option value="bottlestore">Bottlestore</option>
+            <option value="mercearia">Mercearia</option>
+          </select>
         </div>
-        <button className="admin-mobile-pdv-btn" disabled={aAbrirPDV} onClick={abrirPDV}>
-          <ComputerDesktopIcon style={{ width: 17, height: 17 }} aria-hidden="true" />
-          <span>PDV</span>
-        </button>
+        <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+          <button
+            className="admin-sidebar-config"
+            title="Configurações da loja"
+            aria-label="Configurações da loja"
+            onClick={() => setConfigAberta(true)}
+          >
+            <Cog6ToothIcon className="admin-sidebar-config-icon" aria-hidden="true" />
+          </button>
+          <button className="admin-mobile-pdv-btn" disabled={aAbrirPDV} onClick={abrirPDV}>
+            <ComputerDesktopIcon style={{ width: 17, height: 17 }} aria-hidden="true" />
+            <span>PDV</span>
+          </button>
+        </div>
       </header>
 
       {/* Fundo escuro desfocado ao abrir a gaveta no mobile */}
@@ -282,13 +350,50 @@ function AdminPrincipal({
             <XMarkIcon className="admin-sidebar-config-icon" aria-hidden="true" />
           </button>
         </div>
+
+        {/* Alternador Rápido de Negócios com Glassmorphism e Ícones Reais */}
+        <div className="admin-business-switcher">
+          <div className="admin-business-switcher-header">
+            <span className="admin-business-switcher-title">Mudar Negócio</span>
+            {aTrocarNegocio && <span className="admin-business-switcher-loading">A alternar…</span>}
+          </div>
+          <div className="admin-business-switcher-grid">
+            {[
+              { tipo: "farmacia", rotulo: "Farmácia", Icone: BeakerIcon },
+              { tipo: "ferragem", rotulo: "Ferragem", Icone: WrenchScrewdriverIcon },
+              { tipo: "bottlestore", rotulo: "Bottlestore", Icone: SparklesIcon },
+              { tipo: "mercearia", rotulo: "Mercearia", Icone: BuildingStorefrontIcon },
+            ].map((b) => {
+              const ativo = loja?.TipoNegocio === b.tipo;
+              const IconeNegocio = b.Icone;
+              return (
+                <button
+                  key={b.tipo}
+                  type="button"
+                  disabled={aTrocarNegocio}
+                  className={`admin-business-chip${ativo ? " active" : ""}`}
+                  onClick={() => trocarNegocio(b.tipo)}
+                  title={`Alternar base e módulos para ${b.rotulo}`}
+                >
+                  <IconeNegocio className="admin-business-chip-icon" aria-hidden="true" />
+                  <span>{b.rotulo}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
         <button className="admin-sidebar-pdv" disabled={aAbrirPDV} onClick={abrirPDV}>
           <ComputerDesktopIcon className="admin-sidebar-icon" aria-hidden="true" />
           {aAbrirPDV ? "A abrir…" : "PDV"}
         </button>
         <nav className="admin-sidebar-nav">
           {NAV.map((g) => {
-            const itens = g.itens.filter((item) => !item.soFarmacia || loja?.TipoNegocio === "farmacia");
+            const itens = g.itens.filter((item) => {
+              if (item.soFarmacia && loja?.TipoNegocio !== "farmacia") return false;
+              if (item.negocios && !item.negocios.includes(loja?.TipoNegocio || "")) return false;
+              return true;
+            });
+            if (itens.length === 0) return null;
             return (
               <div key={g.grupo ?? "inicio"} className="admin-sidebar-grupo">
                 {g.grupo && <div className="admin-sidebar-grupo-nome">{g.grupo}</div>}
@@ -367,6 +472,10 @@ function AdminPrincipal({
             loja={loja}
             onGuardada={(l) => {
               onLojaAtualizada(l);
+              setDestino((atual) => {
+                const destinoEcra = ecraPermitido(atual.ecra, l.TipoNegocio) ? atual.ecra : "dashboard";
+                return { ...atual, ecra: destinoEcra, n: atual.n + 1 };
+              });
               setConfigAberta(false);
             }}
             onCancelar={() => setConfigAberta(false)}
