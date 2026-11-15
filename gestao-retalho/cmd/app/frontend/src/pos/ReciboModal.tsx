@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { XMarkIcon } from "@heroicons/react/24/outline";
 import { ObterRecibo, GerarRecibo } from "../../wailsjs/go/api/App";
 import { usecase } from "../../wailsjs/go/models";
 import { mt, qtd } from "./formato";
@@ -62,7 +63,7 @@ export default function ReciboModal({
         <div className="recibo-barra">
           <span>{d?.DocumentoCodigo ? `${d.DocumentoNome} ${d.DocumentoCodigo}` : `Recibo #${vendaId}`}</span>
           <button className="recibo-fechar" onClick={onFechar} aria-label="Fechar">
-            ×
+            <XMarkIcon style={{ width: 18, height: 18 }} aria-hidden="true" />
           </button>
         </div>
 
@@ -96,7 +97,7 @@ export default function ReciboModal({
                   <div className="recibo-item-nome">{item.NomeProduto}</div>
                   <div className="recibo-linha">
                     <span>
-                      {qtd(item.Quantidade)} {item.NomeUnidade} × {mt(item.PrecoUnitario).replace(" MT", "")}
+                      {qtd(item.Quantidade)} {item.NomeUnidade} x {mt(item.PrecoUnitario).replace(" MT", "")}
                       {item.Desconto > 0 && ` −${mt(item.Desconto).replace(" MT", "")}`}
                     </span>
                     <span>{mt(item.Subtotal).replace(" MT", "")}</span>

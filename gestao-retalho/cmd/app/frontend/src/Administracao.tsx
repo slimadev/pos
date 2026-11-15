@@ -10,6 +10,7 @@ import {
   BeakerIcon,
   UserGroupIcon,
   ChartBarIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import {
   ListarArmazens,
@@ -126,7 +127,10 @@ export default function Administracao({ modulosAtivos }: { modulosAtivos: string
       <div className="admin2-content fase1">
         {erro && (
           <div className="fase1-erro">
-            {erro} <button onClick={() => setErro(null)}>×</button>
+            <span>{erro}</span>
+            <button onClick={() => setErro(null)} aria-label="Fechar erro">
+              <XMarkIcon style={{ width: 16, height: 16 }} aria-hidden="true" />
+            </button>
           </div>
         )}
 

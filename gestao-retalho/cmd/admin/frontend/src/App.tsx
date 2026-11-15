@@ -18,6 +18,8 @@ import {
   Cog6ToothIcon,
   DocumentTextIcon,
   ReceiptPercentIcon,
+  Bars3Icon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { PrecisaConfigurarAdmin, Logout, ObterLojaAtual, AbrirPDV } from "../wailsjs/go/admin/AdminApp";
 import { admin } from "../wailsjs/go/models";
@@ -144,6 +146,11 @@ export default function App() {
     carregarLoja();
   }, []);
 
+  const atualizarLoja = (l: LojaAtual) => {
+    setLoja(l);
+    document.documentElement.setAttribute("data-tipo-negocio", l.TipoNegocio);
+  };
+
   if (estado.tipo === "a-carregar") {
     return null;
   }
@@ -160,7 +167,7 @@ export default function App() {
   if (estado.tipo === "login") {
     return <Login loja={loja} onEntrar={() => setEstado({ tipo: "pronto" })} />;
   }
-  return <AdminPrincipal loja={loja} onLojaAtualizada={setLoja} onSair={() => Logout().finally(verificar)} />;
+  return <AdminPrincipal loja={loja} onLojaAtualizada={atualizarLoja} onSair={() => Logout().finally(verificar)} />;
 }
 
 /**
@@ -185,9 +192,13 @@ function AdminPrincipal({
   onSair: () => void;
 }) {
   const [configAberta, setConfigAberta] = useState(false);
+  const [menuMobileAberto, setMenuMobileAberto] = useState(false);
   const [destino, setDestino] = useState<Destino & { n: number }>({ ecra: "dashboard", n: 0 });
   const ecra = destino.ecra;
-  const navegar: Navegar = (d) => setDestino((atual) => ({ ...d, n: atual.n + 1 }));
+  const navegar: Navegar = (d) => {
+    setDestino((atual) => ({ ...d, n: atual.n + 1 }));
+    setMenuMobileAberto(false);
+  };
   const [stubNome, setStubNome] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [aAbrirPDV, setAAbrirPDV] = useState(false);
@@ -202,18 +213,56 @@ function AdminPrincipal({
 
   return (
     <div className="admin-shell">
-      <aside className="admin-sidebar">
+      {/* Topbar compacta para dispositivos móveis */}
+      <header className="admin-mobile-header">
+        <button
+          className="admin-mobile-menu-btn"
+          onClick={() => setMenuMobileAberto(true)}
+          aria-label="Abrir menu de navegação"
+        >
+          <Bars3Icon className="admin-sidebar-icon" aria-hidden="true" />
+        </button>
+        <div
+          className="admin-mobile-header-brand"
+          onClick={() => setConfigAberta(true)}
+          style={{ cursor: "pointer" }}
+          title="Toque para trocar o tipo de negócio ou dados da loja"
+        >
+          <div className="admin-mobile-header-nome">{loja?.Nome ?? "Administração"}</div>
+          {loja && <span className="admin-mobile-header-tag">{loja.TipoNegocio} ▾</span>}
+        </div>
+        <button className="admin-mobile-pdv-btn" disabled={aAbrirPDV} onClick={abrirPDV}>
+          <ComputerDesktopIcon style={{ width: 17, height: 17 }} aria-hidden="true" />
+          <span>PDV</span>
+        </button>
+      </header>
+
+      {/* Fundo escuro desfocado ao abrir a gaveta no mobile */}
+      {menuMobileAberto && (
+        <div
+          className="admin-mobile-backdrop"
+          onClick={() => setMenuMobileAberto(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      <aside className={`admin-sidebar${menuMobileAberto ? " mobile-aberta" : ""}`}>
         <div className="admin-sidebar-brand">
           {loja?.Logo ? (
             <img src={loja.Logo} alt="" className="admin-sidebar-brand-logo" />
           ) : (
             <div className="admin-sidebar-brand-mark" />
           )}
-          <div className="admin-sidebar-brand-texto">
+          <div
+            className="admin-sidebar-brand-texto"
+            onClick={() => setConfigAberta(true)}
+            style={{ cursor: "pointer" }}
+            title="Clique para trocar o tipo de negócio ou dados da loja"
+          >
             <div className="admin-sidebar-brand-nome" title={loja?.Nome}>
               {loja?.Nome ?? "Administração"}
             </div>
-            {loja && <div className="admin-sidebar-brand-tag">{loja.TipoNegocio}</div>}
+            {loja && <div className="admin-sidebar-brand-tag">{loja.TipoNegocio} ▾</div>}
           </div>
           {loja && (
             <button
@@ -225,6 +274,13 @@ function AdminPrincipal({
               <Cog6ToothIcon className="admin-sidebar-config-icon" aria-hidden="true" />
             </button>
           )}
+          <button
+            className="admin-sidebar-mobile-close"
+            onClick={() => setMenuMobileAberto(false)}
+            aria-label="Fechar menu"
+          >
+            <XMarkIcon className="admin-sidebar-config-icon" aria-hidden="true" />
+          </button>
         </div>
         <button className="admin-sidebar-pdv" disabled={aAbrirPDV} onClick={abrirPDV}>
           <ComputerDesktopIcon className="admin-sidebar-icon" aria-hidden="true" />
@@ -262,8 +318,10 @@ function AdminPrincipal({
       <div className="admin-main">
         {erro && (
           <div className="admin-erro">
-            {erro}
-            <button onClick={() => setErro(null)}>×</button>
+            <span>{erro}</span>
+            <button onClick={() => setErro(null)} aria-label="Fechar mensagem de erro">
+              <XMarkIcon className="admin-btn-icon" aria-hidden="true" />
+            </button>
           </div>
         )}
         <div key={destino.n} className="admin-ecra">
@@ -316,6 +374,45 @@ function AdminPrincipal({
           />
         </Modal>
       )}
+
+      {/* Barra de navegação inferior estilo app mobile */}
+      <nav className="admin-mobile-bottom-bar" aria-label="Navegação móvel">
+        <button
+          className={`admin-bottom-tab${ecra === "dashboard" ? " active" : ""}`}
+          onClick={() => navegar({ ecra: "dashboard" })}
+        >
+          <Squares2X2Icon className="admin-bottom-icon" aria-hidden="true" />
+          <span>Início</span>
+        </button>
+        <button
+          className={`admin-bottom-tab${ecra === "vendas" ? " active" : ""}`}
+          onClick={() => navegar({ ecra: "vendas" })}
+        >
+          <ShoppingCartIcon className="admin-bottom-icon" aria-hidden="true" />
+          <span>Vendas</span>
+        </button>
+        <button
+          className={`admin-bottom-tab${ecra === "stock" ? " active" : ""}`}
+          onClick={() => navegar({ ecra: "stock" })}
+        >
+          <ArchiveBoxIcon className="admin-bottom-icon" aria-hidden="true" />
+          <span>Stock</span>
+        </button>
+        <button
+          className={`admin-bottom-tab${ecra === "produtos" ? " active" : ""}`}
+          onClick={() => navegar({ ecra: "produtos" })}
+        >
+          <CubeIcon className="admin-bottom-icon" aria-hidden="true" />
+          <span>Produtos</span>
+        </button>
+        <button
+          className={`admin-bottom-tab${menuMobileAberto ? " active" : ""}`}
+          onClick={() => setMenuMobileAberto(!menuMobileAberto)}
+        >
+          <Bars3Icon className="admin-bottom-icon" aria-hidden="true" />
+          <span>Menu</span>
+        </button>
+      </nav>
     </div>
   );
 }

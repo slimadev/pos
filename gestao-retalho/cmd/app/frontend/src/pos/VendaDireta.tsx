@@ -4,6 +4,7 @@ import {
   MagnifyingGlassIcon as MagnifyingGlassOutline,
   ShoppingCartIcon as ShoppingCartOutline,
   CheckCircleIcon as CheckCircleOutline,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import {
   MagnifyingGlassIcon as MagnifyingGlassSolid,
@@ -82,6 +83,7 @@ export default function VendaDireta({ tipoNegocio }: { tipoNegocio: string }) {
   const [historicoDia, setHistoricoDia] = useState<domain.Venda[]>([]);
   const [erro, setErro] = useState<string | null>(null);
   const [aFinalizar, setAFinalizar] = useState(false);
+  const [abaMobile, setAbaMobile] = useState<"catalogo" | "carrinho">("catalogo");
 
   const catalogoRef = useRef<CatalogoHandle>(null);
 
@@ -237,7 +239,26 @@ export default function VendaDireta({ tipoNegocio }: { tipoNegocio: string }) {
   return (
     <div className="pos">
       {recibo && <ReciboModal vendaId={recibo.id} troco={recibo.troco} onFechar={() => setRecibo(null)} />}
-      <div className="pos-vendas">
+
+      {/* Abas táteis exclusivas para modo mobile / ecrãs menores */}
+      <div className="pos-mobile-tabs" role="tablist">
+        <button
+          className={`pos-mobile-tab${abaMobile === "catalogo" ? " ativa" : ""}`}
+          onClick={() => setAbaMobile("catalogo")}
+        >
+          <span>Catálogo</span>
+        </button>
+        <button
+          className={`pos-mobile-tab${abaMobile === "carrinho" ? " ativa" : ""}`}
+          onClick={() => setAbaMobile("carrinho")}
+        >
+          <IconeCarrinho className="pos-mobile-tab-icon" aria-hidden="true" />
+          <span>Carrinho ({carrinho.length})</span>
+          {carrinho.length > 0 && <strong className="pos-mobile-tab-total">{mt(total)}</strong>}
+        </button>
+      </div>
+
+      <div className={`pos-vendas${abaMobile === "carrinho" ? " mobile-oculto" : ""}`}>
         {armazemId !== "" && (
           <Catalogo
             ref={catalogoRef}
@@ -269,7 +290,10 @@ export default function VendaDireta({ tipoNegocio }: { tipoNegocio: string }) {
 
         {erro && (
           <div className="pos-erro">
-            {erro} <button onClick={() => setErro(null)}>×</button>
+            <span>{erro}</span>
+            <button onClick={() => setErro(null)} aria-label="Fechar erro">
+              <XMarkIcon style={{ width: 16, height: 16 }} aria-hidden="true" />
+            </button>
           </div>
         )}
 
@@ -288,7 +312,7 @@ export default function VendaDireta({ tipoNegocio }: { tipoNegocio: string }) {
         )}
       </div>
 
-      <aside className="pos-carrinho">
+      <aside className={`pos-carrinho${abaMobile === "catalogo" ? " mobile-oculto" : ""}`}>
         <div className="pos-carrinho-header">
           <span className="pos-carrinho-titulo">
             <IconeCarrinho className="pos-carrinho-icon" aria-hidden="true" />
@@ -435,6 +459,20 @@ export default function VendaDireta({ tipoNegocio }: { tipoNegocio: string }) {
           </>
         )}
       </aside>
+
+      {/* Botão flutuante no modo mobile para ir ao carrinho */}
+      {carrinho.length > 0 && abaMobile === "catalogo" && (
+        <div className="pos-mobile-floating-bar">
+          <div className="pos-mobile-floating-info">
+            <span className="pos-mobile-floating-qtd">{carrinho.length} {carrinho.length === 1 ? "item" : "itens"}</span>
+            <span className="pos-mobile-floating-total">{mt(total)}</span>
+          </div>
+          <button className="pos-mobile-floating-btn" onClick={() => setAbaMobile("carrinho")}>
+            <IconeCarrinho style={{ width: 18, height: 18 }} aria-hidden="true" />
+            <span>Ver Carrinho</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

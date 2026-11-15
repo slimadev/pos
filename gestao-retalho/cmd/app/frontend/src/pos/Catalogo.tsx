@@ -1,5 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import type { ComponentType, SVGProps } from "react";
+import { XMarkIcon } from "@heroicons/react/24/outline";
 import { CatalogoPDV, ListarCategorias } from "../../wailsjs/go/api/App";
 import { domain, usecase } from "../../wailsjs/go/models";
 import { mt, normalizar, qtd } from "./formato";
@@ -154,7 +155,7 @@ const Catalogo = forwardRef<
           />
           {busca && (
             <button className="cat-limpar" onClick={() => setBusca("")} aria-label="Limpar pesquisa">
-              ×
+              <XMarkIcon style={{ width: 16, height: 16 }} aria-hidden="true" />
             </button>
           )}
         </div>

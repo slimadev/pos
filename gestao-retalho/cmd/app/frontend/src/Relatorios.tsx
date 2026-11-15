@@ -365,7 +365,7 @@ function RelatorioStock({ armazens, onErro }: { armazens: domain.Armazem[]; onEr
               l.QuantidadeUnidadeBase,
               mt(l.CustoMedioPonderado),
               mt(l.ValorStock),
-              l.AbaixoDoMinimo ? "⚠ sim" : "não",
+              l.AbaixoDoMinimo ? "Sim (Crítico)" : "Não",
             ])}
             totais={["TOTAL", "", "", "", mt(resposta.ValorTotal), ""]}
             onErro={onErro}
@@ -481,7 +481,7 @@ function RelatorioDividas({ onErro }: { onErro: (e: string) => void }) {
         mt(l.ValorPago),
         mt(l.ValorEmAberto),
         l.IdadeDias,
-        l.IdadeDias > 30 ? `${l.Status} ⚠ antiga` : l.Status,
+        l.IdadeDias > 30 ? `${l.Status} (Antiga > 30d)` : l.Status,
       ])}
       onErro={onErro}
     />

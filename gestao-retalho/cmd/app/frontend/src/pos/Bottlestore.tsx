@@ -5,6 +5,7 @@ import {
   XCircleIcon,
   CheckCircleIcon,
   MagnifyingGlassIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import {
   ListarContasAbertas,
@@ -113,7 +114,10 @@ export default function Bottlestore() {
       {modalRecibo}
       {erro && (
         <div className="bs-erro">
-          {erro} <button onClick={() => setErro(null)}>×</button>
+          <span>{erro}</span>
+          <button onClick={() => setErro(null)} aria-label="Fechar erro">
+            <XMarkIcon style={{ width: 16, height: 16 }} aria-hidden="true" />
+          </button>
         </div>
       )}
 
@@ -283,7 +287,8 @@ function ContaDetalhe({
             {itensAtual.map((i) => (
               <div key={i.ID} className="bs-comanda-item">
                 <div className="bs-comanda-item-nome">
-                  {qtd(i.Quantidade)}× {nomeProduto(i.ProdutoID)}
+                  <span style={{ fontWeight: 700, color: "var(--color-accent)", marginRight: 6 }}>{qtd(i.Quantidade)}x</span>
+                  <span>{nomeProduto(i.ProdutoID)}</span>
                 </div>
                 <div className="bs-comanda-item-total">{mt(i.Quantidade * i.PrecoUnitarioAplicado - i.Desconto)}</div>
                 {outrasContasAbertas.length > 0 && (

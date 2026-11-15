@@ -15,6 +15,11 @@
   --color-warning: #e0a62b;
   --color-error: #d9534f;
 
+  --glass-bg: rgba(31, 27, 41, 0.78);
+  --glass-border: rgba(212, 162, 78, 0.22);
+  --glass-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+  --glass-blur: blur(14px) saturate(180%);
+
   --font-display: "DM Serif Display", serif;
   --font-body: "Inter", sans-serif;
 }

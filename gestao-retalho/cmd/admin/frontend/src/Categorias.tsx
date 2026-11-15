@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { PlusIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import {
   ListarCategorias,
   ListarProdutos,
@@ -77,15 +78,16 @@ export default function CategoriasScreen({ onErro }: { onErro: (e: string) => vo
       <div className="admin-ecra-header">
         <h2 style={{ margin: 0 }}>Categorias</h2>
         <button className="admin-btn" onClick={() => setModal({ aberto: true, categoria: null })}>
-          + Criar categoria
+          <PlusIcon className="admin-btn-icon" aria-hidden="true" />
+          <span>Criar categoria</span>
         </button>
       </div>
 
       {aviso && (
         <div className="admin-aviso-ok">
-          {aviso}
+          <span>{aviso}</span>
           <button onClick={() => setAviso(null)} aria-label="Fechar">
-            ×
+            <XMarkIcon className="admin-btn-icon" aria-hidden="true" />
           </button>
         </div>
       )}

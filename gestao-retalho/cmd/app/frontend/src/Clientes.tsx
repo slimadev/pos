@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import {
   ListarClientes,
   CriarCliente,
@@ -49,9 +50,12 @@ export default function ClientesSection({ onErro }: { onErro: (e: string) => voi
       <h2>Clientes e dívidas</h2>
 
       {dividasAntigas.length > 0 && (
-        <p className="fase1-stock-atual">
-          ⚠ {dividasAntigas.length} dívida(s) com mais de {DIAS_ANTIGA} dias em aberto:{" "}
-          {dividasAntigas.map((d) => nomeCliente(d.ClienteID)).join(", ")}
+        <p className="fase1-stock-atual" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <ExclamationTriangleIcon style={{ width: 18, height: 18, color: "var(--color-warning)" }} aria-hidden="true" />
+          <span>
+            {dividasAntigas.length} dívida(s) com mais de {DIAS_ANTIGA} dias em aberto:{" "}
+            {dividasAntigas.map((d) => nomeCliente(d.ClienteID)).join(", ")}
+          </span>
         </p>
       )}
 

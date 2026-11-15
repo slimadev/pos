@@ -26,6 +26,7 @@ export default function ConfiguracoesLoja({
   onErro: (e: string) => void;
 }) {
   const [nome, setNome] = useState(loja.Nome);
+  const [tipoNegocio, setTipoNegocio] = useState(loja.TipoNegocio || "farmacia");
   const [logo, setLogo] = useState(loja.Logo);
   const [papel, setPapel] = useState(loja.PapelRecibo || "80");
   const [nuit, setNuit] = useState(loja.NUIT ?? "");
@@ -59,6 +60,7 @@ export default function ConfiguracoesLoja({
     if (!podeGuardar) return;
     const d = new usecase.DadosLoja();
     d.Nome = nome.trim();
+    d.TipoNegocio = tipoNegocio;
     d.Logo = logo;
     d.PapelRecibo = papel;
     d.NUIT = nuitLimpo;
@@ -75,6 +77,32 @@ export default function ConfiguracoesLoja({
 
   return (
     <div className="admin-produto-form">
+      <div className="admin-config-secao">Ramo de Atividade / Tipo de Negócio</div>
+      <div className="admin-campo">
+        <label>Tipo de Negócio e Modo de Operação</label>
+        <select
+          value={tipoNegocio}
+          onChange={(e) => setTipoNegocio(e.target.value)}
+          style={{
+            padding: "10px 14px",
+            borderRadius: "10px",
+            border: "1px solid var(--cor-borda)",
+            background: "var(--cor-fundo-cartao)",
+            color: "var(--cor-texto)",
+            fontSize: "0.95rem",
+            fontWeight: 500,
+          }}
+        >
+          <option value="farmacia">💊 Farmácia (Lotes FEFO, Validades, Receitas Médicas, POS Clínico)</option>
+          <option value="ferragem">🔧 Ferragem / Materiais (POS Direto, Unidades de Embalagem, Caixa Rápido)</option>
+          <option value="bottlestore">🍹 Bottlestore / Bar (Mesas, Contas Abertas, Fichas Técnicas, Dívidas)</option>
+          <option value="mercearia">🛒 Mercearia / Minimercado (POS Direto, Venda a Granel por Peso)</option>
+        </select>
+        <span className="admin-texto-fraco">
+          Ao alternar o tipo de negócio, o sistema adapta imediatamente o tema visual, as cores glass, os módulos e o ecrã de vendas do PDV.
+        </span>
+      </div>
+
       <div className="admin-config-secao">Identificação</div>
       <div className="admin-config-grelha">
         <label className="admin-campo">

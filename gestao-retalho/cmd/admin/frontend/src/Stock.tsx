@@ -8,6 +8,8 @@ import {
   ClockIcon,
   ExclamationTriangleIcon,
   MagnifyingGlassIcon,
+  CheckCircleIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import {
   ListarArmazens,
@@ -134,9 +136,9 @@ export default function StockScreen({ onNavegar, onErro }: { onNavegar: Navegar;
 
       {aviso && (
         <div className="admin-aviso-ok">
-          {aviso}
+          <span>{aviso}</span>
           <button onClick={() => setAviso(null)} aria-label="Fechar">
-            ×
+            <XMarkIcon className="admin-btn-icon" aria-hidden="true" />
           </button>
         </div>
       )}
@@ -758,13 +760,18 @@ function EntradaLoteEmMassa({
                   />
                 </td>
                 <td>
-                  {feito && "✓ registada"}
+                  {feito && (
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--ok)", fontWeight: 600 }}>
+                      <CheckCircleIcon style={{ width: 16, height: 16 }} aria-hidden="true" />
+                      Registada
+                    </span>
+                  )}
                   {erro && <span style={{ color: "var(--danger)" }}>{erro}</span>}
                 </td>
                 <td>
                   {!feito && linhas.length > 1 && (
-                    <button className="admin-btn-secundario" onClick={() => removerLinha(l.id)}>
-                      ×
+                    <button className="admin-btn-secundario" onClick={() => removerLinha(l.id)} aria-label="Remover linha">
+                      <XMarkIcon style={{ width: 16, height: 16 }} aria-hidden="true" />
                     </button>
                   )}
                 </td>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { MagnifyingGlassIcon, PlusIcon, XMarkIcon, ArrowUpTrayIcon } from "@heroicons/react/24/outline";
 import {
   ListarProdutos,
   ListarCategorias,
@@ -112,20 +112,22 @@ export default function ProdutosScreen({ onErro }: { onErro: (e: string) => void
       <div className="admin-ecra-header">
         <h2 style={{ margin: 0 }}>Produtos</h2>
         <div className="admin-form">
-          <button className="admin-btn-secundario" onClick={() => setImportar(true)}>
-            Importar do Excel
+          <button className="admin-btn-secundario admin-btn-com-icone" onClick={() => setImportar(true)}>
+            <ArrowUpTrayIcon className="admin-btn-icon" aria-hidden="true" />
+            <span>Importar do Excel</span>
           </button>
-          <button className="admin-btn" onClick={() => setModal({ aberto: true, produto: null })}>
-            + Criar produto
+          <button className="admin-btn admin-btn-com-icone" onClick={() => setModal({ aberto: true, produto: null })}>
+            <PlusIcon className="admin-btn-icon" aria-hidden="true" />
+            <span>Criar produto</span>
           </button>
         </div>
       </div>
 
       {aviso && (
         <div className="admin-aviso-ok">
-          {aviso}
+          <span>{aviso}</span>
           <button onClick={() => setAviso(null)} aria-label="Fechar">
-            ×
+            <XMarkIcon className="admin-btn-icon" aria-hidden="true" />
           </button>
         </div>
       )}

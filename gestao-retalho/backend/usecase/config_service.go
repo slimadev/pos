@@ -219,10 +219,11 @@ func resolverModulosETema(tipo domain.TipoNegocio, modulosPersonalizados []domai
 const tamanhoMaximoLogo = 2_200_000
 
 // DadosLoja é o que se muda nas configurações da loja depois do
-// assistente inicial. O tipo de negócio (e com ele módulos e tema) não
-// muda aqui.
+// assistente inicial. Permite também alternar o tipo de negócio (e com ele
+// os módulos ativos e o tema correspondente).
 type DadosLoja struct {
 	Nome        string
+	TipoNegocio string // "" = mantém o tipo atual; ou "mercearia", "ferragem", "farmacia", "bottlestore"
 	Logo        string // data URL, "" remove o logótipo
 	PapelRecibo string // "80", "58" ou "a5"
 	NUIT        string // 9 algarismos, "" = por preencher
@@ -272,7 +273,31 @@ func (s *ConfigService) AtualizarIdentidade(ctx context.Context, d DadosLoja) (d
 	if err != nil {
 		return domain.Negocio{}, err
 	}
-	negocio, err := s.negocios.Atualizar(ctx, nome, atual.TipoNegocio)
+
+	tipoNegocio := atual.TipoNegocio
+	if d.TipoNegocio != "" && domain.TipoNegocio(d.TipoNegocio) != atual.TipoNegocio {
+		novoTipo := domain.TipoNegocio(d.TipoNegocio)
+		for _, p := range domain.PresetsNegocio {
+			if p.Tipo == novoTipo {
+				tipoNegocio = novoTipo
+				_ = s.configs.Definir(ctx, "tema", string(p.Tema))
+				modulosPreset := make(map[domain.Modulo]bool)
+				for _, m := range p.Modulos {
+					modulosPreset[m] = true
+				}
+				for _, m := range domain.TodosModulos {
+					val := "false"
+					if modulosPreset[m] {
+						val = "true"
+					}
+					_ = s.configs.Definir(ctx, "modulo_"+string(m), val)
+				}
+				break
+			}
+		}
+	}
+
+	negocio, err := s.negocios.Atualizar(ctx, nome, tipoNegocio)
 	if err != nil {
 		return domain.Negocio{}, fmt.Errorf("gravar negócio: %w", err)
 	}
