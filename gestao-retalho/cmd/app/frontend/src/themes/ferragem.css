@@ -1,32 +1,28 @@
-/* SDD secção 7.2 — Ferragem, tema "industrial / prático".
- *
- * Fase 10 (auditoria de contraste, WCAG 1.4.3): o laranja #E8611C exato do
- * SDD só atinge 3.4:1 com texto branco em cima — falha o mínimo de 4.5:1
- * para texto normal (o botão "Finalizar venda" usa exatamente esta
- * combinação). --color-accent aqui ficou ~18% mais escuro (4.9:1 com
- * branco) — continua inequivocamente "laranja industrial", só deixou de
- * falhar o teste. --color-warning e --color-text-muted tinham o mesmo
- * problema (2.0:1 e 4.3:1 respetivamente) e foram corrigidos da mesma
- * forma.
- */
+/* SDD secção 7.2 — Ferragem, tema "industrial / materiais". */
 :root[data-theme="ferragem"] {
-  --color-bg: #f4f2ed;
+  --color-bg: #f4f2ee;
   --color-surface: #ffffff;
-  --color-surface-border: #e3dfd6;
-  --color-accent: #be4f16;
+  --color-surface-border: #e3ded6;
+  --color-accent: #c2410c;
   --color-accent-contrast: #ffffff;
-  --color-secondary: #2c3539;
-  --color-text: #22262b;
-  --color-text-muted: #636a77;
-  --color-success: #3e8e5a;
-  --color-warning: #916b1b;
-  --color-error: #c1443d;
+  --color-accent-rgb: 194, 65, 12;
+  --color-accent-subtle: rgba(194, 65, 12, 0.09);
+  --color-accent-glow: rgba(194, 65, 12, 0.24);
+  --color-secondary: #334155;
+  --color-text: #1c1f24;
+  --color-text-muted: #646b76;
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-error: #dc2626;
 
-  --glass-bg: rgba(255, 255, 255, 0.85);
-  --glass-border: rgba(190, 79, 22, 0.16);
-  --glass-shadow: 0 10px 28px rgba(190, 79, 22, 0.06);
-  --glass-blur: blur(14px) saturate(160%);
+  --glass-bg: rgba(255, 255, 255, 0.82);
+  --glass-card-bg: rgba(255, 255, 255, 0.88);
+  --glass-card-hover: rgba(255, 255, 255, 0.98);
+  --glass-border: rgba(194, 65, 12, 0.16);
+  --glass-card-border: rgba(194, 65, 12, 0.14);
+  --glass-shadow: 0 12px 32px rgba(194, 65, 12, 0.08);
+  --glass-blur: blur(16px) saturate(180%);
 
-  --font-display: "IBM Plex Sans", sans-serif;
-  --font-body: "IBM Plex Sans", sans-serif;
+  --font-display: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-body: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }

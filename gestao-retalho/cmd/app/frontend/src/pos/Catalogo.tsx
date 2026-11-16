@@ -204,13 +204,16 @@ const Catalogo = forwardRef<
                 <span className="cat-cartao-unidade">{u.NomeUnidade}</span>
               </span>
               <span className={`cat-cartao-stock${sem ? " zero" : ""}`}>
-                {sem
-                  ? "sem stock"
-                  : i.Produto.TipoProduto === "composto"
-                    ? `dá para ${qtd(i.Disponivel)}`
-                    : i.Produto.ControlaStock
-                      ? `${qtd(i.Disponivel)} ${i.Produto.UnidadeBase}`
-                      : ""}
+                <span className="cat-cartao-stock-dot" />
+                <span>
+                  {sem
+                    ? "Sem stock"
+                    : i.Produto.TipoProduto === "composto"
+                      ? `Dá para ${qtd(i.Disponivel)}`
+                      : i.Produto.ControlaStock
+                        ? `${qtd(i.Disponivel)} ${i.Produto.UnidadeBase}`
+                        : "Disponível"}
+                </span>
               </span>
             </button>
           );
