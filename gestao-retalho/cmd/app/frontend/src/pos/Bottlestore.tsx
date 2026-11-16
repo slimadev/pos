@@ -156,19 +156,40 @@ export default function Bottlestore() {
       </div>
 
       <div className="bs-grid">
-        {contas.map(({ conta, itens, total }) => (
-          <div key={conta.ID} className="bs-card" onClick={() => setContaSelecionadaId(conta.ID)}>
-            <div className="bs-card-top">
-              <div className="bs-card-id">{conta.Identificador}</div>
-              <div className="bs-card-cliente">{clientes.find((c) => c.ID === conta.ClienteID)?.Nome ?? "Anónimo"}</div>
+        {contas.map(({ conta, itens, total }) => {
+          const emConsumo = itens.length > 0;
+          return (
+            <div
+              key={conta.ID}
+              className={`bs-card ${emConsumo ? "bs-card--ativa" : "bs-card--vazia"}`}
+              onClick={() => setContaSelecionadaId(conta.ID)}
+            >
+              <div className="bs-card-top">
+                <div className="bs-card-header-row">
+                  <div className="bs-card-id">{conta.Identificador}</div>
+                  <span className={`bs-card-badge ${emConsumo ? "bs-card-badge--ativa" : ""}`}>
+                    {emConsumo ? "Em Consumo" : "Vazia"}
+                  </span>
+                </div>
+                <div className="bs-card-cliente">
+                  {clientes.find((c) => c.ID === conta.ClienteID)?.Nome ?? "Cliente Anónimo"}
+                </div>
+              </div>
+              <div className="bs-card-bottom">
+                <div className="bs-card-total">{mt(total)}</div>
+                <div className="bs-card-itens">
+                  {itens.length} {itens.length === 1 ? "item" : "itens"}
+                </div>
+              </div>
             </div>
-            <div className="bs-card-bottom">
-              <div className="bs-card-total">{mt(total)}</div>
-              <div className="bs-card-itens">{itens.length} itens</div>
-            </div>
+          );
+        })}
+        {contas.length === 0 && (
+          <div className="bs-vazio">
+            <p>Nenhuma conta ou mesa aberta de momento.</p>
+            <span>Abra uma nova conta no formulário acima para começar a registar pedidos.</span>
           </div>
-        ))}
-        {contas.length === 0 && <div className="bs-vazio">Nenhuma conta aberta — abra uma acima.</div>}
+        )}
       </div>
     </div>
   );
@@ -252,52 +273,80 @@ function ContaDetalhe({
   return (
     <div className="bs bs-detalhe">
       <div className="bs-detalhe-header">
-        <button className="bs-voltar" onClick={onVoltar}>
-          <ArrowLeftIcon className="bs-icon" aria-hidden="true" />
-          Contas
-        </button>
-        <div className="bs-detalhe-titulo">
-          <div>{conta.Identificador}</div>
-          <div className="bs-detalhe-sub">{clientes.find((c) => c.ID === conta.ClienteID)?.Nome ?? "Anónimo"}</div>
+        <div className="bs-detalhe-header-left">
+          <button className="bs-voltar" onClick={onVoltar}>
+            <ArrowLeftIcon className="bs-icon" aria-hidden="true" />
+            <span>Contas</span>
+          </button>
+          <div className="bs-detalhe-titulo">
+            <div className="bs-detalhe-id">{conta.Identificador}</div>
+            <div className="bs-detalhe-sub">
+              {clientes.find((c) => c.ID === conta.ClienteID)?.Nome ?? "Cliente Anónimo"}
+            </div>
+          </div>
         </div>
-        <select value={armazemId} onChange={(e) => setArmazemId(e.target.value ? Number(e.target.value) : "")}>
-          {armazens.map((a) => (
-            <option key={a.ID} value={a.ID}>
-              {a.Nome}
-            </option>
-          ))}
-        </select>
-        <button className="bs-cancelar" onClick={cancelar}>
-          <XCircleIcon className="bs-icon" aria-hidden="true" />
-          Cancelar conta
-        </button>
+        <div className="bs-detalhe-header-right">
+          <select
+            className="bs-armazem-select"
+            value={armazemId}
+            onChange={(e) => setArmazemId(e.target.value ? Number(e.target.value) : "")}
+          >
+            {armazens.map((a) => (
+              <option key={a.ID} value={a.ID}>
+                {a.Nome}
+              </option>
+            ))}
+          </select>
+          <button className="bs-cancelar" onClick={cancelar} title="Cancelar e anular conta">
+            <XCircleIcon className="bs-icon" aria-hidden="true" />
+            <span>Cancelar conta</span>
+          </button>
+        </div>
       </div>
 
       <div className="bs-detalhe-body">
-        {armazemId !== "" && (
-          <Catalogo key={armazemId} armazemID={armazemId} IconeBusca={MagnifyingGlassIcon} onEscolher={adicionar} onErro={onErro} />
-        )}
+        <div className="bs-detalhe-catalogo">
+          {armazemId !== "" && (
+            <Catalogo
+              key={armazemId}
+              armazemID={armazemId}
+              IconeBusca={MagnifyingGlassIcon}
+              onEscolher={adicionar}
+              onErro={onErro}
+            />
+          )}
+        </div>
 
         <div className="bs-comanda">
           <div className="bs-comanda-header">
-            <span>Comanda</span>
-            <span>{itensAtual.length} itens</span>
+            <div>
+              <div className="bs-comanda-titulo">Comanda</div>
+              <div className="bs-comanda-subtitulo">{conta.Identificador}</div>
+            </div>
+            <span className="bs-comanda-badge">
+              {itensAtual.length} {itensAtual.length === 1 ? "item" : "itens"}
+            </span>
           </div>
+
           <div className="bs-comanda-itens">
             {itensAtual.map((i) => (
               <div key={i.ID} className="bs-comanda-item">
-                <div className="bs-comanda-item-nome">
-                  <span style={{ fontWeight: 700, color: "var(--color-accent)", marginRight: 6 }}>{qtd(i.Quantidade)}x</span>
-                  <span>{nomeProduto(i.ProdutoID)}</span>
+                <div className="bs-comanda-item-top">
+                  <div className="bs-comanda-item-nome">
+                    <span className="bs-comanda-item-qtd">{qtd(i.Quantidade)}x</span>
+                    <span className="bs-comanda-item-desc">{nomeProduto(i.ProdutoID)}</span>
+                  </div>
+                  <div className="bs-comanda-item-total">
+                    {mt(i.Quantidade * i.PrecoUnitarioAplicado - i.Desconto)}
+                  </div>
                 </div>
-                <div className="bs-comanda-item-total">{mt(i.Quantidade * i.PrecoUnitarioAplicado - i.Desconto)}</div>
                 {outrasContasAbertas.length > 0 && (
                   <select
                     className="bs-transferir"
                     defaultValue=""
                     onChange={(e) => e.target.value && transferir(i.ID, Number(e.target.value))}
                   >
-                    <option value="">Transferir…</option>
+                    <option value="">Transferir para outra conta…</option>
                     {outrasContasAbertas.map((c) => (
                       <option key={c.ID} value={c.ID}>
                         {c.Identificador}
@@ -307,12 +356,18 @@ function ContaDetalhe({
                 )}
               </div>
             ))}
-            {itensAtual.length === 0 && <div className="bs-comanda-vazia">Sem consumo lançado</div>}
+            {itensAtual.length === 0 && (
+              <div className="bs-comanda-vazia">
+                <p>Sem consumo lançado</p>
+                <span>Toque nos produtos do catálogo para adicionar a esta conta.</span>
+              </div>
+            )}
           </div>
+
           <div className="bs-comanda-footer">
             <div className="bs-comanda-total">
-              <span>Total</span>
-              <span>{mt(total)}</span>
+              <span className="bs-comanda-total-lbl">Total da Conta</span>
+              <span className="bs-comanda-total-val">{mt(total)}</span>
             </div>
             <button
               className="bs-fechar"
@@ -320,7 +375,7 @@ function ContaDetalhe({
               onClick={() => setMostrarFecho(true)}
             >
               <CheckCircleIcon className="bs-icon" aria-hidden="true" />
-              Fechar conta
+              <span>Fechar conta</span>
             </button>
           </div>
         </div>

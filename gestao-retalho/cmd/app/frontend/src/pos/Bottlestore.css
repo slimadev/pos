@@ -1,3 +1,7 @@
+/* ==========================================================================
+   Bottlestore POS - Lounge & Bar Theme (Dark Glassmorphism)
+   ========================================================================== */
+
 .bs {
   display: flex;
   flex-direction: column;
@@ -6,26 +10,75 @@
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   color: var(--color-text);
-  border-radius: 18px;
+  border-radius: 20px;
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
   padding: 22px;
-  min-height: 70vh;
+  min-height: calc(100vh - 120px);
   font-family: var(--font-body);
+  box-sizing: border-box;
+  animation: fadeInBs 0.25s ease-out;
 }
 
+@keyframes fadeInBs {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Global icons sizing to prevent any oversized SVGs */
+.bs-icon {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  min-height: 18px;
+  max-width: 18px;
+  max-height: 18px;
+  flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Error banner */
 .bs-erro {
-  background: rgba(220, 38, 38, 0.12);
-  border: 1px solid rgba(220, 38, 38, 0.25);
-  color: var(--color-error);
-  padding: 10px 14px;
-  border-radius: 10px;
-  font-size: 13px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.1);
 }
 
+.bs-erro button {
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 6px;
+  transition: background 0.15s ease;
+}
+
+.bs-erro button:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+/* Top KPI summary cards */
 .bs-kpis {
   display: flex;
-  gap: 24px;
+  gap: 16px;
   flex-wrap: wrap;
 }
 
@@ -33,11 +86,13 @@
   display: flex;
   align-items: baseline;
   gap: 10px;
-  padding: 12px 18px;
+  padding: 12px 20px;
   border-radius: 14px;
   background: var(--glass-card-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-card-border);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 .bs-kpi-valor {
@@ -45,24 +100,28 @@
   font-size: 24px;
   font-weight: 800;
   color: var(--color-accent);
+  letter-spacing: -0.02em;
 }
 
 .bs-kpi-label {
   font-size: 13px;
   color: var(--color-text-muted);
   font-weight: 500;
+  text-transform: lowercase;
 }
 
+/* Nova conta / mesa form bar */
 .bs-nova {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .bs-nova input,
 .bs-nova select {
   padding: 12px 16px;
-  border-radius: 12px;
+  border-radius: 14px;
   border: 1px solid var(--glass-card-border);
   background: var(--glass-card-bg);
   backdrop-filter: var(--glass-blur);
@@ -70,124 +129,182 @@
   color: var(--color-text);
   font-size: 14px;
   outline: none;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .bs-nova input {
   flex: 1;
-  min-width: 180px;
+  min-width: 220px;
+}
+
+.bs-nova input::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.7;
 }
 
 .bs-nova input:focus,
 .bs-nova select:focus {
   border-color: var(--color-accent);
   box-shadow: 0 0 0 3px var(--color-accent-subtle);
+  background: var(--glass-card-hover);
 }
 
 .bs-nova button {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 12px 20px;
+  padding: 12px 22px;
   font-weight: 700;
   font-size: 14px;
   border: none;
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--color-accent);
   color: var(--color-accent-contrast);
   cursor: pointer;
-  box-shadow: 0 4px 14px var(--color-accent-glow);
-  transition: all 0.2s ease;
+  box-shadow: 0 4px 16px var(--color-accent-glow);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
 }
 
 .bs-nova button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px var(--color-accent-glow);
+  box-shadow: 0 8px 24px var(--color-accent-glow);
 }
+
+.bs-nova button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* ==========================================================================
+   Table & Account Grid
+   ========================================================================== */
 
 .bs-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 14px;
-  margin-top: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+  margin-top: 6px;
 }
 
-.bs-cartao {
+.bs-card {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 16px;
-  border-radius: 16px;
+  padding: 18px 20px;
+  border-radius: 18px;
   background: var(--glass-card-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-card-border);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
   cursor: pointer;
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-  min-height: 120px;
+  min-height: 135px;
   user-select: none;
+  position: relative;
+  overflow: hidden;
 }
 
-.bs-cartao:hover {
-  transform: translateY(-3px);
+.bs-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: transparent;
+  transition: background 0.2s ease;
+}
+
+.bs-card--ativa::before {
+  background: var(--color-accent);
+  box-shadow: 0 0 12px var(--color-accent-glow);
+}
+
+.bs-card:hover {
+  transform: translateY(-4px);
   border-color: var(--color-accent);
-  box-shadow: 0 10px 26px var(--color-accent-glow);
+  box-shadow: 0 12px 32px var(--color-accent-glow), 0 4px 16px rgba(0, 0, 0, 0.4);
   background: var(--glass-card-hover);
 }
 
-.bs-cartao:active {
-  transform: scale(0.97);
+.bs-card:active {
+  transform: scale(0.98);
 }
 
-.bs-cartao-header {
+.bs-card-top {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bs-card-header-row {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 8px;
+  gap: 10px;
 }
 
-.bs-cartao-nome {
+.bs-card-id {
   font-size: 16px;
   font-weight: 700;
   color: var(--color-text);
+  line-height: 1.3;
 }
 
-.bs-cartao-cliente {
-  font-size: 12px;
-  color: var(--color-text-muted);
-  margin-top: 2px;
-}
-
-.bs-cartao-status {
+.bs-card-badge {
   font-size: 10.5px;
   font-weight: 700;
   text-transform: uppercase;
-  padding: 2px 7px;
-  border-radius: 6px;
-  background: var(--color-accent-subtle);
-  color: var(--color-accent);
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text-muted);
   letter-spacing: 0.04em;
+  white-space: nowrap;
 }
 
-.bs-cartao-rodape {
-  margin-top: 14px;
+.bs-card-badge--ativa {
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent-glow);
+  box-shadow: 0 0 10px var(--color-accent-glow);
+}
+
+.bs-card-cliente {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bs-card-bottom {
+  margin-top: 16px;
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  border-top: 1px solid var(--color-surface-border);
-  padding-top: 10px;
+  border-top: 1px solid var(--glass-card-border);
+  padding-top: 12px;
 }
 
-.bs-cartao-total {
-  font-size: 18px;
+.bs-card-total {
+  font-family: var(--font-display);
+  font-size: 22px;
   font-weight: 800;
   color: var(--color-accent);
+  letter-spacing: -0.01em;
 }
 
-.bs-cartao-itens-qtd {
-  font-size: 11.5px;
+.bs-card-itens {
+  font-size: 12px;
   color: var(--color-text-muted);
+  font-weight: 500;
 }
 
 .bs-vazio {
@@ -195,5 +312,564 @@
   font-size: 14px;
   grid-column: 1 / -1;
   text-align: center;
-  padding: 40px;
+  padding: 50px 20px;
+  background: var(--glass-card-bg);
+  border-radius: 16px;
+  border: 1px dashed var(--glass-card-border);
+}
+
+.bs-vazio p {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.bs-vazio span {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+/* ==========================================================================
+   Account Detail View (ContaDetalhe)
+   ========================================================================== */
+
+.bs-detalhe {
+  height: calc(100vh - 120px);
+  min-height: 540px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px 22px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.bs-detalhe-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--glass-card-border);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.bs-detalhe-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.bs-voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--glass-card-border);
+  background: var(--glass-card-bg);
+  color: var(--color-text);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bs-voltar:hover {
+  background: var(--glass-card-hover);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  transform: translateX(-2px);
+}
+
+.bs-detalhe-titulo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bs-detalhe-id {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--color-text);
+  font-family: var(--font-display);
+}
+
+.bs-detalhe-sub {
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.bs-detalhe-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bs-armazem-select {
+  padding: 9px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--glass-card-border);
+  background: var(--glass-card-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.bs-armazem-select:focus,
+.bs-armazem-select:hover {
+  border-color: var(--color-accent);
+}
+
+.bs-cancelar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.08);
+  color: #f87171;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.bs-cancelar:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.6);
+  color: #ef4444;
+  transform: translateY(-1px);
+}
+
+/* Two-column layout in Detail view */
+.bs-detalhe-body {
+  display: flex;
+  flex-direction: row;
+  gap: 18px;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.bs-detalhe-catalogo {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ==========================================================================
+   Comanda / Order Ticket
+   ========================================================================== */
+
+.bs-comanda {
+  width: 360px;
+  max-width: 400px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--glass-card-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-card-border);
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.bs-comanda-header {
+  padding: 16px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--glass-card-border);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.bs-comanda-titulo {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+
+.bs-comanda-subtitulo {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.bs-comanda-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 8px;
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent-glow);
+}
+
+.bs-comanda-itens {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bs-comanda-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-card-border);
+  transition: all 0.15s ease;
+}
+
+.bs-comanda-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--color-accent-glow);
+}
+
+.bs-comanda-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.bs-comanda-item-nome {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--color-text);
+  min-width: 0;
+}
+
+.bs-comanda-item-qtd {
+  font-weight: 800;
+  color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.bs-comanda-item-desc {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bs-comanda-item-total {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--color-accent);
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+}
+
+.bs-transferir {
+  font-size: 11.5px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--glass-card-border);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--color-text-muted);
+  align-self: flex-start;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s ease;
+  max-width: 100%;
+}
+
+.bs-transferir:hover,
+.bs-transferir:focus {
+  border-color: var(--color-accent);
+  color: var(--color-text);
+}
+
+.bs-comanda-vazia {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 16px;
+  gap: 6px;
+  color: var(--color-text-muted);
+  height: 100%;
+}
+
+.bs-comanda-vazia p {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.bs-comanda-vazia span {
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.bs-comanda-footer {
+  padding: 16px 18px;
+  border-top: 1px solid var(--glass-card-border);
+  background: rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.bs-comanda-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.bs-comanda-total-lbl {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.bs-comanda-total-val {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--color-accent);
+  letter-spacing: -0.01em;
+}
+
+.bs-fechar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  border: none;
+  border-radius: 14px;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  cursor: pointer;
+  box-shadow: 0 4px 18px var(--color-accent-glow);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bs-fechar:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 26px var(--color-accent-glow);
+}
+
+.bs-fechar:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* ==========================================================================
+   Modal Fecho de Conta
+   ========================================================================== */
+
+.bs-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 8, 14, 0.78);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: fadeInBs 0.2s ease-out;
+}
+
+.bs-modal {
+  width: 100%;
+  max-width: 480px;
+  background: var(--color-surface);
+  border: 1px solid var(--glass-card-border);
+  border-radius: 20px;
+  padding: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55), 0 0 24px var(--color-accent-glow);
+  animation: modalPopBs 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalPopBs {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.bs-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid var(--glass-card-border);
+  padding-bottom: 14px;
+}
+
+.bs-modal-header > div:first-child {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.bs-modal-total {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--color-accent);
+}
+
+.bs-modal-pagamentos {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bs-modal-linha {
+  display: flex;
+  gap: 10px;
+}
+
+.bs-modal-linha select,
+.bs-modal-linha input {
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--glass-card-border);
+  background: var(--glass-card-bg);
+  color: var(--color-text);
+  font-size: 14px;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.bs-modal-linha select:focus,
+.bs-modal-linha input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-subtle);
+}
+
+.bs-modal-linha input {
+  flex: 1;
+  font-weight: 600;
+}
+
+.bs-modal-pagamentos > button {
+  align-self: flex-start;
+  background: none;
+  border: 1px dashed var(--glass-card-border);
+  border-radius: 10px;
+  padding: 8px 14px;
+  color: var(--color-accent);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.bs-modal-pagamentos > button:hover {
+  background: var(--color-accent-subtle);
+  border-color: var(--color-accent);
+}
+
+.bs-modal-falta {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--color-success);
+}
+
+.bs-modal-falta--divida {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: var(--color-warning);
+}
+
+.bs-modal-falta--troco {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #60a5fa;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.bs-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 6px;
+}
+
+.bs-modal-actions button {
+  padding: 12px 22px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--glass-card-border);
+  background: var(--glass-card-bg);
+  color: var(--color-text);
+  transition: all 0.15s ease;
+}
+
+.bs-modal-actions button:hover {
+  background: var(--glass-card-hover);
+}
+
+.bs-modal-confirmar {
+  border: none !important;
+  background: var(--color-accent) !important;
+  color: var(--color-accent-contrast) !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 16px var(--color-accent-glow);
+}
+
+.bs-modal-confirmar:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px var(--color-accent-glow);
+}
+
+.bs-modal-confirmar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
