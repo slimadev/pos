@@ -24,6 +24,7 @@ import Catalogo from "./Catalogo";
 import { METODOS, ROTULO_METODO, lerNumero, mt, qtd } from "./formato";
 import { calcularTroco } from "./troco";
 import ReciboModal from "./ReciboModal";
+import { obterVisualProduto, gerarSvgFallback } from "./productVisuals";
 import "./Bottlestore.css";
 
 interface ContaComTotal {
@@ -329,33 +330,47 @@ function ContaDetalhe({
           </div>
 
           <div className="bs-comanda-itens">
-            {itensAtual.map((i) => (
-              <div key={i.ID} className="bs-comanda-item">
-                <div className="bs-comanda-item-top">
-                  <div className="bs-comanda-item-nome">
-                    <span className="bs-comanda-item-qtd">{qtd(i.Quantidade)}x</span>
-                    <span className="bs-comanda-item-desc">{nomeProduto(i.ProdutoID)}</span>
+            {itensAtual.map((i) => {
+              const nome = nomeProduto(i.ProdutoID);
+              const visual = obterVisualProduto(nome);
+              const fallback = gerarSvgFallback(nome, visual.corAcento, "Item");
+              return (
+                <div key={i.ID} className="bs-comanda-item">
+                  <div className="bs-comanda-item-top">
+                    <img
+                      src={visual.imagemUrl}
+                      alt={nome}
+                      className="bs-comanda-item-thumb"
+                      loading="lazy"
+                      onError={(e) => {
+                        e.currentTarget.src = fallback;
+                      }}
+                    />
+                    <div className="bs-comanda-item-nome">
+                      <span className="bs-comanda-item-qtd">{qtd(i.Quantidade)}x</span>
+                      <span className="bs-comanda-item-desc">{nome}</span>
+                    </div>
+                    <div className="bs-comanda-item-total">
+                      {mt(i.Quantidade * i.PrecoUnitarioAplicado - i.Desconto)}
+                    </div>
                   </div>
-                  <div className="bs-comanda-item-total">
-                    {mt(i.Quantidade * i.PrecoUnitarioAplicado - i.Desconto)}
-                  </div>
+                  {outrasContasAbertas.length > 0 && (
+                    <select
+                      className="bs-transferir"
+                      defaultValue=""
+                      onChange={(e) => e.target.value && transferir(i.ID, Number(e.target.value))}
+                    >
+                      <option value="">Transferir para outra conta…</option>
+                      {outrasContasAbertas.map((c) => (
+                        <option key={c.ID} value={c.ID}>
+                          {c.Identificador}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
-                {outrasContasAbertas.length > 0 && (
-                  <select
-                    className="bs-transferir"
-                    defaultValue=""
-                    onChange={(e) => e.target.value && transferir(i.ID, Number(e.target.value))}
-                  >
-                    <option value="">Transferir para outra conta…</option>
-                    {outrasContasAbertas.map((c) => (
-                      <option key={c.ID} value={c.ID}>
-                        {c.Identificador}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-            ))}
+              );
+            })}
             {itensAtual.length === 0 && (
               <div className="bs-comanda-vazia">
                 <p>Sem consumo lançado</p>

@@ -15,6 +15,7 @@ import {
 import { ObterDashboard } from "../wailsjs/go/admin/AdminApp";
 import { admin } from "../wailsjs/go/models";
 import { mtInteiro, pct } from "./formato";
+import { obterVisualProduto, gerarSvgFallback } from "./productVisuals";
 
 const mt = mtInteiro;
 
@@ -365,26 +366,43 @@ export default function Dashboard({ onErro }: { onErro: (e: string) => void }) {
               </div>
             </div>
             <div className="admin-vendidos-lista">
-              {d.MaisVendidosHoje.map((item, i) => (
-                <div key={i} className="admin-vendido-linha">
-                  <div className="admin-vendido-topo">
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                      <span className={`admin-rank-badge rank-${i + 1}`}>#{i + 1}</span>
-                      <span className="admin-vendido-nome" title={item.ProdutoNome}>{item.ProdutoNome}</span>
+              {d.MaisVendidosHoje.map((item, i) => {
+                const visual = obterVisualProduto(item.ProdutoNome);
+                const fallback = gerarSvgFallback(item.ProdutoNome, visual.corAcento, "Top");
+                return (
+                  <div key={i} className="admin-vendido-linha">
+                    <div className="admin-vendido-topo">
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                        <span className={`admin-rank-badge rank-${i + 1}`}>#{i + 1}</span>
+                        <div className="admin-vendido-thumb-wrap">
+                          <img
+                            src={visual.imagemUrl}
+                            alt={item.ProdutoNome}
+                            className="admin-vendido-thumb"
+                            loading="lazy"
+                            onError={(e) => {
+                              e.currentTarget.src = fallback;
+                            }}
+                          />
+                        </div>
+                        <span className="admin-vendido-nome" title={item.ProdutoNome}>
+                          {item.ProdutoNome}
+                        </span>
+                      </div>
+                      <span className="admin-vendido-qtd">{item.Quantidade} un</span>
                     </div>
-                    <span className="admin-vendido-qtd">{item.Quantidade} un</span>
+                    <div className="admin-barra-fundo">
+                      <div
+                        className="admin-barra-valor"
+                        style={{
+                          width: `${(item.Quantidade / maxVendido) * 100}%`,
+                          background: "var(--accent)",
+                        }}
+                      />
+                    </div>
                   </div>
-                  <div className="admin-barra-fundo">
-                    <div
-                      className="admin-barra-valor"
-                      style={{
-                        width: `${(item.Quantidade / maxVendido) * 100}%`,
-                        background: "var(--accent)",
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               {d.MaisVendidosHoje.length === 0 && (
                 <div className="admin-alerta-vazio">
                   <InformationCircleIcon className="admin-icon-vazio" />

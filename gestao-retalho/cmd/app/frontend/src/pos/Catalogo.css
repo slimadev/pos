@@ -1,15 +1,20 @@
+/* ==========================================================================
+   Catálogo Zobaze POS - Visual, Moderno e Vibrante com Imagens
+   ========================================================================== */
+
 .cat {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   flex: 1;
   min-height: 0;
   min-width: 0;
 }
 
+/* Toolbar de pesquisa e alternador de visualização */
 .cat-toolbar {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
   flex-wrap: wrap;
 }
@@ -17,7 +22,7 @@
 .cat-busca-wrap {
   position: relative;
   flex: 1;
-  min-width: 200px;
+  min-width: 220px;
   display: flex;
   align-items: center;
 }
@@ -38,12 +43,12 @@
   font-size: 14px;
   font-weight: 500;
   border: 1px solid var(--glass-card-border);
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--glass-card-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   color: var(--color-text);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   outline: none;
 }
@@ -54,8 +59,63 @@
   background: var(--glass-card-hover);
 }
 
+.cat-limpar {
+  position: absolute;
+  right: 12px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cat-limpar:hover {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+/* Alternador de visualização (Cards vs Lista) */
+.cat-view-toggle {
+  display: flex;
+  background: var(--glass-card-bg);
+  border: 1px solid var(--glass-card-border);
+  border-radius: 12px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.cat-view-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 10px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.cat-view-btn:hover {
+  color: var(--color-text);
+}
+
+.cat-view-btn.ativo {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  box-shadow: 0 2px 8px var(--color-accent-glow);
+}
+
+/* Selects da toolbar */
 .cat-toolbar select {
-  padding: 11px 14px;
+  padding: 10px 14px;
   border: 1px solid var(--glass-card-border);
   border-radius: 12px;
   background: var(--glass-card-bg);
@@ -77,45 +137,38 @@
   box-shadow: 0 0 0 3px var(--color-accent-subtle);
 }
 
-.cat-limpar {
-  position: absolute;
-  right: 10px;
-  width: 24px;
-  height: 24px;
-  border: none;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.06);
-  color: var(--color-text-muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.cat-limpar:hover {
-  background: var(--color-accent);
-  color: #fff;
-}
-
+/* Aviso temporário */
 .cat-aviso {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: var(--color-warning);
+  padding: 10px 14px;
+  border-radius: 10px;
   font-size: 13px;
   font-weight: 500;
-  color: var(--color-warning);
-  padding: 8px 14px;
-  border-radius: 10px;
-  background: rgba(217, 119, 6, 0.12);
-  border: 1px solid rgba(217, 119, 6, 0.2);
+  animation: fadeInAviso 0.2s ease-out;
 }
 
-/* Category Pills with no scrollbar */
+@keyframes fadeInAviso {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Separadores de Categoria (Pílulas com rolagem horizontal Zobaze) */
 .cat-separadores {
   display: flex;
   gap: 8px;
   overflow-x: auto;
-  padding: 4px 2px 10px;
+  padding-bottom: 4px;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  flex-shrink: 0;
 }
 
 .cat-separadores::-webkit-scrollbar {
@@ -123,171 +176,432 @@
 }
 
 .cat-separador {
-  flex: none;
-  padding: 8px 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 12px;
   border: 1px solid var(--glass-card-border);
-  border-radius: 999px;
   background: var(--glass-card-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
-  color: var(--color-text);
-  font: inherit;
-  font-size: 13.5px;
-  font-weight: 500;
+  color: var(--color-text-muted);
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-  user-select: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
 }
 
 .cat-separador:hover {
   border-color: var(--color-accent);
-  color: var(--color-accent);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  color: var(--color-text);
+  transform: translateY(-1px);
 }
 
 .cat-separador.ativo {
   background: var(--color-accent);
-  border-color: var(--color-accent);
   color: var(--color-accent-contrast);
+  border-color: var(--color-accent);
+  box-shadow: 0 4px 14px var(--color-accent-glow);
+  transform: translateY(-1px);
+}
+
+.cat-separador-qtd {
+  font-size: 11px;
   font-weight: 700;
-  box-shadow: 0 4px 16px var(--color-accent-glow);
-  transform: translateY(-2px);
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.12);
 }
 
-/* Product Cards Grid */
+.cat-separador.ativo .cat-separador-qtd {
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--color-accent-contrast);
+}
+
+/* ==========================================================================
+   Grelha de Produtos (Cards com Imagem - Estilo Zobaze)
+   ========================================================================== */
+
 .cat-grelha {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(154px, 1fr));
-  gap: 12px;
-  align-content: start;
-  overflow-y: auto;
   flex: 1;
+  overflow-y: auto;
   min-height: 0;
-  padding: 2px 2px 12px;
+  padding-right: 4px;
+  scrollbar-width: thin;
 }
 
-.cat-cartao {
-  position: relative;
+.cat-grelha--cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.cat-vazio {
+  grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  text-align: left;
-  padding: 13px 14px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 60px 20px;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+.cat-vazio-icon {
+  width: 32px;
+  height: 32px;
+  color: var(--color-accent);
+  opacity: 0.8;
+}
+
+/* Cartão de Produto Individual */
+.cat-cartao {
+  display: flex;
+  flex-direction: column;
   background: var(--glass-card-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-card-border);
-  border-radius: 14px;
-  color: var(--color-text);
-  font: inherit;
+  border-radius: 16px;
+  padding: 0;
   cursor: pointer;
   overflow: hidden;
+  text-align: left;
+  position: relative;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
-  min-height: 114px;
   user-select: none;
+  font-family: inherit;
 }
 
-.cat-cartao::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 100%);
-  pointer-events: none;
-}
-
-.cat-cartao:hover:not(.esgotado) {
+.cat-cartao:hover {
+  transform: translateY(-4px);
   border-color: var(--color-accent);
-  transform: translateY(-3px);
-  box-shadow: 0 10px 24px var(--color-accent-glow);
-  background: var(--glass-card-hover);
+  box-shadow: 0 10px 28px var(--color-accent-glow), 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-.cat-cartao:active:not(.esgotado) {
+.cat-cartao:active {
   transform: scale(0.97);
 }
 
 .cat-cartao.esgotado {
-  opacity: 0.55;
-  background: rgba(0, 0, 0, 0.02);
+  opacity: 0.6;
+  filter: grayscale(0.4);
+}
+
+/* Área da Imagem */
+.cat-cartao-img-box {
+  position: relative;
+  width: 100%;
+  height: 125px;
+  background: #1e1b24;
+  overflow: hidden;
+}
+
+.cat-cartao-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cat-cartao:hover .cat-cartao-img {
+  transform: scale(1.08);
+}
+
+.cat-cartao-overlay-grad {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, 0.6) 100%);
+  pointer-events: none;
+}
+
+/* Badges flutuantes */
+.cat-cartao-badges {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.cat-badge-stock {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 6px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.cat-badge-stock.ok {
+  background: rgba(34, 197, 94, 0.85);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(34, 197, 94, 0.35);
+}
+
+.cat-badge-stock.baixo {
+  background: rgba(245, 158, 11, 0.85);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.35);
+}
+
+.cat-badge-stock.sem {
+  background: rgba(239, 68, 68, 0.88);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.35);
+}
+
+.cat-badge-cat {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.55);
+  color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  max-width: 85px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Botão flutuante de adição rápida Zobaze */
+.cat-cartao-quick-add {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(2px) scale(0.92);
+  opacity: 0.9;
+}
+
+.cat-cartao:hover .cat-cartao-quick-add {
+  transform: translateY(0) scale(1.05);
+  opacity: 1;
+  box-shadow: 0 4px 14px var(--color-accent-glow);
+}
+
+/* Corpo do Cartão */
+.cat-cartao-corpo {
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--glass-card-bg);
 }
 
 .cat-cartao-nome {
   font-size: 13.5px;
-  font-weight: 600;
-  line-height: 1.25;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.35;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  color: var(--color-text);
+  min-height: 36px;
 }
 
 .cat-cartao-rodape {
-  margin-top: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-top: 4px;
+  border-top: 1px solid var(--glass-card-border);
+}
+
+.cat-cartao-precos {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
-  gap: 6px;
+  gap: 4px;
 }
 
 .cat-cartao-preco {
-  font-size: 16px;
+  font-family: var(--font-display);
+  font-size: 16.5px;
   font-weight: 800;
   color: var(--color-accent);
-  white-space: nowrap;
   letter-spacing: -0.01em;
 }
 
 .cat-cartao-unidade {
   font-size: 11px;
-  font-weight: 500;
   color: var(--color-text-muted);
-  background: rgba(0, 0, 0, 0.05);
-  padding: 1px 6px;
-  border-radius: 6px;
+  font-weight: 500;
+}
+
+.cat-cartao-variacoes {
+  font-size: 10.5px;
+  color: var(--color-text-muted);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* ==========================================================================
+   Visualização em Lista Compacta (Modo Rápido)
+   ========================================================================== */
+
+.cat-grelha--lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cat-linha {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--glass-card-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-card-border);
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.18s ease;
+  font-family: inherit;
+}
+
+.cat-linha:hover {
+  background: var(--glass-card-hover);
+  border-color: var(--color-accent);
+  transform: translateX(3px);
+  box-shadow: 0 4px 14px var(--color-accent-glow);
+}
+
+.cat-linha.esgotado {
+  opacity: 0.55;
+}
+
+.cat-linha-thumb-wrap {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #1e1b24;
+}
+
+.cat-linha-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cat-linha-badge-sem {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+.cat-linha-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cat-linha-nome {
+  font-size: 13.5px;
+  font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.cat-cartao-stock {
-  display: inline-flex;
+.cat-linha-sub {
+  display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--color-success);
-  margin-top: 4px;
+  gap: 8px;
+  font-size: 11.5px;
 }
 
-.cat-cartao-stock-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--color-success);
+.cat-linha-unidade {
+  color: var(--color-text-muted);
+}
+
+.cat-linha-stock-pill {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 5px;
+}
+
+.cat-linha-stock-pill.ok {
+  background: rgba(34, 197, 94, 0.12);
+  color: #22c55e;
+}
+
+.cat-linha-stock-pill.baixo {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+.cat-linha-stock-pill.sem {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.cat-linha-preco-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   flex-shrink: 0;
 }
 
-.cat-cartao-stock.zero {
-  color: var(--color-error);
-  background: rgba(220, 38, 38, 0.08);
-  padding: 2px 6px;
-  border-radius: 6px;
-  align-self: flex-start;
+.cat-linha-preco {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--color-accent);
 }
 
-.cat-cartao-stock.zero .cat-cartao-stock-dot {
-  background: var(--color-error);
+.cat-linha-add {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
 }
 
-.cat-vazio {
-  grid-column: 1 / -1;
-  padding: 40px 20px;
-  text-align: center;
-  color: var(--color-text-muted);
-  font-size: 14px;
+.cat-linha:hover .cat-linha-add {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
 }

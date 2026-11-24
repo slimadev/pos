@@ -193,38 +193,47 @@ function Lista({
               <td colSpan={6}>{lista.length === 0 ? "Ainda não há clientes registados." : "Nenhum cliente neste filtro."}</td>
             </tr>
           )}
-          {visiveis.map((r) => (
-            <tr key={r.Cliente.ID}>
-              <td>
-                {r.Cliente.Nome}
-                {r.LimiteExcedido && (
-                  <span className="admin-stock-abaixo-minimo">
-                    <ExclamationTriangleIcon className="admin-stock-abaixo-minimo-icon" aria-hidden="true" />
-                    acima do limite
-                  </span>
-                )}
-              </td>
-              <td>{r.Cliente.Telefone || "—"}</td>
-              <td style={{ textAlign: "right" }}>{r.Cliente.LimiteCredito != null ? mt(r.Cliente.LimiteCredito) : "—"}</td>
-              <td style={{ textAlign: "right" }}>
-                {r.TotalEmAberto > 0 ? <span className="admin-inventario-dif falta">{mt(r.TotalEmAberto)}</span> : "—"}
-              </td>
-              <td style={{ textAlign: "right" }}>
-                {r.TotalEmAberto > 0 ? (
-                  <span className={r.DiasDividaMaisAntiga > DIAS_DIVIDA_ANTIGA ? "admin-inventario-dif falta" : undefined}>
-                    {haDias(r.DiasDividaMaisAntiga)}
-                  </span>
-                ) : (
-                  "—"
-                )}
-              </td>
+          {visiveis.map((r) => {
+            const partes = (r.Cliente.Nome || "Cliente").trim().split(/\s+/);
+            const iniciais = (partes[0][0] + (partes.length > 1 ? partes[partes.length - 1][0] : "")).toUpperCase();
+            return (
+              <tr key={r.Cliente.ID}>
+                <td>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div className="admin-cliente-avatar">{iniciais || "C"}</div>
+                    <div>
+                      <div style={{ fontWeight: 600, color: "var(--text)" }}>{r.Cliente.Nome}</div>
+                      {r.LimiteExcedido && (
+                        <span className="admin-stock-abaixo-minimo">
+                          <ExclamationTriangleIcon className="admin-stock-abaixo-minimo-icon" aria-hidden="true" />
+                          acima do limite
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </td>
+                <td>{r.Cliente.Telefone || "—"}</td>
+                <td style={{ textAlign: "right" }}>{r.Cliente.LimiteCredito != null ? mt(r.Cliente.LimiteCredito) : "—"}</td>
+                <td style={{ textAlign: "right" }}>
+                  {r.TotalEmAberto > 0 ? <span className="admin-inventario-dif falta">{mt(r.TotalEmAberto)}</span> : "—"}
+                </td>
+                <td style={{ textAlign: "right" }}>
+                  {r.TotalEmAberto > 0 ? (
+                    <span className={r.DiasDividaMaisAntiga > DIAS_DIVIDA_ANTIGA ? "admin-inventario-dif falta" : undefined}>
+                      {haDias(r.DiasDividaMaisAntiga)}
+                    </span>
+                  ) : (
+                    "—"
+                  )}
+                </td>
               <td className="admin-form">
                 <button className="admin-btn-secundario" onClick={() => onAbrir(r.Cliente)}>
                   Abrir
                 </button>
               </td>
             </tr>
-          ))}
+          );
+        })}
         </tbody>
       </table>
 

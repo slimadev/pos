@@ -553,6 +553,16 @@
   gap: 10px;
 }
 
+.bs-comanda-item-thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--glass-card-border);
+  background: #1e1b24;
+}
+
 .bs-comanda-item-nome {
   display: flex;
   align-items: center;

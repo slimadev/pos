@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { MagnifyingGlassIcon, PlusIcon, XMarkIcon, ArrowUpTrayIcon } from "@heroicons/react/24/outline";
+import {
+  MagnifyingGlassIcon,
+  PlusIcon,
+  XMarkIcon,
+  ArrowUpTrayIcon,
+  Squares2X2Icon,
+  ListBulletIcon,
+} from "@heroicons/react/24/outline";
 import {
   ListarProdutos,
   ListarCategorias,
@@ -18,6 +25,7 @@ import Breadcrumb from "./Breadcrumb";
 import Modal from "./Modal";
 import ImportarProdutosAssistente from "./ImportarProdutos";
 import { mt, num } from "./formato";
+import { obterVisualProduto, gerarSvgFallback } from "./productVisuals";
 
 type TipoProduto = "simples" | "composto" | "semi_elaborado";
 
@@ -61,6 +69,7 @@ export default function ProdutosScreen({ onErro }: { onErro: (e: string) => void
   const [pesquisa, setPesquisa] = useState("");
   const [categoriaFiltro, setCategoriaFiltro] = useState<number | "" | "sem">("");
   const [estado, setEstado] = useState<FiltroEstado>("ativos");
+  const [modoVista, setModoVista] = useState<"grelha" | "tabela">("grelha");
 
   function carregar() {
     Promise.all([ListarProdutos(), ListarCategorias(), ListarTodasUnidades()])
@@ -147,104 +156,253 @@ export default function ProdutosScreen({ onErro }: { onErro: (e: string) => void
         </Modal>
       )}
 
-      <div className="admin-form">
-        <label className="admin-pesquisa">
-          <MagnifyingGlassIcon className="admin-pesquisa-icone" aria-hidden="true" />
-          <input
-            placeholder="Pesquisar nome ou código de barras"
-            value={pesquisa}
-            onChange={(e) => setPesquisa(e.target.value)}
-          />
-        </label>
-        <select
-          value={categoriaFiltro}
-          onChange={(e) =>
-            setCategoriaFiltro(e.target.value === "" ? "" : e.target.value === "sem" ? "sem" : Number(e.target.value))
-          }
-        >
-          <option value="">Todas as categorias</option>
-          <option value="sem">Sem categoria</option>
-          {categorias.map((c) => (
-            <option key={c.ID} value={c.ID}>
-              {c.Nome}
-            </option>
-          ))}
-        </select>
-        <select value={estado} onChange={(e) => setEstado(e.target.value as FiltroEstado)}>
-          <option value="ativos">Ativos</option>
-          <option value="inativos">Inativos</option>
-          <option value="todos">Todos</option>
-        </select>
-        <span style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>{visiveis.length} produto(s)</span>
+      <div className="admin-form" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", flex: 1, minWidth: 280 }}>
+          <label className="admin-pesquisa" style={{ minWidth: 240, flex: 1 }}>
+            <MagnifyingGlassIcon className="admin-pesquisa-icone" aria-hidden="true" />
+            <input
+              placeholder="Pesquisar nome ou código de barras..."
+              value={pesquisa}
+              onChange={(e) => setPesquisa(e.target.value)}
+            />
+          </label>
+          <select
+            value={categoriaFiltro}
+            onChange={(e) =>
+              setCategoriaFiltro(e.target.value === "" ? "" : e.target.value === "sem" ? "sem" : Number(e.target.value))
+            }
+          >
+            <option value="">Todas as categorias</option>
+            <option value="sem">Sem categoria</option>
+            {categorias.map((c) => (
+              <option key={c.ID} value={c.ID}>
+                {c.Nome}
+              </option>
+            ))}
+          </select>
+          <select value={estado} onChange={(e) => setEstado(e.target.value as FiltroEstado)}>
+            <option value="ativos">Ativos</option>
+            <option value="inativos">Inativos</option>
+            <option value="todos">Todos</option>
+          </select>
+          <span style={{ color: "var(--text-secondary)", fontSize: "0.9rem", fontWeight: 500 }}>
+            {visiveis.length} produto(s)
+          </span>
+        </div>
+
+        {/* Alternador de visualização Zobaze: Cards com Foto vs Tabela */}
+        <div className="admin-view-toggle">
+          <button
+            type="button"
+            className={`admin-view-btn ${modoVista === "grelha" ? "ativo" : ""}`}
+            onClick={() => setModoVista("grelha")}
+            title="Vista em Grelha com Fotos (Zobaze)"
+          >
+            <Squares2X2Icon style={{ width: 18, height: 18 }} />
+            <span>Grelha</span>
+          </button>
+          <button
+            type="button"
+            className={`admin-view-btn ${modoVista === "tabela" ? "ativo" : ""}`}
+            onClick={() => setModoVista("tabela")}
+            title="Vista em Tabela Detalhada"
+          >
+            <ListBulletIcon style={{ width: 18, height: 18 }} />
+            <span>Tabela</span>
+          </button>
+        </div>
       </div>
 
-      <table className="admin-tabela">
-        <thead>
-          <tr>
-            <th style={{ width: "28%" }}>Nome</th>
-            <th>Categoria</th>
-            <th>Tipo</th>
-            <th style={{ textAlign: "right" }}>Preço de venda</th>
-            <th style={{ textAlign: "right" }}>Stock mínimo</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
+      {modoVista === "grelha" ? (
+        /* Vista em Grelha Visual Zobaze */
+        <div className="admin-produtos-grid">
           {visiveis.map((p) => {
             const us = unidadesDe(p.ID);
             const padrao = us.find((u) => u.IsPadraoVenda) ?? us[0];
+            const nomeCat = p.CategoriaID != null ? nomeCategoria(p.CategoriaID) : null;
+            const visual = obterVisualProduto(p.Nome, nomeCat);
+            const fallback = gerarSvgFallback(p.Nome, visual.corAcento, padrao ? padrao.NomeUnidade : p.UnidadeBase);
+
             return (
-              <tr key={p.ID} className={p.Ativo ? undefined : "admin-linha-inativa"}>
-                <td>
-                  {p.Nome}
-                  {p.LoteControlado && <span className="admin-etiqueta">lotes</span>}
-                  {!p.Ativo && <span className="admin-etiqueta">inativo</span>}
-                </td>
-                <td>{p.CategoriaID != null ? nomeCategoria(p.CategoriaID) : "—"}</td>
-                <td>{ROTULO_TIPO_PRODUTO[p.TipoProduto as TipoProduto] ?? p.TipoProduto}</td>
-                <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-                  {padrao ? (
-                    <>
-                      {mt(padrao.PrecoVenda)}
-                      <span className="admin-texto-fraco"> / {padrao.NomeUnidade}</span>
-                      {us.length > 1 && <div className="admin-texto-fraco">+{us.length - 1} outra(s) unidade(s)</div>}
-                    </>
-                  ) : (
-                    "—"
-                  )}
-                </td>
-                <td style={{ textAlign: "right" }}>
-                  {p.StockMinimo != null ? `${num(p.StockMinimo)} ${p.UnidadeBase}` : "—"}
-                </td>
-                <td>
-                  <div className="admin-acoes">
-                    <button className="admin-btn-secundario" onClick={() => setModal({ aberto: true, produto: p })}>
+              <div key={p.ID} className={`admin-produto-card ${!p.Ativo ? "admin-produto-card--inativo" : ""}`}>
+                <div className="admin-produto-card-img-wrap">
+                  <img
+                    src={visual.imagemUrl}
+                    alt={p.Nome}
+                    className="admin-produto-card-img"
+                    loading="lazy"
+                    onError={(e) => {
+                      e.currentTarget.src = fallback;
+                    }}
+                  />
+                  <div className="admin-produto-card-badges">
+                    {p.Ativo ? (
+                      <span className="admin-badge-status ativo">Ativo</span>
+                    ) : (
+                      <span className="admin-badge-status inativo">Inativo</span>
+                    )}
+                    {nomeCat && <span className="admin-badge-cat">{nomeCat}</span>}
+                  </div>
+                </div>
+
+                <div className="admin-produto-card-body">
+                  <div className="admin-produto-card-nome" title={p.Nome}>
+                    {p.Nome}
+                  </div>
+                  <div className="admin-produto-card-meta">
+                    <span className="admin-produto-card-tipo">
+                      {ROTULO_TIPO_PRODUTO[p.TipoProduto as TipoProduto] ?? p.TipoProduto}
+                    </span>
+                    {p.StockMinimo != null && (
+                      <span className="admin-produto-card-stock-min">
+                        Min: {num(p.StockMinimo)} {p.UnidadeBase}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="admin-produto-card-preco-row">
+                    <div className="admin-produto-card-preco">
+                      {padrao ? (
+                        <>
+                          <span className="admin-preco-val">{mt(padrao.PrecoVenda)}</span>
+                          <span className="admin-preco-un">/ {padrao.NomeUnidade}</span>
+                        </>
+                      ) : (
+                        <span className="admin-texto-fraco">Sem preço</span>
+                      )}
+                    </div>
+                    {us.length > 1 && (
+                      <span className="admin-badge-variacoes">+{us.length - 1} un.</span>
+                    )}
+                  </div>
+
+                  <div className="admin-produto-card-acoes">
+                    <button
+                      className="admin-btn-secundario admin-btn-sm"
+                      onClick={() => setModal({ aberto: true, produto: p })}
+                    >
                       Editar
                     </button>
-                    <button className="admin-btn-secundario" onClick={() => duplicar(p)}>
+                    <button
+                      className="admin-btn-secundario admin-btn-sm"
+                      onClick={() => duplicar(p)}
+                      title="Duplicar produto"
+                    >
                       Duplicar
                     </button>
-                    <button className="admin-btn-secundario" onClick={() => alternarAtivo(p)}>
+                    <button
+                      className="admin-btn-secundario admin-btn-sm"
+                      onClick={() => alternarAtivo(p)}
+                    >
                       {p.Ativo ? "Desativar" : "Ativar"}
                     </button>
                   </div>
-                </td>
-              </tr>
+                </div>
+              </div>
             );
           })}
           {visiveis.length === 0 && (
-            <tr>
-              <td colSpan={6}>
+            <div className="admin-card" style={{ gridColumn: "1 / -1", textAlign: "center", padding: "48px 20px" }}>
+              <p style={{ color: "var(--text-secondary)", margin: 0 }}>
                 {aCarregar
-                  ? "A carregar…"
+                  ? "A carregar produtos..."
                   : produtos.length === 0
-                    ? 'Sem produtos — clique em "+ Criar produto".'
-                    : "Nenhum produto com estes filtros."}
-              </td>
-            </tr>
+                    ? 'Sem produtos registados — clique em "+ Criar produto".'
+                    : "Nenhum produto corresponde aos filtros aplicados."}
+              </p>
+            </div>
           )}
-        </tbody>
-      </table>
+        </div>
+      ) : (
+        /* Vista em Tabela Detalhada com Miniaturas de Foto */
+        <table className="admin-tabela">
+          <thead>
+            <tr>
+              <th style={{ width: 64 }}>Foto</th>
+              <th style={{ width: "26%" }}>Nome</th>
+              <th>Categoria</th>
+              <th>Tipo</th>
+              <th style={{ textAlign: "right" }}>Preço de venda</th>
+              <th style={{ textAlign: "right" }}>Stock mínimo</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {visiveis.map((p) => {
+              const us = unidadesDe(p.ID);
+              const padrao = us.find((u) => u.IsPadraoVenda) ?? us[0];
+              const nomeCat = p.CategoriaID != null ? nomeCategoria(p.CategoriaID) : null;
+              const visual = obterVisualProduto(p.Nome, nomeCat);
+              const fallback = gerarSvgFallback(p.Nome, visual.corAcento, padrao ? padrao.NomeUnidade : p.UnidadeBase);
+
+              return (
+                <tr key={p.ID} className={p.Ativo ? undefined : "admin-linha-inativa"}>
+                  <td>
+                    <div className="admin-tabela-thumb-wrap">
+                      <img
+                        src={visual.imagemUrl}
+                        alt={p.Nome}
+                        className="admin-tabela-thumb"
+                        loading="lazy"
+                        onError={(e) => {
+                          e.currentTarget.src = fallback;
+                        }}
+                      />
+                    </div>
+                  </td>
+                  <td>
+                    <div style={{ fontWeight: 600, color: "var(--text)" }}>{p.Nome}</div>
+                    <div style={{ display: "flex", gap: 6, marginTop: 3 }}>
+                      {p.LoteControlado && <span className="admin-etiqueta">lotes</span>}
+                      {!p.Ativo && <span className="admin-etiqueta inativo">inativo</span>}
+                    </div>
+                  </td>
+                  <td>{nomeCat ?? "—"}</td>
+                  <td>{ROTULO_TIPO_PRODUTO[p.TipoProduto as TipoProduto] ?? p.TipoProduto}</td>
+                  <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+                    {padrao ? (
+                      <>
+                        <span style={{ fontWeight: 700, color: "var(--accent)" }}>{mt(padrao.PrecoVenda)}</span>
+                        <span className="admin-texto-fraco"> / {padrao.NomeUnidade}</span>
+                        {us.length > 1 && <div className="admin-texto-fraco">+{us.length - 1} outra(s) un.</div>}
+                      </>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                  <td style={{ textAlign: "right" }}>
+                    {p.StockMinimo != null ? `${num(p.StockMinimo)} ${p.UnidadeBase}` : "—"}
+                  </td>
+                  <td>
+                    <div className="admin-acoes">
+                      <button className="admin-btn-secundario" onClick={() => setModal({ aberto: true, produto: p })}>
+                        Editar
+                      </button>
+                      <button className="admin-btn-secundario" onClick={() => duplicar(p)}>
+                        Duplicar
+                      </button>
+                      <button className="admin-btn-secundario" onClick={() => alternarAtivo(p)}>
+                        {p.Ativo ? "Desativar" : "Ativar"}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+            {visiveis.length === 0 && (
+              <tr>
+                <td colSpan={7}>
+                  {aCarregar
+                    ? "A carregar…"
+                    : produtos.length === 0
+                      ? 'Sem produtos — clique em "+ Criar produto".'
+                      : "Nenhum produto com estes filtros."}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      )}
 
       {modal.aberto && (
         <Modal titulo={modal.produto ? `Editar ${modal.produto.Nome}` : "Criar produto"} largo onFechar={fecharModal}>
@@ -427,9 +585,32 @@ function ProdutoForm({
   }
 
   const base = unidadeBase.trim() || "unidade";
+  const visualPreview = obterVisualProduto(nome || "Novo Produto", categorias.find((c) => c.ID === categoriaId)?.Nome);
+  const fallbackPreview = gerarSvgFallback(nome || "Novo Produto", visualPreview.corAcento, base);
 
   return (
     <div className="admin-produto-form">
+      {/* Banner de pré-visualização ao vivo Zobaze */}
+      <div className="admin-produto-preview-banner">
+        <div className="admin-produto-preview-thumb-box">
+          <img
+            src={visualPreview.imagemUrl}
+            alt={nome || "Pré-visualização"}
+            className="admin-produto-preview-img"
+            onError={(e) => {
+              e.currentTarget.src = fallbackPreview;
+            }}
+          />
+        </div>
+        <div className="admin-produto-preview-info">
+          <span className="admin-produto-preview-badge">Identidade Visual do Produto</span>
+          <h4 className="admin-produto-preview-title">{nome || "Nome do Produto"}</h4>
+          <span className="admin-produto-preview-sub">
+            {categorias.find((c) => c.ID === categoriaId)?.Nome ?? "Sem categoria"} · {ROTULO_TIPO_PRODUTO[tipoProduto]} · {base}
+          </span>
+        </div>
+      </div>
+
       <div className="admin-produto-campos">
         <label className="admin-campo admin-produto-nome">
           Nome do produto

@@ -1,9 +1,16 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import type { ComponentType, SVGProps } from "react";
-import { XMarkIcon } from "@heroicons/react/24/outline";
+import {
+  XMarkIcon,
+  Squares2X2Icon,
+  ListBulletIcon,
+  PlusIcon,
+  SparklesIcon,
+} from "@heroicons/react/24/outline";
 import { CatalogoPDV, ListarCategorias } from "../../wailsjs/go/api/App";
 import { domain, usecase } from "../../wailsjs/go/models";
 import { mt, normalizar, qtd } from "./formato";
+import { obterVisualProduto, gerarSvgFallback } from "./productVisuals";
 import "./Catalogo.css";
 
 type IconeSvg = ComponentType<SVGProps<SVGSVGElement>>;
@@ -16,11 +23,12 @@ export type CatalogoHandle = {
 const SEM_CATEGORIA = -1;
 
 /**
- * Catálogo partilhado pelos ecrãs de venda: pesquisa sem acentos por nome
- * ou código de barras (Enter junta o produto — um leitor de código de
- * barras "escreve" o código e carrega Enter), F2 volta à pesquisa, Esc
- * limpa, separadores por categoria e grelha de cartões de tamanho fixo,
- * com os mais vendidos primeiro. Tudo vem de um só pedido (CatalogoPDV).
+ * Catálogo moderno estilo Zobaze POS:
+ * - Cartões visuais com fotografias reais e vibrantes dos produtos
+ * - Alternador de vista entre Grelha Visual e Lista Compacta
+ * - Badges táteis de stock (Em stock, Stock baixo, Esgotado)
+ * - Separadores de categoria com contadores e rolagem horizontal suave
+ * - Ação rápida de toque para adicionar ao carrinho com animação de feedback
  */
 const Catalogo = forwardRef<
   CatalogoHandle,
@@ -38,6 +46,7 @@ const Catalogo = forwardRef<
   const [busca, setBusca] = useState("");
   const [aviso, setAviso] = useState<string | null>(null);
   const [versao, setVersao] = useState(0);
+  const [modoVisualizacao, setModoVisualizacao] = useState<"cards" | "lista">("cards");
   const buscaRef = useRef<HTMLInputElement>(null);
 
   useImperativeHandle(ref, () => ({
@@ -52,7 +61,7 @@ const Catalogo = forwardRef<
         setItens([]);
         onErro(String(e));
       });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- recarrega quando o armazém muda ou depois de uma venda
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [armazemID, versao]);
 
   useEffect(() => {
@@ -75,34 +84,47 @@ const Catalogo = forwardRef<
   }, []);
 
   const lista = useMemo(() => itens ?? [], [itens]);
-  // Só os separadores que têm produtos; "Outros" para os sem categoria.
+
+  // Separadores com contador de itens
   const separadores = useMemo(() => {
-    const usadas = new Set(lista.map((i) => i.Produto.CategoriaID ?? SEM_CATEGORIA));
+    const contagemPorCat = new Map<number, number>();
+    for (const i of lista) {
+      const catId = i.Produto.CategoriaID ?? SEM_CATEGORIA;
+      contagemPorCat.set(catId, (contagemPorCat.get(catId) || 0) + 1);
+    }
+
     const comProdutos = categorias
-      .filter((c) => usadas.has(c.ID))
+      .filter((c) => contagemPorCat.has(c.ID))
       .sort((a, b) => a.Nome.localeCompare(b.Nome, "pt"))
-      .map((c) => ({ id: c.ID, nome: c.Nome }));
-    if (usadas.has(SEM_CATEGORIA) && comProdutos.length > 0) comProdutos.push({ id: SEM_CATEGORIA, nome: "Outros" });
+      .map((c) => ({ id: c.ID, nome: c.Nome, qtd: contagemPorCat.get(c.ID) || 0 }));
+
+    if (contagemPorCat.has(SEM_CATEGORIA) && comProdutos.length > 0) {
+      comProdutos.push({ id: SEM_CATEGORIA, nome: "Outros", qtd: contagemPorCat.get(SEM_CATEGORIA) || 0 });
+    }
     return comProdutos;
   }, [lista, categorias]);
 
   const termo = normalizar(busca);
   const visiveis = lista.filter((i) => {
     if (termo) {
-      // A pesquisa procura em todas as categorias — quem escreve sabe o que quer.
       return (
-        normalizar(i.Produto.Nome).includes(termo) || i.Unidades.some((u) => u.CodigoBarras && u.CodigoBarras === busca.trim())
+        normalizar(i.Produto.Nome).includes(termo) ||
+        i.Unidades.some((u) => u.CodigoBarras && u.CodigoBarras === busca.trim())
       );
     }
     return categoria === null || (i.Produto.CategoriaID ?? SEM_CATEGORIA) === categoria;
   });
 
-  const unidadePadrao = (i: usecase.ItemCatalogo) => i.Unidades.find((u) => u.ID === i.UnidadePadraoID) ?? i.Unidades[0];
-  const esgotado = (i: usecase.ItemCatalogo) => i.Disponivel <= 0 && (i.Produto.ControlaStock || i.Produto.TipoProduto === "composto");
+  const unidadePadrao = (i: usecase.ItemCatalogo) =>
+    i.Unidades.find((u) => u.ID === i.UnidadePadraoID) ?? i.Unidades[0];
+  const esgotado = (i: usecase.ItemCatalogo) =>
+    i.Disponivel <= 0 && (i.Produto.ControlaStock || i.Produto.TipoProduto === "composto");
+  const stockBaixo = (i: usecase.ItemCatalogo) =>
+    !esgotado(i) && i.Produto.ControlaStock && i.Disponivel <= (i.Produto.StockMinimo || 5);
 
   function escolher(i: usecase.ItemCatalogo, u?: domain.UnidadeProduto) {
     if (esgotado(i)) {
-      setAviso(`${i.Produto.Nome} não tem stock neste armazém.`);
+      setAviso(`${i.Produto.Nome} está sem stock neste armazém.`);
       return;
     }
     setAviso(null);
@@ -112,7 +134,6 @@ const Catalogo = forwardRef<
   function enter() {
     const texto = busca.trim();
     if (!texto) return;
-    // Código de barras exato: junta a unidade desse código (ex: a caixa).
     for (const i of lista) {
       const u = i.Unidades.find((x) => x.CodigoBarras === texto);
       if (u) {
@@ -126,7 +147,7 @@ const Catalogo = forwardRef<
       setBusca("");
       return;
     }
-    setAviso(visiveis.length === 0 ? `Nada encontrado para "${texto}".` : "Vários produtos — toque no que quer.");
+    setAviso(visiveis.length === 0 ? `Nenhum produto encontrado para "${texto}".` : "Vários produtos — clique no desejado.");
   }
 
   return (
@@ -137,7 +158,7 @@ const Catalogo = forwardRef<
           <input
             ref={buscaRef}
             className="cat-busca"
-            placeholder="Nome ou código de barras — Enter junta (F2)"
+            placeholder="Pesquisar por nome ou código de barras... (F2)"
             value={busca}
             onChange={(e) => {
               setBusca(e.target.value);
@@ -159,11 +180,33 @@ const Catalogo = forwardRef<
             </button>
           )}
         </div>
+
         {extraToolbar}
+
+        {/* Alternador de visualização Zobaze: Cards com foto vs Lista */}
+        <div className="cat-view-toggle">
+          <button
+            type="button"
+            className={`cat-view-btn ${modoVisualizacao === "cards" ? "ativo" : ""}`}
+            onClick={() => setModoVisualizacao("cards")}
+            title="Vista em Grelha com Fotos"
+          >
+            <Squares2X2Icon style={{ width: 18, height: 18 }} />
+          </button>
+          <button
+            type="button"
+            className={`cat-view-btn ${modoVisualizacao === "lista" ? "ativo" : ""}`}
+            onClick={() => setModoVisualizacao("lista")}
+            title="Vista Compacta em Lista"
+          >
+            <ListBulletIcon style={{ width: 18, height: 18 }} />
+          </button>
+        </div>
       </div>
 
       {aviso && <div className="cat-aviso">{aviso}</div>}
 
+      {/* Barra de categorias com pílulas táteis */}
       {separadores.length > 0 && !termo && (
         <div className="cat-separadores" role="tablist">
           <button
@@ -172,7 +215,8 @@ const Catalogo = forwardRef<
             className={`cat-separador${categoria === null ? " ativo" : ""}`}
             onClick={() => setCategoria(null)}
           >
-            Todos
+            <span>Todos</span>
+            <span className="cat-separador-qtd">{lista.length}</span>
           </button>
           {separadores.map((c) => (
             <button
@@ -182,39 +226,127 @@ const Catalogo = forwardRef<
               className={`cat-separador${categoria === c.id ? " ativo" : ""}`}
               onClick={() => setCategoria(c.id)}
             >
-              {c.nome}
+              <span>{c.nome}</span>
+              <span className="cat-separador-qtd">{c.qtd}</span>
             </button>
           ))}
         </div>
       )}
 
-      <div className="cat-grelha">
-        {itens === null && <div className="cat-vazio">A carregar produtos…</div>}
-        {itens !== null && visiveis.length === 0 && (
-          <div className="cat-vazio">{termo ? `Nenhum produto com "${busca.trim()}".` : "Sem produtos nesta categoria."}</div>
+      {/* Grelha / Lista de produtos estilo Zobaze POS */}
+      <div className={`cat-grelha ${modoVisualizacao === "lista" ? "cat-grelha--lista" : "cat-grelha--cards"}`}>
+        {itens === null && (
+          <div className="cat-vazio">
+            <SparklesIcon className="cat-vazio-icon" />
+            <span>A carregar catálogo de produtos...</span>
+          </div>
         )}
+        {itens !== null && visiveis.length === 0 && (
+          <div className="cat-vazio">
+            <SparklesIcon className="cat-vazio-icon" />
+            <span>{termo ? `Nenhum produto encontrado para "${busca.trim()}".` : "Sem produtos disponíveis nesta categoria."}</span>
+          </div>
+        )}
+
         {visiveis.map((i) => {
           const u = unidadePadrao(i);
           const sem = esgotado(i);
+          const baixo = stockBaixo(i);
+          const nomeCat = categorias.find((c) => c.ID === i.Produto.CategoriaID)?.Nome ?? null;
+          const visual = obterVisualProduto(i.Produto.Nome, nomeCat);
+          const fallback = gerarSvgFallback(i.Produto.Nome, visual.corAcento, u.NomeUnidade);
+
+          if (modoVisualizacao === "lista") {
+            // Visualização Compacta em Lista
+            return (
+              <button
+                key={i.Produto.ID}
+                className={`cat-linha${sem ? " esgotado" : ""}`}
+                onClick={() => escolher(i)}
+              >
+                <div className="cat-linha-thumb-wrap">
+                  <img
+                    src={visual.imagemUrl}
+                    alt={i.Produto.Nome}
+                    className="cat-linha-thumb"
+                    loading="lazy"
+                    onError={(e) => {
+                      e.currentTarget.src = fallback;
+                    }}
+                  />
+                  {sem && <span className="cat-linha-badge-sem">0</span>}
+                </div>
+                <div className="cat-linha-info">
+                  <span className="cat-linha-nome">{i.Produto.Nome}</span>
+                  <div className="cat-linha-sub">
+                    <span className="cat-linha-unidade">{u.NomeUnidade}</span>
+                    <span className={`cat-linha-stock-pill ${sem ? "sem" : baixo ? "baixo" : "ok"}`}>
+                      {sem ? "Sem stock" : `${qtd(i.Disponivel)} disp.`}
+                    </span>
+                  </div>
+                </div>
+                <div className="cat-linha-preco-wrap">
+                  <span className="cat-linha-preco">{mt(u.PrecoVenda)}</span>
+                  <span className="cat-linha-add">
+                    <PlusIcon style={{ width: 16, height: 16 }} />
+                  </span>
+                </div>
+              </button>
+            );
+          }
+
+          // Visualização em Cartão com Imagem Grande (Zobaze Tile)
           return (
-            <button key={i.Produto.ID} className={`cat-cartao${sem ? " esgotado" : ""}`} onClick={() => escolher(i)}>
-              <span className="cat-cartao-nome">{i.Produto.Nome}</span>
-              <span className="cat-cartao-rodape">
-                <span className="cat-cartao-preco">{mt(u.PrecoVenda)}</span>
-                <span className="cat-cartao-unidade">{u.NomeUnidade}</span>
-              </span>
-              <span className={`cat-cartao-stock${sem ? " zero" : ""}`}>
-                <span className="cat-cartao-stock-dot" />
-                <span>
-                  {sem
-                    ? "Sem stock"
-                    : i.Produto.TipoProduto === "composto"
-                      ? `Dá para ${qtd(i.Disponivel)}`
-                      : i.Produto.ControlaStock
-                        ? `${qtd(i.Disponivel)} ${i.Produto.UnidadeBase}`
-                        : "Disponível"}
+            <button
+              key={i.Produto.ID}
+              className={`cat-cartao${sem ? " esgotado" : ""}`}
+              onClick={() => escolher(i)}
+            >
+              <div className="cat-cartao-img-box">
+                <img
+                  src={visual.imagemUrl}
+                  alt={i.Produto.Nome}
+                  className="cat-cartao-img"
+                  loading="lazy"
+                  onError={(e) => {
+                    e.currentTarget.src = fallback;
+                  }}
+                />
+                <div className="cat-cartao-overlay-grad" />
+
+                {/* Badges flutuantes sobre a imagem */}
+                <div className="cat-cartao-badges">
+                  {sem ? (
+                    <span className="cat-badge-stock sem">Esgotado</span>
+                  ) : baixo ? (
+                    <span className="cat-badge-stock baixo">{qtd(i.Disponivel)} restam</span>
+                  ) : (
+                    <span className="cat-badge-stock ok">{qtd(i.Disponivel)} em stock</span>
+                  )}
+                  {nomeCat && <span className="cat-badge-cat">{nomeCat}</span>}
+                </div>
+
+                {/* Botão flutuante de adição rápida */}
+                <div className="cat-cartao-quick-add" title="Adicionar ao carrinho">
+                  <PlusIcon style={{ width: 18, height: 18 }} />
+                </div>
+              </div>
+
+              <div className="cat-cartao-corpo">
+                <span className="cat-cartao-nome" title={i.Produto.Nome}>
+                  {i.Produto.Nome}
                 </span>
-              </span>
+
+                <div className="cat-cartao-rodape">
+                  <div className="cat-cartao-precos">
+                    <span className="cat-cartao-preco">{mt(u.PrecoVenda)}</span>
+                    <span className="cat-cartao-unidade">/ {u.NomeUnidade}</span>
+                  </div>
+                  {i.Unidades.length > 1 && (
+                    <span className="cat-cartao-variacoes">+{i.Unidades.length - 1} un.</span>
+                  )}
+                </div>
+              </div>
             </button>
           );
         })}

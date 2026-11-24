@@ -5,6 +5,8 @@ import {
   ShoppingCartIcon as ShoppingCartOutline,
   CheckCircleIcon as CheckCircleOutline,
   XMarkIcon,
+  UserIcon,
+  TrashIcon,
 } from "@heroicons/react/24/outline";
 import {
   MagnifyingGlassIcon as MagnifyingGlassSolid,
@@ -22,6 +24,7 @@ import Catalogo, { type CatalogoHandle } from "./Catalogo";
 import { calcularTroco } from "./troco";
 import ReciboModal from "./ReciboModal";
 import { METODOS, ROTULO_METODO, lerNumero, mt, qtd } from "./formato";
+import { obterVisualProduto, gerarSvgFallback } from "./productVisuals";
 import "./VendaDireta.css";
 
 interface ItemCarrinho {
@@ -351,38 +354,70 @@ export default function VendaDireta({ tipoNegocio }: { tipoNegocio: string }) {
         ) : (
           <>
           <div className="pos-carrinho-itens">
-            {carrinho.map((i) => (
-              <div key={i.chave} className="pos-carrinho-item">
-                {i.granel ? (
-                  <input
-                    className="pos-peso-granel"
-                    inputMode="decimal"
-                    value={String(i.quantidade).replace(".", ",")}
-                    onChange={(e) => definirQuantidade(i.chave, e.target.value)}
-                    title="Peso em kg — escrito à mão até haver balança integrada"
-                  />
-                ) : (
-                  <div className="pos-qtd-stepper">
-                    <button onClick={() => alterarQuantidade(i.chave, -1)} aria-label="Menos um">
-                      −
-                    </button>
-                    <span>{qtd(i.quantidade)}</span>
-                    <button onClick={() => alterarQuantidade(i.chave, 1)} aria-label="Mais um">
-                      +
-                    </button>
+            {carrinho.map((i) => {
+              const visual = obterVisualProduto(i.produtoNome);
+              const fallback = gerarSvgFallback(i.produtoNome, visual.corAcento, i.unidadeNome);
+              return (
+                <div key={i.chave} className="pos-carrinho-item">
+                  <div className="pos-carrinho-thumb-wrap">
+                    <img
+                      src={visual.imagemUrl}
+                      alt={i.produtoNome}
+                      className="pos-carrinho-thumb"
+                      loading="lazy"
+                      onError={(e) => {
+                        e.currentTarget.src = fallback;
+                      }}
+                    />
                   </div>
-                )}
-                <div className="pos-carrinho-item-nome">
-                  <div>{i.produtoNome}</div>
-                  <div className="pos-carrinho-item-detalhe">
-                    {mt(i.precoVenda)} · {i.unidadeNome}
+
+                  <div className="pos-carrinho-item-info">
+                    <div className="pos-carrinho-item-nome">{i.produtoNome}</div>
+                    <div className="pos-carrinho-item-detalhe">
+                      <span className="pos-carrinho-item-preco">{mt(i.precoVenda)}</span>
+                      <span className="pos-carrinho-item-unidade">/ {i.unidadeNome}</span>
+                    </div>
                   </div>
+
+                  {i.granel ? (
+                    <input
+                      className="pos-peso-granel"
+                      inputMode="decimal"
+                      value={String(i.quantidade).replace(".", ",")}
+                      onChange={(e) => definirQuantidade(i.chave, e.target.value)}
+                      title="Peso em kg — escrito à mão até haver balança integrada"
+                    />
+                  ) : (
+                    <div className="pos-qtd-stepper">
+                      <button onClick={() => alterarQuantidade(i.chave, -1)} aria-label="Menos um">
+                        −
+                      </button>
+                      <span>{qtd(i.quantidade)}</span>
+                      <button onClick={() => alterarQuantidade(i.chave, 1)} aria-label="Mais um">
+                        +
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="pos-carrinho-item-total">{mt(i.precoVenda * i.quantidade)}</div>
+
+                  <button
+                    className="pos-carrinho-item-remover"
+                    onClick={() => alterarQuantidade(i.chave, -i.quantidade)}
+                    title="Remover item do carrinho"
+                    aria-label="Remover item"
+                  >
+                    <TrashIcon style={{ width: 15, height: 15 }} />
+                  </button>
                 </div>
-                <div className="pos-carrinho-item-total">{mt(i.precoVenda * i.quantidade)}</div>
-              </div>
-            ))}
+              );
+            })}
             {carrinho.length === 0 && (
-              <div className="pos-carrinho-vazio">Carrinho vazio — toque num produto ou leia o código de barras.</div>
+              <div className="pos-carrinho-vazio">
+                <ShoppingCartOutline style={{ width: 36, height: 36, opacity: 0.3, margin: "0 auto 8px" }} />
+                <span>Carrinho vazio</span>
+                <small>Toque nos produtos ao lado ou use o leitor de código de barras para registar.</small>
+              </div>
             )}
           </div>
 
