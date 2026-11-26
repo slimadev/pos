@@ -221,6 +221,20 @@ func (q *Queries) DefinirContaMesa(ctx context.Context, arg DefinirContaMesaPara
 	return err
 }
 
+const definirEtiquetaMesa = `-- name: DefinirEtiquetaMesa :exec
+UPDATE contas_mesa SET etiqueta = ? WHERE conta_id = ?
+`
+
+type DefinirEtiquetaMesaParams struct {
+	Etiqueta string `json:"etiqueta"`
+	ContaID  int64  `json:"conta_id"`
+}
+
+func (q *Queries) DefinirEtiquetaMesa(ctx context.Context, arg DefinirEtiquetaMesaParams) error {
+	_, err := q.db.ExecContext(ctx, definirEtiquetaMesa, arg.Etiqueta, arg.ContaID)
+	return err
+}
+
 const definirQuantidadeEnviada = `-- name: DefinirQuantidadeEnviada :exec
 INSERT INTO itens_conta_enviados (item_id, quantidade) VALUES (?, ?)
 ON CONFLICT (item_id) DO UPDATE SET quantidade = excluded.quantidade
@@ -397,7 +411,7 @@ func (q *Queries) ListarItensComEnvio(ctx context.Context, contaID int64) ([]Lis
 }
 
 const listarMesasAbertas = `-- name: ListarMesasAbertas :many
-SELECT m.conta_id, m.mesa, m.garcom_id, m.pessoas, u.nome AS garcom_nome, c.aberta_em,
+SELECT m.conta_id, m.mesa, m.etiqueta, m.garcom_id, m.pessoas, u.nome AS garcom_nome, c.aberta_em,
        CAST(COALESCE((SELECT SUM(i.quantidade * i.preco_unitario_aplicado - i.desconto) FROM itens_conta i WHERE i.conta_id = c.id), 0) AS REAL) AS total,
        CAST(COALESCE((SELECT SUM(MAX(i.quantidade - COALESCE(e.quantidade, 0), 0)) FROM itens_conta i LEFT JOIN itens_conta_enviados e ON e.item_id = i.id WHERE i.conta_id = c.id), 0) AS REAL) AS por_enviar
 FROM contas_mesa m
@@ -410,6 +424,7 @@ ORDER BY u.nome, m.mesa
 type ListarMesasAbertasRow struct {
 	ContaID    int64   `json:"conta_id"`
 	Mesa       string  `json:"mesa"`
+	Etiqueta   string  `json:"etiqueta"`
 	GarcomID   int64   `json:"garcom_id"`
 	Pessoas    int64   `json:"pessoas"`
 	GarcomNome string  `json:"garcom_nome"`
@@ -430,6 +445,7 @@ func (q *Queries) ListarMesasAbertas(ctx context.Context, negocioID int64) ([]Li
 		if err := rows.Scan(
 			&i.ContaID,
 			&i.Mesa,
+			&i.Etiqueta,
 			&i.GarcomID,
 			&i.Pessoas,
 			&i.GarcomNome,
@@ -565,7 +581,7 @@ func (q *Queries) ListarSessoesCaixa(ctx context.Context, arg ListarSessoesCaixa
 }
 
 const obterContaMesa = `-- name: ObterContaMesa :one
-SELECT conta_id, mesa, garcom_id, pessoas FROM contas_mesa WHERE conta_id = ?
+SELECT conta_id, mesa, garcom_id, pessoas, etiqueta FROM contas_mesa WHERE conta_id = ?
 `
 
 func (q *Queries) ObterContaMesa(ctx context.Context, contaID int64) (ContasMesa, error) {
@@ -576,6 +592,7 @@ func (q *Queries) ObterContaMesa(ctx context.Context, contaID int64) (ContasMesa
 		&i.Mesa,
 		&i.GarcomID,
 		&i.Pessoas,
+		&i.Etiqueta,
 	)
 	return i, err
 }

@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"gestao-retalho/backend/domain"
 	"gestao-retalho/backend/export"
@@ -106,14 +108,63 @@ func (s *RestauranteService) ObterMesa(ctx context.Context, contaID int64) (Mesa
 	return MesaDetalhe{Mesa: m, Itens: itens}, nil
 }
 
-// rotuloMesa: "5" vira "Mesa 5"; "Varanda 2" fica como está.
+// rotuloMesa: "5" vira "Mesa 5", "5 (2)" vira "Mesa 5 (2)"; "Varanda 2"
+// fica como está.
 func rotuloMesa(mesa string) string {
-	for _, r := range mesa {
+	base := baseMesa(mesa)
+	if base == "" {
+		return mesa
+	}
+	for _, r := range base {
 		if r < '0' || r > '9' {
 			return mesa
 		}
 	}
 	return "Mesa " + mesa
+}
+
+var sufixoConta = regexp.MustCompile(`\s*\(\d+\)$`)
+
+// baseMesa tira o número da conta: "5 (2)" é a mesa "5".
+func baseMesa(mesa string) string {
+	return sufixoConta.ReplaceAllString(mesa, "")
+}
+
+// MaxEtiqueta: o bastante para "camisa azul" ou "aniversariante", e cabe
+// numa linha do talão.
+const MaxEtiqueta = 30
+
+func limparEtiqueta(e string) (string, error) {
+	e = strings.Join(strings.Fields(e), " ")
+	if utf8.RuneCountInString(e) > MaxEtiqueta {
+		return "", fmt.Errorf("a etiqueta tem de ter até %d letras", MaxEtiqueta)
+	}
+	return e, nil
+}
+
+// nomeConta: "Mesa 5 (2) · camisa azul" — como a conta aparece nos talões.
+func nomeConta(m domain.MesaAberta) string {
+	if m.Etiqueta == "" {
+		return rotuloMesa(m.Mesa)
+	}
+	return rotuloMesa(m.Mesa) + " · " + m.Etiqueta
+}
+
+// proximaConta escolhe o nome da próxima conta da mesa: "5 (2)", "5 (3)"…
+func proximaConta(abertas []domain.MesaAberta, mesa string) string {
+	base := baseMesa(mesa)
+	for n := 2; ; n++ {
+		candidato := fmt.Sprintf("%s (%d)", base, n)
+		livre := true
+		for _, a := range abertas {
+			if mesmoNome(a.Mesa, candidato) {
+				livre = false
+			}
+		}
+		if livre {
+			return candidato
+		}
+	}
 }
 
 func (s *RestauranteService) garcomAtivo(ctx context.Context, id int64) (domain.Utilizador, error) {
@@ -129,10 +180,14 @@ func (s *RestauranteService) garcomAtivo(ctx context.Context, id int64) (domain.
 
 // AbrirMesa abre a conta de uma mesa para um garçom. Uma mesa já aberta
 // não se abre outra vez — junta-se o pedido à que lá está.
-func (s *RestauranteService) AbrirMesa(ctx context.Context, mesa string, garcomID, pessoas int64) (domain.MesaAberta, error) {
+func (s *RestauranteService) AbrirMesa(ctx context.Context, mesa, etiqueta string, garcomID, pessoas int64) (domain.MesaAberta, error) {
 	mesa = strings.Join(strings.Fields(mesa), " ")
 	if mesa == "" {
 		return domain.MesaAberta{}, fmt.Errorf("diga o número ou o nome da mesa")
+	}
+	etiqueta, err := limparEtiqueta(etiqueta)
+	if err != nil {
+		return domain.MesaAberta{}, err
 	}
 	if pessoas < 1 {
 		pessoas = 1
@@ -146,7 +201,7 @@ func (s *RestauranteService) AbrirMesa(ctx context.Context, mesa string, garcomI
 	}
 	for _, m := range abertas {
 		if mesmoNome(m.Mesa, mesa) {
-			return domain.MesaAberta{}, fmt.Errorf("%s já está aberta (garçom %s)", rotuloMesa(m.Mesa), m.GarcomNome)
+			return domain.MesaAberta{}, fmt.Errorf("%s já está aberta (garçom %s) — para contas separadas, abra-a e use «Nova conta»", rotuloMesa(m.Mesa), m.GarcomNome)
 		}
 	}
 	var contaID int64
@@ -156,7 +211,10 @@ func (s *RestauranteService) AbrirMesa(ctx context.Context, mesa string, garcomI
 			return err
 		}
 		contaID = c.ID
-		return rest.DefinirContaMesa(ctx, c.ID, mesa, garcomID, pessoas)
+		if err := rest.DefinirContaMesa(ctx, c.ID, mesa, garcomID, pessoas); err != nil {
+			return err
+		}
+		return rest.DefinirEtiquetaMesa(ctx, c.ID, etiqueta)
 	})
 	if err != nil {
 		return domain.MesaAberta{}, err
@@ -182,6 +240,57 @@ func (s *RestauranteService) DefinirPessoas(ctx context.Context, contaID, pessoa
 		return err
 	}
 	return s.rest.DefinirContaMesa(ctx, contaID, m.Mesa, m.GarcomID, pessoas)
+}
+
+// NovaConta abre mais uma conta na mesma mesa ("5 (2)"), para quem quer
+// pagar à parte desde o início. Fica com o garçom que a abre.
+func (s *RestauranteService) NovaConta(ctx context.Context, contaID int64, etiqueta string, garcomID int64) (domain.MesaAberta, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	etiqueta, err := limparEtiqueta(etiqueta)
+	if err != nil {
+		return domain.MesaAberta{}, err
+	}
+	m, err := s.obterMesa(ctx, contaID)
+	if err != nil {
+		return domain.MesaAberta{}, err
+	}
+	if _, err := s.garcomAtivo(ctx, garcomID); err != nil {
+		return domain.MesaAberta{}, err
+	}
+	abertas, err := s.rest.ListarMesasAbertas(ctx, domain.NegocioID)
+	if err != nil {
+		return domain.MesaAberta{}, err
+	}
+	nome := proximaConta(abertas, m.Mesa)
+	var novaID int64
+	err = s.rest.WithTxVendas(ctx, s.vendas, func(rest *repository.RestauranteRepository, vendas *repository.VendaRepository) error {
+		c, err := vendas.CriarConta(ctx, domain.NegocioID, domain.ClienteAnonimoID, rotuloMesa(nome), garcomID)
+		if err != nil {
+			return err
+		}
+		novaID = c.ID
+		if err := rest.DefinirContaMesa(ctx, c.ID, nome, garcomID, 1); err != nil {
+			return err
+		}
+		return rest.DefinirEtiquetaMesa(ctx, c.ID, etiqueta)
+	})
+	if err != nil {
+		return domain.MesaAberta{}, err
+	}
+	return s.obterMesa(ctx, novaID)
+}
+
+// DefinirEtiqueta muda (ou apaga, com "") a etiqueta da conta.
+func (s *RestauranteService) DefinirEtiqueta(ctx context.Context, contaID int64, etiqueta string) error {
+	etiqueta, err := limparEtiqueta(etiqueta)
+	if err != nil {
+		return err
+	}
+	if _, err := s.obterMesa(ctx, contaID); err != nil {
+		return err
+	}
+	return s.rest.DefinirEtiquetaMesa(ctx, contaID, etiqueta)
 }
 
 // TransferirMesa passa a mesa (com tudo o que já tem) para outro garçom.
@@ -339,7 +448,7 @@ func (s *RestauranteService) EnviarPedido(ctx context.Context, contaID, garcomID
 	var pedido domain.Pedido
 	err = s.rest.WithTx(ctx, func(tx *repository.RestauranteRepository) error {
 		var err error
-		pedido, err = tx.CriarPedido(ctx, domain.Pedido{ContaID: contaID, Tipo: domain.TipoPedidoEnvio, Mesa: m.Mesa, GarcomID: garcomID, Linhas: linhas})
+		pedido, err = tx.CriarPedido(ctx, domain.Pedido{ContaID: contaID, Tipo: domain.TipoPedidoEnvio, Mesa: nomeConta(m), GarcomID: garcomID, Linhas: linhas})
 		if err != nil {
 			return err
 		}
@@ -538,7 +647,7 @@ func (s *RestauranteService) AnularItem(ctx context.Context, p AnularItemParams)
 		}
 		aut := autorizador.ID
 		criado, err := rest.CriarPedido(ctx, domain.Pedido{
-			ContaID: im.ContaID, Tipo: domain.TipoPedidoAnulacao, Mesa: m.Mesa, GarcomID: p.GarcomID,
+			ContaID: im.ContaID, Tipo: domain.TipoPedidoAnulacao, Mesa: nomeConta(m), GarcomID: p.GarcomID,
 			Motivo: &motivo, AutorizadoPor: &aut,
 			Linhas: []domain.LinhaPedido{{ProdutoID: im.ProdutoID, Descricao: im.Produto, Unidade: im.Unidade,
 				Quantidade: anularEnviada, ImpressoraID: r.destino(im.CategoriaID)}},
@@ -567,9 +676,13 @@ type ParteDivisao struct {
 // mesa ("5 (2)"), que se fecha à parte. O que já foi enviado continua
 // enviado, nas duas contas. A divisão em partes iguais não precisa disto:
 // faz-se ao imprimir a conta, com o número de pessoas.
-func (s *RestauranteService) DividirConta(ctx context.Context, contaID int64, partes []ParteDivisao) (domain.MesaAberta, error) {
+func (s *RestauranteService) DividirConta(ctx context.Context, contaID int64, partes []ParteDivisao, etiqueta string) (domain.MesaAberta, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	etiqueta, err := limparEtiqueta(etiqueta)
+	if err != nil {
+		return domain.MesaAberta{}, err
+	}
 
 	m, err := s.obterMesa(ctx, contaID)
 	if err != nil {
@@ -615,19 +728,7 @@ func (s *RestauranteService) DividirConta(ctx context.Context, contaID int64, pa
 	if err != nil {
 		return domain.MesaAberta{}, err
 	}
-	nome := ""
-	for n := 2; nome == ""; n++ {
-		candidato := fmt.Sprintf("%s (%d)", m.Mesa, n)
-		livre := true
-		for _, a := range abertas {
-			if mesmoNome(a.Mesa, candidato) {
-				livre = false
-			}
-		}
-		if livre {
-			nome = candidato
-		}
-	}
+	nome := proximaConta(abertas, m.Mesa)
 
 	var novaID int64
 	err = s.rest.WithTxVendas(ctx, s.vendas, func(rest *repository.RestauranteRepository, vendas *repository.VendaRepository) error {
@@ -641,6 +742,9 @@ func (s *RestauranteService) DividirConta(ctx context.Context, contaID int64, pa
 		}
 		novaID = c.ID
 		if err := rest.DefinirContaMesa(ctx, c.ID, nome, m.GarcomID, 1); err != nil {
+			return err
+		}
+		if err := rest.DefinirEtiquetaMesa(ctx, c.ID, etiqueta); err != nil {
 			return err
 		}
 		for _, p := range partes {
@@ -759,6 +863,9 @@ func talaoConta(loja export.DadosRecibo, m domain.MesaAberta, itens []domain.Ite
 	}
 	t.Separador()
 	t.Titulo("CONTA · " + strings.ToUpper(rotuloMesa(m.Mesa)))
+	if m.Etiqueta != "" {
+		t.Centro(m.Etiqueta)
+	}
 	t.Centro("Garçom " + m.GarcomNome + " · " + agora.Format("02/01/2006 15:04"))
 	t.Separador()
 	for _, i := range itens {

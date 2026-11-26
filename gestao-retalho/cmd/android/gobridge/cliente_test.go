@@ -44,7 +44,7 @@ func TestModoGarcom_ChamadasVaoParaOBalcao(t *testing.T) {
 	if _, err := Chamar("api.App", "IniciarTurno", string(args)); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Chamar("api.App", "AbrirMesa", `["12", 2]`); err != nil {
+	if _, err := Chamar("api.App", "AbrirMesa", `["12", "", 2]`); err != nil {
 		t.Fatal(err)
 	}
 	mesas, _ := app.ListarMesas(false)

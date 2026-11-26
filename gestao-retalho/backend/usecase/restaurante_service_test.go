@@ -171,11 +171,11 @@ func TestEnviarPedido_BalcaoRecebeTudoCozinhaSoOsPratos(t *testing.T) {
 	ctx := context.Background()
 	c := novoCenarioRestaurante(t)
 
-	mesa, err := c.rest.AbrirMesa(ctx, "5", c.lima.ID, 3)
+	mesa, err := c.rest.AbrirMesa(ctx, "5", "", c.lima.ID, 3)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := c.rest.AbrirMesa(ctx, " 5 ", c.ana.ID, 1); err == nil {
+	if _, err := c.rest.AbrirMesa(ctx, " 5 ", "", c.ana.ID, 1); err == nil {
 		t.Fatal("a mesa 5 já estava aberta")
 	}
 	c.lancar(t, mesa.ContaID, c.heineken, 2, c.lima.ID)
@@ -240,7 +240,7 @@ func TestEnviarPedido_ImpressoraEmBaixoNaoPerdeOPedido(t *testing.T) {
 	c := novoCenarioRestaurante(t)
 	c.impressor.falhar["10.0.0.20"] = true
 
-	mesa, _ := c.rest.AbrirMesa(ctx, "Varanda", c.lima.ID, 1)
+	mesa, _ := c.rest.AbrirMesa(ctx, "Varanda", "", c.lima.ID, 1)
 	c.lancar(t, mesa.ContaID, c.feijoada, 2, c.lima.ID)
 	res, err := c.rest.EnviarPedido(ctx, mesa.ContaID, c.lima.ID)
 	if err != nil {
@@ -264,7 +264,7 @@ func TestAnularItem_EnviadoPedeGerente(t *testing.T) {
 	ctx := context.Background()
 	c := novoCenarioRestaurante(t)
 
-	mesa, _ := c.rest.AbrirMesa(ctx, "2", c.lima.ID, 2)
+	mesa, _ := c.rest.AbrirMesa(ctx, "2", "", c.lima.ID, 2)
 	c.lancar(t, mesa.ContaID, c.feijoada, 2, c.lima.ID)
 	if _, err := c.rest.EnviarPedido(ctx, mesa.ContaID, c.lima.ID); err != nil {
 		t.Fatal(err)
@@ -319,7 +319,7 @@ func TestDividirConta_PassaQuantidadesEMantemEnviados(t *testing.T) {
 	ctx := context.Background()
 	c := novoCenarioRestaurante(t)
 
-	mesa, _ := c.rest.AbrirMesa(ctx, "7", c.lima.ID, 4)
+	mesa, _ := c.rest.AbrirMesa(ctx, "7", "", c.lima.ID, 4)
 	c.lancar(t, mesa.ContaID, c.heineken, 3, c.lima.ID)
 	if _, err := c.rest.EnviarPedido(ctx, mesa.ContaID, c.lima.ID); err != nil {
 		t.Fatal(err)
@@ -329,10 +329,10 @@ func TestDividirConta_PassaQuantidadesEMantemEnviados(t *testing.T) {
 	h := itemDe(t, c, mesa.ContaID, c.heineken.ProdutoID)
 	f := itemDe(t, c, mesa.ContaID, c.feijoada.ProdutoID)
 
-	if _, err := c.rest.DividirConta(ctx, mesa.ContaID, []usecase.ParteDivisao{{ItemID: h.ID, Quantidade: 4}, {ItemID: f.ID, Quantidade: 1}}); err == nil {
+	if _, err := c.rest.DividirConta(ctx, mesa.ContaID, []usecase.ParteDivisao{{ItemID: h.ID, Quantidade: 4}, {ItemID: f.ID, Quantidade: 1}}, ""); err == nil {
 		t.Fatal("passar tudo não é dividir")
 	}
-	nova, err := c.rest.DividirConta(ctx, mesa.ContaID, []usecase.ParteDivisao{{ItemID: h.ID, Quantidade: 2}, {ItemID: f.ID, Quantidade: 1}})
+	nova, err := c.rest.DividirConta(ctx, mesa.ContaID, []usecase.ParteDivisao{{ItemID: h.ID, Quantidade: 2}, {ItemID: f.ID, Quantidade: 1}}, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -362,7 +362,7 @@ func TestImprimirConta_ValorPorPessoa(t *testing.T) {
 	ctx := context.Background()
 	c := novoCenarioRestaurante(t)
 
-	mesa, _ := c.rest.AbrirMesa(ctx, "3", c.lima.ID, 1)
+	mesa, _ := c.rest.AbrirMesa(ctx, "3", "", c.lima.ID, 1)
 	c.lancar(t, mesa.ContaID, c.heineken, 2, c.lima.ID)
 	c.lancar(t, mesa.ContaID, c.feijoada, 1, c.lima.ID)
 
@@ -394,8 +394,8 @@ func TestTransferirEJuntarMesas(t *testing.T) {
 	ctx := context.Background()
 	c := novoCenarioRestaurante(t)
 
-	m1, _ := c.rest.AbrirMesa(ctx, "1", c.lima.ID, 2)
-	m2, _ := c.rest.AbrirMesa(ctx, "2", c.lima.ID, 2)
+	m1, _ := c.rest.AbrirMesa(ctx, "1", "", c.lima.ID, 2)
+	m2, _ := c.rest.AbrirMesa(ctx, "2", "", c.lima.ID, 2)
 	c.lancar(t, m1.ContaID, c.heineken, 2, c.lima.ID)
 	c.lancar(t, m2.ContaID, c.feijoada, 1, c.lima.ID)
 
@@ -420,7 +420,7 @@ func TestCaixa_FecharMesaPedeCaixaEFechoConfere(t *testing.T) {
 	ctx := context.Background()
 	c := novoCenarioRestaurante(t)
 
-	mesa, _ := c.rest.AbrirMesa(ctx, "9", c.lima.ID, 3)
+	mesa, _ := c.rest.AbrirMesa(ctx, "9", "", c.lima.ID, 3)
 	c.lancar(t, mesa.ContaID, c.heineken, 2, c.lima.ID)
 	c.lancar(t, mesa.ContaID, c.feijoada, 1, c.lima.ID)
 	fechar := usecase.FecharContaParams{
@@ -497,5 +497,57 @@ func TestOperador_GerenteListadoEAutoriza(t *testing.T) {
 	}
 	if _, err := c.operador.Autenticar(ctx, c.gerente.ID, "9999"); err != nil {
 		t.Fatalf("o gerente também entra no PDV: %v", err)
+	}
+}
+
+func TestNovaConta_MesmaMesaContasSeparadasComEtiqueta(t *testing.T) {
+	ctx := context.Background()
+	c := novoCenarioRestaurante(t)
+
+	a, err := c.rest.AbrirMesa(ctx, "8", "  camisa   azul ", c.lima.ID, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a.Etiqueta != "camisa azul" {
+		t.Errorf("etiqueta = %q", a.Etiqueta)
+	}
+	b, err := c.rest.NovaConta(ctx, a.ContaID, "aniversariante", c.ana.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if b.Mesa != "8 (2)" || b.Etiqueta != "aniversariante" || b.GarcomID != c.ana.ID {
+		t.Errorf("nova conta = %+v", b)
+	}
+	// A partir da "8 (2)" a seguinte é "8 (3)", não "8 (2) (2)".
+	d, err := c.rest.NovaConta(ctx, b.ContaID, "", c.lima.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if d.Mesa != "8 (3)" {
+		t.Errorf("terceira conta = %q", d.Mesa)
+	}
+	if _, err := c.rest.NovaConta(ctx, a.ContaID, strings.Repeat("x", usecase.MaxEtiqueta+1), c.lima.ID); err == nil {
+		t.Error("aceitou etiqueta comprida")
+	}
+
+	c.lancar(t, b.ContaID, c.feijoada, 1, c.ana.ID)
+	if _, err := c.rest.EnviarPedido(ctx, b.ContaID, c.ana.ID); err != nil {
+		t.Fatal(err)
+	}
+	cozinha := c.impressor.talões("10.0.0.20")
+	if len(cozinha) != 1 || !strings.Contains(cozinha[0], "MESA 8 (2)") || !strings.Contains(cozinha[0], "ANIVERSARIANTE") {
+		t.Errorf("cozinha recebeu %q", cozinha)
+	}
+
+	if err := c.rest.DefinirEtiqueta(ctx, d.ContaID, "senhora de óculos"); err != nil {
+		t.Fatal(err)
+	}
+	c.lancar(t, d.ContaID, c.heineken, 2, c.lima.ID)
+	conta, err := c.rest.ImprimirConta(ctx, d.ContaID, 0, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(conta.Texto, "MESA 8 (3)") || !strings.Contains(conta.Texto, "senhora de óculos") {
+		t.Errorf("conta impressa:\n%s", conta.Texto)
 	}
 }

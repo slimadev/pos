@@ -33,6 +33,10 @@ func (r *RestauranteRepository) DefinirContaMesa(ctx context.Context, contaID in
 	return r.q.DefinirContaMesa(ctx, sqlcgen.DefinirContaMesaParams{ContaID: contaID, Mesa: mesa, GarcomID: garcomID, Pessoas: pessoas})
 }
 
+func (r *RestauranteRepository) DefinirEtiquetaMesa(ctx context.Context, contaID int64, etiqueta string) error {
+	return r.q.DefinirEtiquetaMesa(ctx, sqlcgen.DefinirEtiquetaMesaParams{ContaID: contaID, Etiqueta: etiqueta})
+}
+
 // ContaMesa devolve a mesa de uma conta; ok=false se a conta não for de mesa.
 func (r *RestauranteRepository) ContaMesa(ctx context.Context, contaID int64) (mesa string, garcomID, pessoas int64, ok bool, err error) {
 	row, err := r.q.ObterContaMesa(ctx, contaID)
@@ -53,7 +57,7 @@ func (r *RestauranteRepository) ListarMesasAbertas(ctx context.Context, negocioI
 	out := make([]domain.MesaAberta, 0, len(rows))
 	for _, m := range rows {
 		out = append(out, domain.MesaAberta{
-			ContaID: m.ContaID, Mesa: m.Mesa, GarcomID: m.GarcomID, GarcomNome: m.GarcomNome, Pessoas: m.Pessoas,
+			ContaID: m.ContaID, Mesa: m.Mesa, Etiqueta: m.Etiqueta, GarcomID: m.GarcomID, GarcomNome: m.GarcomNome, Pessoas: m.Pessoas,
 			AbertaEm: parseTimestamp(m.AbertaEm), Total: m.Total, PorEnviar: m.PorEnviar,
 		})
 	}

@@ -68,10 +68,10 @@ func TestServidor_ChaveTurnoPorAparelhoEMetodos(t *testing.T) {
 	if atual, _ := app.ObterOperadorAtual(); atual.ID != 0 {
 		t.Errorf("o PC herdou o turno do aparelho: %+v", atual)
 	}
-	if r, _ := chamar(t, srv, "ABCD-EFGH", "sunmi-1", "AbrirMesa", "4", 2); !r.OK {
+	if r, _ := chamar(t, srv, "ABCD-EFGH", "sunmi-1", "AbrirMesa", "4", "", 2); !r.OK {
 		t.Fatalf("abrir mesa no aparelho: %+v", r)
 	}
-	if r, _ := chamar(t, srv, "ABCD-EFGH", "sunmi-2", "AbrirMesa", "5", 2); r.OK {
+	if r, _ := chamar(t, srv, "ABCD-EFGH", "sunmi-2", "AbrirMesa", "5", "", 2); r.OK {
 		t.Fatal("o sunmi-2 não tem turno e abriu mesa")
 	}
 	mesas, _ := app.ListarMesas(false)

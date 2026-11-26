@@ -62,6 +62,7 @@ type Querier interface {
 	DefinirConfiguracao(ctx context.Context, arg DefinirConfiguracaoParams) error
 	DefinirContaMesa(ctx context.Context, arg DefinirContaMesaParams) error
 	DefinirCustoMedioProdutoArmazem(ctx context.Context, arg DefinirCustoMedioProdutoArmazemParams) error
+	DefinirEtiquetaMesa(ctx context.Context, arg DefinirEtiquetaMesaParams) error
 	DefinirProdutoAtivo(ctx context.Context, arg DefinirProdutoAtivoParams) error
 	DefinirQuantidadeEnviada(ctx context.Context, arg DefinirQuantidadeEnviadaParams) error
 	DefinirUtilizadorAtivo(ctx context.Context, arg DefinirUtilizadorAtivoParams) error

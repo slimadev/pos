@@ -17,6 +17,8 @@ import {
   ShieldCheckIcon,
   DocumentDuplicateIcon,
   ChevronUpIcon,
+  TagIcon,
+  DocumentPlusIcon,
 } from "@heroicons/react/24/outline";
 import {
   ListarMesas,
@@ -29,6 +31,8 @@ import {
   TransferirMesa,
   JuntarMesas,
   DefinirPessoasMesa,
+  NovaContaMesa,
+  DefinirEtiquetaMesa,
   ImprimirContaMesa,
   ListarImpressoras,
   ListarPedidosMesa,
@@ -50,7 +54,12 @@ import "./Mesas.css";
 
 const EPS = 1e-9;
 const porEnviar = (i: domain.ItemMesa) => Math.max(0, i.Quantidade - i.Enviada);
-const rotuloMesa = (m: string) => (/^\d+$/.test(m) ? `Mesa ${m}` : m);
+// "5" e "5 (2)" (segunda conta da mesa 5) levam "Mesa" à frente; "Varanda" não.
+const rotuloMesa = (m: string) => (/^\d+( \(\d+\))?$/.test(m) ? `Mesa ${m}` : m);
+const baseMesa = (m: string) => m.replace(/\s*\(\d+\)$/, "");
+const mesmaMesa = (a: string, b: string) => baseMesa(a).toLowerCase() === baseMesa(b).toLowerCase();
+const ordemMesas = (a: domain.MesaAberta, b: domain.MesaAberta) => a.Mesa.localeCompare(b.Mesa, "pt", { numeric: true, sensitivity: "base" });
+const MAX_ETIQUETA = 30;
 
 /**
  * Mesas do restaurante. No balcão (`balcao`) vê-se tudo por garçom e
@@ -141,9 +150,9 @@ export default function Mesas({
   const garcons = Array.from(new Map(lista.map((m) => [m.GarcomID, m.GarcomNome])).entries()).sort((a, b) =>
     a[1].localeCompare(b[1], "pt"),
   );
-  const visiveis = lista.filter((m) =>
-    garcom === "todos" ? true : garcom === "meus" ? m.GarcomID === operador.ID : m.GarcomID === garcom,
-  );
+  const visiveis = lista
+    .filter((m) => (garcom === "todos" ? true : garcom === "meus" ? m.GarcomID === operador.ID : m.GarcomID === garcom))
+    .sort(ordemMesas);
   const total = visiveis.reduce((s, m) => s + m.Total, 0);
 
   return (
@@ -210,6 +219,12 @@ export default function Mesas({
                   </span>
                 )}
               </div>
+              {m.Etiqueta && (
+                <div className="mesas-etiqueta">
+                  <TagIcon className="bs-icon-mini" aria-hidden="true" />
+                  {m.Etiqueta}
+                </div>
+              )}
               <div className="bs-card-cliente">
                 {m.GarcomNome} · {m.Pessoas} {m.Pessoas === 1 ? "pessoa" : "pessoas"}
               </div>
@@ -235,7 +250,7 @@ export default function Mesas({
 
       {abrir && (
         <AbrirMesaFolha
-          ocupadas={lista.map((m) => m.Mesa)}
+          abertas={lista}
           onCancelar={() => setAbrir(false)}
           onAberta={(m) => {
             setAbrir(false);
@@ -250,25 +265,35 @@ export default function Mesas({
 
 // --- Abrir mesa ---------------------------------------------------------------
 
+/**
+ * Abrir mesa. Uma mesa já aberta não se abre outra vez: escolhê-la abre mais
+ * uma conta nela ("Mesa 5 (2)"), para quem quer pagar à parte desde o início.
+ */
 function AbrirMesaFolha({
-  ocupadas,
+  abertas,
   onCancelar,
   onAberta,
 }: {
-  ocupadas: string[];
+  abertas: domain.MesaAberta[];
   onCancelar: () => void;
   onAberta: (m: domain.MesaAberta) => void;
 }) {
   const [mesa, setMesa] = useState("");
+  const [etiqueta, setEtiqueta] = useState("");
   const [pessoas, setPessoas] = useState(2);
   const [erro, setErro] = useState<string | null>(null);
   const [aAbrir, setAAbrir] = useState(false);
-  const livres = Array.from({ length: 20 }, (_, i) => String(i + 1));
+  const numeros = Array.from({ length: 20 }, (_, i) => String(i + 1));
+  const nome = mesa.trim();
+  // A primeira conta da mesa (a "5", não a "5 (2)"), se já estiver aberta.
+  const jaAberta = nome ? abertas.find((m) => m.Mesa.toLowerCase() === nome.toLowerCase().replace(/\s+/g, " ")) : undefined;
+  const contasDaMesa = nome ? abertas.filter((m) => mesmaMesa(m.Mesa, nome)).length : 0;
 
-  function abrir(nome = mesa) {
-    if (!nome.trim() || aAbrir) return;
+  function abrir() {
+    if (!nome || aAbrir) return;
     setAAbrir(true);
-    AbrirMesa(nome.trim(), pessoas)
+    setErro(null);
+    (jaAberta ? NovaContaMesa(jaAberta.ContaID, etiqueta) : AbrirMesa(nome, etiqueta, pessoas))
       .then(onAberta)
       .catch((e) => setErro(textoErro(e)))
       .finally(() => setAAbrir(false));
@@ -277,10 +302,16 @@ function AbrirMesaFolha({
   return (
     <Folha titulo="Abrir mesa" onFechar={onCancelar}>
       <div className="bs-rapidos mesas-numeros">
-        {livres.map((n) => {
-          const ocupada = ocupadas.includes(n);
+        {numeros.map((n) => {
+          const ocupada = abertas.some((m) => m.Mesa === n);
           return (
-            <button key={n} disabled={ocupada || aAbrir} className={mesa === n ? "ativo" : ""} onClick={() => setMesa(n)}>
+            <button
+              key={n}
+              disabled={aAbrir}
+              className={`${mesa === n ? "ativo" : ""}${ocupada ? " ocupada" : ""}`}
+              title={ocupada ? "Já aberta — escolher abre mais uma conta nesta mesa" : undefined}
+              onClick={() => setMesa(n)}
+            >
               {n}
             </button>
           );
@@ -290,17 +321,39 @@ function AbrirMesaFolha({
         <span>Ou escreva (ex: Varanda 2)</span>
         <input value={mesa} onChange={(e) => setMesa(e.target.value)} onKeyDown={(e) => e.key === "Enter" && abrir()} />
       </label>
-      <Pessoas valor={pessoas} onMudar={setPessoas} />
+      {jaAberta && (
+        <div className="bs-aviso">
+          {rotuloMesa(jaAberta.Mesa)} já está aberta ({jaAberta.GarcomNome}
+          {contasDaMesa > 1 ? `, ${contasDaMesa} contas` : ""}). Abre-se mais uma conta nela, que se paga à parte.
+        </div>
+      )}
+      <CampoEtiqueta valor={etiqueta} onMudar={setEtiqueta} onEnter={abrir} />
+      {!jaAberta && <Pessoas valor={pessoas} onMudar={setPessoas} />}
       {erro && <div className="bs-aviso erro">{erro}</div>}
       <div className="bs-folha-acoes">
         <button className="bs-btn-sec" onClick={onCancelar}>
           Voltar
         </button>
-        <button className="bs-btn" disabled={!mesa.trim() || aAbrir} onClick={() => abrir()}>
-          {aAbrir ? "A abrir…" : `Abrir ${mesa.trim() ? rotuloMesa(mesa.trim()) : "mesa"}`}
+        <button className="bs-btn" disabled={!nome || aAbrir} onClick={abrir}>
+          {aAbrir ? "A abrir…" : jaAberta ? "Abrir conta separada" : `Abrir ${nome ? rotuloMesa(nome) : "mesa"}`}
         </button>
       </div>
     </Folha>
+  );
+}
+
+/** Etiqueta livre do garçom para não confundir as contas ("camisa azul"). */
+function CampoEtiqueta({ valor, onMudar, onEnter }: { valor: string; onMudar: (v: string) => void; onEnter?: () => void }) {
+  return (
+    <label className="bs-campo">
+      <span>Etiqueta para não confundir (opcional — ex: camisa azul, aniversariante)</span>
+      <input
+        value={valor}
+        maxLength={MAX_ETIQUETA}
+        onChange={(e) => onMudar(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && onEnter?.()}
+      />
+    </label>
   );
 }
 
@@ -334,6 +387,8 @@ type FolhaAberta =
   | { tipo: "juntar" }
   | { tipo: "pedidos" }
   | { tipo: "pessoas" }
+  | { tipo: "nova-conta" }
+  | { tipo: "etiqueta" }
   | { tipo: "fechar"; armazemID: number }
   | { tipo: "caixa-fechado" };
 
@@ -475,6 +530,8 @@ function MesaDetalhe({
   }
   const tempo = tempoAberta(mesa.AbertaEm);
   const titulo = rotuloMesa(mesa.Mesa);
+  // As outras contas desta mesa, para saltar entre elas.
+  const irmas = outrasMesas.filter((m) => mesmaMesa(m.Mesa, mesa.Mesa));
 
   const acoesComanda = (
     <>
@@ -506,6 +563,12 @@ function MesaDetalhe({
         <div className="bs-detalhe-titulo">
           <div className="bs-detalhe-nome">{titulo}</div>
           <div className="bs-detalhe-sub">
+            {mesa.Etiqueta && (
+              <button className="mesas-etiqueta" onClick={() => setFolha({ tipo: "etiqueta" })} title="Mudar a etiqueta">
+                <TagIcon className="bs-icon-mini" aria-hidden="true" />
+                {mesa.Etiqueta}
+              </button>
+            )}
             {mesa.GarcomNome} · {mesa.Pessoas} {mesa.Pessoas === 1 ? "pessoa" : "pessoas"}
             {tempo.texto && ` · há ${tempo.texto}`}
           </div>
@@ -520,6 +583,8 @@ function MesaDetalhe({
               <div className="bs-menu-lista">
                 {(
                   [
+                    ["nova-conta", DocumentPlusIcon, "Nova conta nesta mesa"],
+                    ["etiqueta", TagIcon, mesa.Etiqueta ? "Mudar a etiqueta" : "Pôr uma etiqueta"],
                     ["pessoas", UserGroupIcon, "Número de pessoas"],
                     ["dividir", ScissorsIcon, "Dividir a conta"],
                     ["transferir", ArrowsRightLeftIcon, "Passar a outro garçom"],
@@ -551,6 +616,24 @@ function MesaDetalhe({
           <button onClick={() => setErro(null)} aria-label="Fechar">
             ×
           </button>
+        </div>
+      )}
+
+      {irmas.length > 0 && (
+        <div className="mesas-contas" role="tablist" aria-label="Contas desta mesa">
+          {[mesa, ...irmas].sort(ordemMesas).map((m) => (
+            <button
+              key={m.ContaID}
+              role="tab"
+              aria-selected={m.ContaID === contaID}
+              className={m.ContaID === contaID ? "ativo" : ""}
+              onClick={() => m.ContaID !== contaID && onAbrirOutra(m.ContaID)}
+            >
+              <strong>{rotuloMesa(m.Mesa)}</strong>
+              {m.Etiqueta && <span>{m.Etiqueta}</span>}
+              <small>{m.ContaID === contaID ? mt(total) : mt(m.Total)}</small>
+            </button>
+          ))}
         </div>
       )}
 
@@ -682,7 +765,8 @@ function MesaDetalhe({
                     .catch((e) => setErro(textoErro(e)))
                 }
               >
-                {rotuloMesa(m.Mesa)} · {m.GarcomNome}
+                {rotuloMesa(m.Mesa)}
+                {m.Etiqueta && ` (${m.Etiqueta})`} · {m.GarcomNome}
               </button>
             ))}
             {outrasMesas.length === 0 && <p className="bs-folha-texto">Não há outras mesas abertas.</p>}
@@ -701,6 +785,36 @@ function MesaDetalhe({
                 recarregar();
               })
               .catch((e) => setErro(textoErro(e)))
+          }
+        />
+      )}
+      {folha?.tipo === "nova-conta" && (
+        <EtiquetaFolha
+          titulo={`Nova conta na ${rotuloMesa(baseMesa(mesa.Mesa))}`}
+          texto="Abre mais uma conta nesta mesa, que se lança e se paga à parte. A etiqueta ajuda a não confundir quem é quem."
+          inicial=""
+          botao="Abrir conta"
+          onCancelar={() => setFolha(null)}
+          onGuardar={(e) =>
+            NovaContaMesa(contaID, e).then((nova) => {
+              setFolha(null);
+              onAbrirOutra(nova.ContaID);
+            })
+          }
+        />
+      )}
+      {folha?.tipo === "etiqueta" && (
+        <EtiquetaFolha
+          titulo={`Etiqueta · ${titulo}`}
+          texto="Uma palavra para não confundir esta conta (sai também nos talões). Deixe vazio para tirar."
+          inicial={mesa.Etiqueta}
+          botao="Guardar"
+          onCancelar={() => setFolha(null)}
+          onGuardar={(e) =>
+            DefinirEtiquetaMesa(contaID, e).then(() => {
+              setFolha(null);
+              recarregar();
+            })
           }
         />
       )}
@@ -903,6 +1017,51 @@ function PessoasFolha({ atual, onCancelar, onGuardar }: { atual: number; onCance
   );
 }
 
+function EtiquetaFolha({
+  titulo,
+  texto,
+  inicial,
+  botao,
+  onCancelar,
+  onGuardar,
+}: {
+  titulo: string;
+  texto: string;
+  inicial: string;
+  botao: string;
+  onCancelar: () => void;
+  onGuardar: (etiqueta: string) => Promise<unknown>;
+}) {
+  const [etiqueta, setEtiqueta] = useState(inicial);
+  const [erro, setErro] = useState<string | null>(null);
+  const [aGuardar, setAGuardar] = useState(false);
+
+  function guardar() {
+    if (aGuardar) return;
+    setAGuardar(true);
+    setErro(null);
+    onGuardar(etiqueta.trim())
+      .catch((e) => setErro(textoErro(e)))
+      .finally(() => setAGuardar(false));
+  }
+
+  return (
+    <Folha titulo={titulo} onFechar={onCancelar}>
+      <p className="bs-folha-texto">{texto}</p>
+      <CampoEtiqueta valor={etiqueta} onMudar={setEtiqueta} onEnter={guardar} />
+      {erro && <div className="bs-aviso erro">{erro}</div>}
+      <div className="bs-folha-acoes">
+        <button className="bs-btn-sec" onClick={onCancelar}>
+          Voltar
+        </button>
+        <button className="bs-btn" disabled={aGuardar} onClick={guardar}>
+          {aGuardar ? "A guardar…" : botao}
+        </button>
+      </div>
+    </Folha>
+  );
+}
+
 // --- Anular (com o gerente) ---------------------------------------------------------
 
 const MOTIVOS_ANULACAO = ["Cliente desistiu", "Engano no pedido", "Demorou demasiado", "Produto acabou"];
@@ -995,6 +1154,7 @@ function DividirFolha({
   onDividida: (nova: domain.MesaAberta) => void;
 }) {
   const [partes, setPartes] = useState<Record<number, number>>({});
+  const [etiqueta, setEtiqueta] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [aDividir, setADividir] = useState(false);
   const totalNova = itens.reduce((s, i) => s + (partes[i.ID] ?? 0) * i.PrecoUnitario, 0);
@@ -1014,7 +1174,7 @@ function DividirFolha({
         return p;
       });
     setADividir(true);
-    DividirMesa(mesa.ContaID, lista)
+    DividirMesa(mesa.ContaID, lista, etiqueta.trim())
       .then(onDividida)
       .catch((e) => setErro(textoErro(e)))
       .finally(() => setADividir(false));
@@ -1048,6 +1208,7 @@ function DividirFolha({
         <span>Nova conta</span>
         <strong>{mt(totalNova)}</strong>
       </div>
+      <CampoEtiqueta valor={etiqueta} onMudar={setEtiqueta} />
       {erro && <div className="bs-aviso erro">{erro}</div>}
       <div className="bs-folha-acoes">
         <button className="bs-btn-sec" onClick={onCancelar}>

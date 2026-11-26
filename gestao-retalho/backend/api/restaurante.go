@@ -26,11 +26,25 @@ func (a *App) ObterMesa(contaID int64) (usecase.MesaDetalhe, error) {
 	return a.RestauranteService.ObterMesa(a.ctx, contaID)
 }
 
-func (a *App) AbrirMesa(mesa string, pessoas int64) (domain.MesaAberta, error) {
+// AbrirMesa: etiqueta é uma palavra do garçom para não confundir a conta
+// ("camisa azul"); pode ir vazia.
+func (a *App) AbrirMesa(mesa, etiqueta string, pessoas int64) (domain.MesaAberta, error) {
 	if err := a.exigirTurno(); err != nil {
 		return domain.MesaAberta{}, err
 	}
-	return a.RestauranteService.AbrirMesa(a.ctx, mesa, a.utilizadorAtual(), pessoas)
+	return a.RestauranteService.AbrirMesa(a.ctx, mesa, etiqueta, a.utilizadorAtual(), pessoas)
+}
+
+// NovaContaMesa abre mais uma conta na mesma mesa, para pagarem à parte.
+func (a *App) NovaContaMesa(contaID int64, etiqueta string) (domain.MesaAberta, error) {
+	if err := a.exigirTurno(); err != nil {
+		return domain.MesaAberta{}, err
+	}
+	return a.RestauranteService.NovaConta(a.ctx, contaID, etiqueta, a.utilizadorAtual())
+}
+
+func (a *App) DefinirEtiquetaMesa(contaID int64, etiqueta string) error {
+	return a.RestauranteService.DefinirEtiqueta(a.ctx, contaID, etiqueta)
 }
 
 func (a *App) LancarItemMesa(p usecase.AdicionarItemContaParams) (domain.ItemConta, error) {
@@ -69,11 +83,11 @@ func (a *App) AnularItemMesa(p usecase.AnularItemParams) (usecase.ResultadoAnula
 	return a.RestauranteService.AnularItem(a.ctx, p)
 }
 
-func (a *App) DividirMesa(contaID int64, partes []usecase.ParteDivisao) (domain.MesaAberta, error) {
+func (a *App) DividirMesa(contaID int64, partes []usecase.ParteDivisao, etiqueta string) (domain.MesaAberta, error) {
 	if err := a.exigirTurno(); err != nil {
 		return domain.MesaAberta{}, err
 	}
-	return a.RestauranteService.DividirConta(a.ctx, contaID, partes)
+	return a.RestauranteService.DividirConta(a.ctx, contaID, partes, etiqueta)
 }
 
 func (a *App) TransferirMesa(contaID, novoGarcomID int64) error {

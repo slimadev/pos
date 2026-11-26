@@ -32,6 +32,7 @@ var metodosPermitidos = map[string]bool{
 	"ListarOperadoresAtivos": true, "IniciarTurno": true, "TerminarTurno": true, "ObterOperadorAtual": true,
 	"CatalogoPDV": true, "ListarArmazens": true, "ListarCategorias": true,
 	"ListarMesas": true, "ObterMesa": true, "AbrirMesa": true, "LancarItemMesa": true, "DefinirPessoasMesa": true,
+	"NovaContaMesa": true, "DefinirEtiquetaMesa": true,
 	"EnviarPedido": true, "ListarPedidosMesa": true, "ReimprimirPedido": true, "AnularItemMesa": true,
 	"DividirMesa": true, "TransferirMesa": true, "JuntarMesas": true, "ImprimirContaMesa": true,
 	"ListarImpressoras": true, "AutorizarGerente": true,

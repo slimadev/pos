@@ -7,6 +7,7 @@ import "time"
 type MesaAberta struct {
 	ContaID    int64
 	Mesa       string
+	Etiqueta   string // palavra do garçom para não confundir contas ("camisa azul")
 	GarcomID   int64
 	GarcomNome string
 	Pessoas    int64

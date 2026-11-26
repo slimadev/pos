@@ -68,6 +68,7 @@ type ContasMesa struct {
 	Mesa     string `json:"mesa"`
 	GarcomID int64  `json:"garcom_id"`
 	Pessoas  int64  `json:"pessoas"`
+	Etiqueta string `json:"etiqueta"`
 }
 
 type CotacaoItens struct {
