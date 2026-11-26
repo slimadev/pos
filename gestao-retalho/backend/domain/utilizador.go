@@ -22,4 +22,13 @@ type Utilizador struct {
 	PasswordHash string
 	Role         RoleUtilizador
 	Ativo        bool
+	// Caixa: no restaurante fecha contas, vende direto e mexe nas mesas
+	// dos outros garçons (o gerente também).
+	Caixa bool
+}
+
+// PodeGerirMesas: caixa ou gerente — fecha contas e mexe nas mesas dos
+// outros (anular, dividir, passar a outro garçom), mas não lança nelas.
+func (u Utilizador) PodeGerirMesas() bool {
+	return u.Caixa || u.Role == RoleGerente || u.Role == RoleAdmin
 }

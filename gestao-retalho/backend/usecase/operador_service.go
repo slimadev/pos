@@ -24,10 +24,13 @@ type Operador struct {
 	// Gerente autoriza o que o garçom não pode fazer sozinho: anular itens
 	// já enviados para a cozinha, transferir mesas, reabrir o caixa.
 	Gerente bool
+	// Caixa: fecha contas, vende direto, abre/fecha o caixa e mexe nas
+	// mesas dos outros — como o gerente, no restaurante.
+	Caixa bool
 }
 
 func operadorDe(u domain.Utilizador) Operador {
-	return Operador{ID: u.ID, Nome: u.Nome, Ativo: u.Ativo, Gerente: u.Role == domain.RoleGerente}
+	return Operador{ID: u.ID, Nome: u.Nome, Ativo: u.Ativo, Gerente: u.Role == domain.RoleGerente, Caixa: u.Caixa}
 }
 
 // eOperador: operadores do PDV e gerentes (que também trabalham no PDV).
@@ -207,11 +210,19 @@ func (s *OperadorService) DefinirGerente(ctx context.Context, id int64, gerente 
 	return s.repo.AtualizarRole(ctx, id, role)
 }
 
-// ErrSemAutorizacao: o PIN não é de nenhum gerente ativo.
-var ErrSemAutorizacao = errors.New("PIN de gerente inválido")
+// DefinirCaixa marca (ou desmarca) o operador como caixa.
+func (s *OperadorService) DefinirCaixa(ctx context.Context, id int64, caixa bool) error {
+	if _, err := s.obterOperador(ctx, id); err != nil {
+		return err
+	}
+	return s.repo.DefinirCaixa(ctx, id, caixa)
+}
 
-// AutorizarGerente procura o gerente ativo dono deste PIN — é o "chame o
-// gerente" do restaurante: ele digita o PIN no aparelho do garçom. As falhas
+// ErrSemAutorizacao: o PIN não é de nenhum gerente nem caixa ativo.
+var ErrSemAutorizacao = errors.New("PIN de gerente ou caixa inválido")
+
+// AutorizarGerente procura o gerente (ou caixa) ativo dono deste PIN — é o
+// "chame o gerente" do restaurante: ele digita o PIN no aparelho do garçom. As falhas
 // contam para um bloqueio comum (id 0), para não se adivinhar o PIN.
 func (s *OperadorService) AutorizarGerente(ctx context.Context, pin string) (Operador, error) {
 	s.mu.Lock()
@@ -228,7 +239,7 @@ func (s *OperadorService) AutorizarGerente(ctx context.Context, pin string) (Ope
 		return Operador{}, err
 	}
 	for _, u := range todos {
-		if u.Role == domain.RoleGerente && u.Ativo && bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(pin)) == nil {
+		if u.PodeGerirMesas() && u.Role != domain.RoleAdmin && u.Ativo && bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(pin)) == nil {
 			s.mu.Lock()
 			delete(s.falhas, 0)
 			s.mu.Unlock()

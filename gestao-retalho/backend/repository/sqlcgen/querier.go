@@ -67,6 +67,7 @@ type Querier interface {
 	DefinirProdutoAtivo(ctx context.Context, arg DefinirProdutoAtivoParams) error
 	DefinirQuantidadeEnviada(ctx context.Context, arg DefinirQuantidadeEnviadaParams) error
 	DefinirUtilizadorAtivo(ctx context.Context, arg DefinirUtilizadorAtivoParams) error
+	DefinirUtilizadorCaixa(ctx context.Context, arg DefinirUtilizadorCaixaParams) error
 	FecharConta(ctx context.Context, arg FecharContaParams) (Contas, error)
 	FecharInventario(ctx context.Context, id int64) error
 	FecharSessaoCaixa(ctx context.Context, arg FecharSessaoCaixaParams) (SessoesCaixa, error)

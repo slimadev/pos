@@ -22,6 +22,39 @@ func (a *App) ListarMesas(soMinhas bool) ([]domain.MesaAberta, error) {
 	return a.RestauranteService.ListarMesas(a.ctx, nil)
 }
 
+// podeMesa: há turno e o operador pode fazer a ação nesta mesa (ver
+// usecase.AcaoMesa — cada garçom só mexe nas suas; o caixa e o gerente
+// mexem em todas mas não lançam nas dos outros; só eles fecham).
+func (a *App) podeMesa(contaID int64, acao usecase.AcaoMesa) error {
+	if err := a.exigirTurno(); err != nil {
+		return err
+	}
+	return a.RestauranteService.ExigirPermissao(a.ctx, contaID, a.utilizadorAtual(), acao)
+}
+
+// exigirCaixa: há turno e o operador é caixa ou gerente.
+func (a *App) exigirCaixa() error {
+	if err := a.exigirTurno(); err != nil {
+		return err
+	}
+	return a.RestauranteService.ExigirCaixa(a.ctx, a.utilizadorAtual())
+}
+
+// comMesas: a loja usa o restaurante (aí a venda direta e o fecho das
+// contas do bar também são só do caixa e do gerente).
+func (a *App) comMesas() bool {
+	e, err := a.ConfigService.ObterEstado(a.ctx)
+	if err != nil {
+		return false
+	}
+	for _, m := range e.ModulosAtivos {
+		if m == domain.ModuloMesas {
+			return true
+		}
+	}
+	return false
+}
+
 func (a *App) ObterMesa(contaID int64) (usecase.MesaDetalhe, error) {
 	return a.RestauranteService.ObterMesa(a.ctx, contaID)
 }
@@ -37,18 +70,21 @@ func (a *App) AbrirMesa(mesa, etiqueta string, pessoas int64) (domain.MesaAberta
 
 // NovaContaMesa abre mais uma conta na mesma mesa, para pagarem à parte.
 func (a *App) NovaContaMesa(contaID int64, etiqueta string) (domain.MesaAberta, error) {
-	if err := a.exigirTurno(); err != nil {
+	if err := a.podeMesa(contaID, usecase.AcaoGerir); err != nil {
 		return domain.MesaAberta{}, err
 	}
 	return a.RestauranteService.NovaConta(a.ctx, contaID, etiqueta, a.utilizadorAtual())
 }
 
 func (a *App) DefinirEtiquetaMesa(contaID int64, etiqueta string) error {
+	if err := a.podeMesa(contaID, usecase.AcaoGerir); err != nil {
+		return err
+	}
 	return a.RestauranteService.DefinirEtiqueta(a.ctx, contaID, etiqueta)
 }
 
 func (a *App) LancarItemMesa(p usecase.AdicionarItemContaParams) (domain.ItemConta, error) {
-	if err := a.exigirTurno(); err != nil {
+	if err := a.podeMesa(p.ContaID, usecase.AcaoLancar); err != nil {
 		return domain.ItemConta{}, err
 	}
 	p.UtilizadorID = a.utilizadorAtual()
@@ -56,11 +92,14 @@ func (a *App) LancarItemMesa(p usecase.AdicionarItemContaParams) (domain.ItemCon
 }
 
 func (a *App) DefinirPessoasMesa(contaID, pessoas int64) error {
+	if err := a.podeMesa(contaID, usecase.AcaoGerir); err != nil {
+		return err
+	}
 	return a.RestauranteService.DefinirPessoas(a.ctx, contaID, pessoas)
 }
 
 func (a *App) EnviarPedido(contaID int64) (usecase.ResultadoPedido, error) {
-	if err := a.exigirTurno(); err != nil {
+	if err := a.podeMesa(contaID, usecase.AcaoGerir); err != nil {
 		return usecase.ResultadoPedido{}, err
 	}
 	return a.RestauranteService.EnviarPedido(a.ctx, contaID, a.utilizadorAtual())
@@ -72,6 +111,9 @@ func (a *App) ListarPedidosMesa(contaID int64) ([]domain.Pedido, error) {
 
 // ReimprimirPedido: impressoraID nil = em todas as que o receberam.
 func (a *App) ReimprimirPedido(pedidoID int64, impressoraID *int64) (usecase.ResultadoPedido, error) {
+	if err := a.exigirTurno(); err != nil {
+		return usecase.ResultadoPedido{}, err
+	}
 	return a.RestauranteService.ReimprimirPedido(a.ctx, pedidoID, impressoraID)
 }
 
@@ -84,14 +126,14 @@ func (a *App) AnularItemMesa(p usecase.AnularItemParams) (usecase.ResultadoAnula
 }
 
 func (a *App) DividirMesa(contaID int64, partes []usecase.ParteDivisao, etiqueta string) (domain.MesaAberta, error) {
-	if err := a.exigirTurno(); err != nil {
+	if err := a.podeMesa(contaID, usecase.AcaoGerir); err != nil {
 		return domain.MesaAberta{}, err
 	}
 	return a.RestauranteService.DividirConta(a.ctx, contaID, partes, etiqueta)
 }
 
 func (a *App) TransferirMesa(contaID, novoGarcomID int64) error {
-	if err := a.exigirTurno(); err != nil {
+	if err := a.podeMesa(contaID, usecase.AcaoGerir); err != nil {
 		return err
 	}
 	return a.RestauranteService.TransferirMesa(a.ctx, contaID, novoGarcomID)
@@ -108,17 +150,23 @@ func (a *App) JuntarMesas(origemID, destinoID int64) error {
 // mantém o da mesa; impressoraID nil só devolve o texto (impressora do
 // próprio aparelho).
 func (a *App) ImprimirContaMesa(contaID, pessoas int64, impressoraID *int64) (usecase.ContaImpressa, error) {
+	if err := a.podeMesa(contaID, usecase.AcaoGerir); err != nil {
+		return usecase.ContaImpressa{}, err
+	}
 	return a.RestauranteService.ImprimirConta(a.ctx, contaID, pessoas, impressoraID)
 }
 
 // DefinirClienteMesa: de quem é a conta (nil = anónimo). Só com cliente o
 // fecho pode deixar o resto em dívida. Só no balcão (não é dos aparelhos).
 func (a *App) DefinirClienteMesa(contaID int64, clienteID *int64) error {
+	if err := a.podeMesa(contaID, usecase.AcaoFechar); err != nil {
+		return err
+	}
 	return a.RestauranteService.DefinirCliente(a.ctx, contaID, clienteID)
 }
 
 func (a *App) FecharMesa(contaID int64, p usecase.FecharContaParams) (FecharContaResponse, error) {
-	if err := a.exigirTurno(); err != nil {
+	if err := a.podeMesa(contaID, usecase.AcaoFechar); err != nil {
 		return FecharContaResponse{}, err
 	}
 	p.UtilizadorID = a.utilizadorAtual()
@@ -174,7 +222,7 @@ func (a *App) EstadoCaixa() (usecase.EstadoCaixa, error) {
 }
 
 func (a *App) AbrirCaixa(fundo float64) (domain.SessaoCaixa, error) {
-	if err := a.exigirTurno(); err != nil {
+	if err := a.exigirCaixa(); err != nil {
 		return domain.SessaoCaixa{}, err
 	}
 	return a.CaixaService.Abrir(a.ctx, a.utilizadorAtual(), fundo)
@@ -183,7 +231,7 @@ func (a *App) AbrirCaixa(fundo float64) (domain.SessaoCaixa, error) {
 // FecharCaixa recebe o contado por método (as chaves são os métodos:
 // "dinheiro", "mpesa"…).
 func (a *App) FecharCaixa(contagem map[string]float64, observacoes string) (usecase.FechoSessao, error) {
-	if err := a.exigirTurno(); err != nil {
+	if err := a.exigirCaixa(); err != nil {
 		return usecase.FechoSessao{}, err
 	}
 	c := make(map[domain.MetodoPagamento]float64, len(contagem))
@@ -296,4 +344,8 @@ func (a *App) DefinirModoRestaurante(ativo bool) error {
 
 func (a *App) DefinirGerente(operadorID int64, gerente bool) error {
 	return a.OperadorService.DefinirGerente(a.ctx, operadorID, gerente)
+}
+
+func (a *App) DefinirCaixa(operadorID int64, caixa bool) error {
+	return a.OperadorService.DefinirCaixa(a.ctx, operadorID, caixa)
 }

@@ -1049,6 +1049,15 @@ func (a *AdminApp) DefinirGerente(operadorID int64, gerente bool) error {
 	return a.Restaurante.DefinirGerente(a.ctx, operadorID, gerente)
 }
 
+// DefinirCaixa: no restaurante, o caixa fecha contas, vende direto e mexe
+// nas mesas dos outros garçons (como o gerente).
+func (a *AdminApp) DefinirCaixa(operadorID int64, caixa bool) error {
+	if err := a.exigirSessao(); err != nil {
+		return err
+	}
+	return a.Restaurante.DefinirCaixa(a.ctx, operadorID, caixa)
+}
+
 func (a *AdminApp) HistoricoCaixa() ([]domain.SessaoCaixa, error) {
 	if err := a.exigirSessao(); err != nil {
 		return nil, err

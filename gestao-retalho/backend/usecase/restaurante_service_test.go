@@ -411,7 +411,11 @@ func TestTransferirEJuntarMesas(t *testing.T) {
 		t.Fatalf("mesas da Ana = %+v", daAna)
 	}
 
-	if err := c.rest.JuntarMesas(ctx, m2.ContaID, m1.ContaID, c.lima.ID); err != nil {
+	// A mesa 1 já é da Ana: o Lima não a junta; o gerente sim.
+	if err := c.rest.JuntarMesas(ctx, m2.ContaID, m1.ContaID, c.lima.ID); err == nil {
+		t.Fatal("o Lima juntou numa mesa da Ana")
+	}
+	if err := c.rest.JuntarMesas(ctx, m2.ContaID, m1.ContaID, c.gerente.ID); err != nil {
 		t.Fatal(err)
 	}
 	todas, _ := c.rest.ListarMesas(ctx, nil)
@@ -515,11 +519,14 @@ func TestNovaConta_MesmaMesaContasSeparadasComEtiqueta(t *testing.T) {
 	if a.Etiqueta != "camisa azul" {
 		t.Errorf("etiqueta = %q", a.Etiqueta)
 	}
-	b, err := c.rest.NovaConta(ctx, a.ContaID, "aniversariante", c.ana.ID)
+	if _, err := c.rest.NovaConta(ctx, a.ContaID, "", c.ana.ID); err == nil {
+		t.Fatal("a Ana abriu conta numa mesa do Lima")
+	}
+	b, err := c.rest.NovaConta(ctx, a.ContaID, "aniversariante", c.lima.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if b.Mesa != "8 (2)" || b.Etiqueta != "aniversariante" || b.GarcomID != c.ana.ID {
+	if b.Mesa != "8 (2)" || b.Etiqueta != "aniversariante" || b.GarcomID != c.lima.ID {
 		t.Errorf("nova conta = %+v", b)
 	}
 	// A partir da "8 (2)" a seguinte é "8 (3)", não "8 (2) (2)".
@@ -534,8 +541,8 @@ func TestNovaConta_MesmaMesaContasSeparadasComEtiqueta(t *testing.T) {
 		t.Error("aceitou etiqueta comprida")
 	}
 
-	c.lancar(t, b.ContaID, c.feijoada, 1, c.ana.ID)
-	if _, err := c.rest.EnviarPedido(ctx, b.ContaID, c.ana.ID); err != nil {
+	c.lancar(t, b.ContaID, c.feijoada, 1, c.lima.ID)
+	if _, err := c.rest.EnviarPedido(ctx, b.ContaID, c.lima.ID); err != nil {
 		t.Fatal(err)
 	}
 	cozinha := c.impressor.talões("10.0.0.20")
@@ -591,5 +598,74 @@ func TestFecharMesa_ACreditoPrecisaDeCliente(t *testing.T) {
 	}
 	if err := c.rest.DefinirCliente(ctx, mesa.ContaID, nil); err == nil {
 		t.Error("mudou o cliente de uma mesa já fechada")
+	}
+}
+
+func TestPermissoes_GarcomSoNasSuasCaixaGereMasNaoLanca(t *testing.T) {
+	ctx := context.Background()
+	c := novoCenarioRestaurante(t)
+	rita, err := c.operador.Criar(ctx, "Rita", "3333")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := c.operador.DefinirCaixa(ctx, rita.ID, true); err != nil {
+		t.Fatal(err)
+	}
+
+	mesa, _ := c.rest.AbrirMesa(ctx, "6", "", c.lima.ID, 2)
+	conta := mesa.ContaID
+	type caso struct {
+		quem int64
+		acao usecase.AcaoMesa
+		pode bool
+	}
+	for _, k := range []caso{
+		{c.lima.ID, usecase.AcaoLancar, true},
+		{c.lima.ID, usecase.AcaoGerir, true},
+		{c.lima.ID, usecase.AcaoFechar, false}, // o garçom não fecha
+		{c.ana.ID, usecase.AcaoLancar, false},  // mesa de outro
+		{c.ana.ID, usecase.AcaoGerir, false},
+		{rita.ID, usecase.AcaoLancar, false}, // o caixa não lança nas mesas dos outros
+		{rita.ID, usecase.AcaoGerir, true},
+		{rita.ID, usecase.AcaoFechar, true},
+		{c.gerente.ID, usecase.AcaoLancar, false},
+		{c.gerente.ID, usecase.AcaoGerir, true},
+		{c.gerente.ID, usecase.AcaoFechar, true},
+	} {
+		err := c.rest.ExigirPermissao(ctx, conta, k.quem, k.acao)
+		if (err == nil) != k.pode {
+			t.Errorf("operador %d, ação %d: pode=%v, erro=%v", k.quem, k.acao, k.pode, err)
+		}
+	}
+	if err := c.rest.ExigirCaixa(ctx, c.lima.ID); !errors.Is(err, usecase.ErrSoCaixa) {
+		t.Errorf("garçom a abrir o caixa: %v", err)
+	}
+	if err := c.rest.ExigirCaixa(ctx, rita.ID); err != nil {
+		t.Errorf("caixa: %v", err)
+	}
+
+	// O caixa anula o que já foi enviado sem pedir PIN (só o motivo); o
+	// PIN do caixa também autoriza o garçom.
+	c.lancar(t, conta, c.feijoada, 2, c.lima.ID)
+	if _, err := c.rest.EnviarPedido(ctx, conta, c.lima.ID); err != nil {
+		t.Fatal(err)
+	}
+	item := itemDe(t, c, conta, c.feijoada.ProdutoID)
+	if _, err := c.rest.AnularItem(ctx, usecase.AnularItemParams{ItemID: item.ID, Quantidade: 1, GarcomID: c.ana.ID,
+		PINGerente: "9999", Motivo: "x"}); err == nil {
+		t.Error("a Ana anulou numa mesa do Lima")
+	}
+	res, err := c.rest.AnularItem(ctx, usecase.AnularItemParams{ItemID: item.ID, Quantidade: 1, GarcomID: rita.ID})
+	if err != nil || !res.PrecisaAutorizacao {
+		t.Fatalf("sem motivo devia pedir: %+v, %v", res, err)
+	}
+	res, err = c.rest.AnularItem(ctx, usecase.AnularItemParams{ItemID: item.ID, Quantidade: 1, GarcomID: rita.ID, Motivo: "Engano no pedido"})
+	if err != nil || res.Anulacao == nil {
+		t.Fatalf("caixa a anular: %+v, %v", res, err)
+	}
+	res, err = c.rest.AnularItem(ctx, usecase.AnularItemParams{ItemID: item.ID, Quantidade: 1, GarcomID: c.lima.ID,
+		PINGerente: "3333", Motivo: "Cliente desistiu"})
+	if err != nil || res.Anulacao == nil {
+		t.Fatalf("PIN do caixa a autorizar o garçom: %+v, %v", res, err)
 	}
 }

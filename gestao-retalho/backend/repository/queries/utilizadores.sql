@@ -4,24 +4,24 @@ SET nome = ?, username = ?, password_hash = ?
 WHERE id = ?;
 
 -- name: ObterUtilizadorPorUsername :one
-SELECT id, negocio_id, nome, username, password_hash, role, ativo
+SELECT id, negocio_id, nome, username, password_hash, role, ativo, caixa
 FROM utilizadores
 WHERE username = ?;
 
 -- name: ListarUtilizadores :many
-SELECT id, negocio_id, nome, username, password_hash, role, ativo
+SELECT id, negocio_id, nome, username, password_hash, role, ativo, caixa
 FROM utilizadores
 ORDER BY nome;
 
 -- name: ObterUtilizador :one
-SELECT id, negocio_id, nome, username, password_hash, role, ativo
+SELECT id, negocio_id, nome, username, password_hash, role, ativo, caixa
 FROM utilizadores
 WHERE id = ?;
 
 -- name: CriarUtilizador :one
 INSERT INTO utilizadores (negocio_id, nome, username, password_hash, role, ativo)
 VALUES (?, ?, ?, ?, ?, 1)
-RETURNING id, negocio_id, nome, username, password_hash, role, ativo;
+RETURNING id, negocio_id, nome, username, password_hash, role, ativo, caixa;
 
 -- name: AtualizarNomeUtilizador :exec
 UPDATE utilizadores SET nome = ? WHERE id = ?;
@@ -31,3 +31,6 @@ UPDATE utilizadores SET password_hash = ? WHERE id = ?;
 
 -- name: DefinirUtilizadorAtivo :exec
 UPDATE utilizadores SET ativo = ? WHERE id = ?;
+
+-- name: DefinirUtilizadorCaixa :exec
+UPDATE utilizadores SET caixa = ? WHERE id = ?;

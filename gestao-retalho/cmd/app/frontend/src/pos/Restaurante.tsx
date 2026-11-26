@@ -42,7 +42,13 @@ function lerSeparador(): Separador {
  * caixa (abrir com o fundo, fechar com a contagem), os aparelhos dos
  * garçons ligados a este PC e a venda ao balcão de sempre.
  */
-export default function Restaurante({ operador, venda }: { operador: usecase.Operador; venda?: React.ReactNode }) {
+export default function Restaurante({
+  operador,
+  venda,
+}: {
+  operador: usecase.Operador;
+  venda?: React.ReactNode;
+}) {
   const [sep, setSepEstado] = useState<Separador>(lerSeparador);
   const setSep = (s: Separador) => {
     setSepEstado(s);
@@ -53,34 +59,51 @@ export default function Restaurante({ operador, venda }: { operador: usecase.Ope
     }
   };
 
+  // O caixa e a venda direta são só do caixa e do gerente; um garçom que
+  // entre neste PC vê as mesas (as dele) e os aparelhos.
+  const gere = operador.Gerente || operador.Caixa;
   const separadores: { chave: Separador; rotulo: string; Icone: typeof BoltIcon }[] = [
     { chave: "mesas", rotulo: "Mesas", Icone: RectangleGroupIcon },
-    { chave: "caixa", rotulo: "Caixa", Icone: BanknotesIcon },
+    ...(gere ? [{ chave: "caixa" as const, rotulo: "Caixa", Icone: BanknotesIcon }] : []),
     { chave: "aparelhos", rotulo: "Aparelhos", Icone: DevicePhoneMobileIcon },
-    ...(venda ? [{ chave: "venda" as const, rotulo: "Venda", Icone: BoltIcon }] : []),
+    ...(venda && gere ? [{ chave: "venda" as const, rotulo: "Venda", Icone: BoltIcon }] : []),
   ];
+  const atual = separadores.some((x) => x.chave === sep) ? sep : "mesas";
 
   return (
     <div className="rest-raiz">
       <div className="bs-modos" role="tablist">
         {separadores.map(({ chave, rotulo, Icone }) => (
-          <button key={chave} role="tab" aria-selected={sep === chave} className={sep === chave ? "ativo" : ""} onClick={() => setSep(chave)}>
+          <button
+            key={chave}
+            role="tab"
+            aria-selected={atual === chave}
+            className={atual === chave ? "ativo" : ""}
+            onClick={() => setSep(chave)}
+          >
             <Icone className="bs-icon" aria-hidden="true" />
             {rotulo}
           </button>
         ))}
       </div>
-      {sep === "mesas" && <Mesas balcao operador={operador} onIrParaCaixa={() => setSep("caixa")} />}
-      {sep === "caixa" && <Caixa />}
-      {sep === "aparelhos" && <Aparelhos />}
-      {sep === "venda" && venda}
+      {atual === "mesas" && (
+        <Mesas
+          balcao
+          operador={operador}
+          onIrParaCaixa={gere ? () => setSep("caixa") : undefined}
+        />
+      )}
+      {atual === "caixa" && <Caixa />}
+      {atual === "aparelhos" && <Aparelhos />}
+      {atual === "venda" && venda}
     </div>
   );
 }
 
 // --- Caixa ---------------------------------------------------------------------
 
-const hora = (t: unknown) => new Date(String(t)).toLocaleString("pt-PT", { dateStyle: "short", timeStyle: "short" });
+const hora = (t: unknown) =>
+  new Date(String(t)).toLocaleString("pt-PT", { dateStyle: "short", timeStyle: "short" });
 
 function Caixa() {
   const [estado, setEstado] = useState<usecase.EstadoCaixa | null>(null);
@@ -130,11 +153,20 @@ function Caixa() {
           <h3>
             <LockClosedIcon className="bs-icon" aria-hidden="true" /> Caixa fechado
           </h3>
-          <p className="rest-fraco">Conte o dinheiro de troco que fica na gaveta e abra o caixa. As mesas só se fecham com o caixa aberto.</p>
+          <p className="rest-fraco">
+            Conte o dinheiro de troco que fica na gaveta e abra o caixa. As mesas só se fecham com o
+            caixa aberto.
+          </p>
           <div className="rest-linha">
             <label className="bs-campo" style={{ flex: 1 }}>
               <span>Fundo de caixa (MT)</span>
-              <input inputMode="decimal" placeholder="0,00" value={fundo} onChange={(e) => setFundo(e.target.value)} onKeyDown={(e) => e.key === "Enter" && abrir()} />
+              <input
+                inputMode="decimal"
+                placeholder="0,00"
+                value={fundo}
+                onChange={(e) => setFundo(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && abrir()}
+              />
             </label>
           </div>
           <button className="bs-btn" onClick={abrir}>
@@ -148,7 +180,8 @@ function Caixa() {
             <LockOpenIcon className="bs-icon" aria-hidden="true" /> Caixa aberto
           </h3>
           <p className="rest-fraco">
-            Aberto por {estado.AbertoPor} em {hora(estado.Sessao?.AbertaEm)} · fundo {mt(estado.Sessao?.FundoInicial ?? 0)}
+            Aberto por {estado.AbertoPor} em {hora(estado.Sessao?.AbertaEm)} · fundo{" "}
+            {mt(estado.Sessao?.FundoInicial ?? 0)}
           </p>
           <table className="rest-tabela">
             <thead>
@@ -216,9 +249,12 @@ function FecharCaixaFolha({
   onCancelar: () => void;
   onFechado: (f: usecase.FechoSessao) => void;
 }) {
-  const metodos = METODOS.filter((m) => m === "dinheiro" || estado.Recebido.PorMetodo.some((l) => l.Metodo === m && l.Total > 0));
+  const metodos = METODOS.filter(
+    (m) => m === "dinheiro" || estado.Recebido.PorMetodo.some((l) => l.Metodo === m && l.Total > 0),
+  );
   const esperado = (m: string) =>
-    (m === "dinheiro" ? (estado.Sessao?.FundoInicial ?? 0) : 0) + (estado.Recebido.PorMetodo.find((l) => l.Metodo === m)?.Total ?? 0);
+    (m === "dinheiro" ? (estado.Sessao?.FundoInicial ?? 0) : 0) +
+    (estado.Recebido.PorMetodo.find((l) => l.Metodo === m)?.Total ?? 0);
   const [contado, setContado] = useState<Record<string, string>>({});
   const [obs, setObs] = useState("");
   const [erro, setErro] = useState<string | null>(null);
@@ -239,7 +275,10 @@ function FecharCaixaFolha({
 
   return (
     <Folha titulo="Fechar caixa" onFechar={onCancelar} larga>
-      <p className="bs-folha-texto">Conte o que tem em cada forma de pagamento (o dinheiro da gaveta com o fundo, o total do M-Pesa, do cartão…).</p>
+      <p className="bs-folha-texto">
+        Conte o que tem em cada forma de pagamento (o dinheiro da gaveta com o fundo, o total do
+        M-Pesa, do cartão…).
+      </p>
       <table className="rest-tabela">
         <thead>
           <tr>
@@ -286,7 +325,8 @@ function ConferenciaCaixa({ fecho }: { fecho: usecase.FechoSessao }) {
     <div className="rest-cartao">
       <h3>Caixa fechado — conferência</h3>
       <p className="rest-fraco">
-        {hora(fecho.Sessao.AbertaEm)} → {hora(fecho.Sessao.FechadaEm)} · aberto por {fecho.AbertoPor}, fechado por {fecho.FechadoPor}
+        {hora(fecho.Sessao.AbertaEm)} → {hora(fecho.Sessao.FechadaEm)} · aberto por{" "}
+        {fecho.AbertoPor}, fechado por {fecho.FechadoPor}
       </p>
       <table className="rest-tabela">
         <thead>
@@ -303,14 +343,24 @@ function ConferenciaCaixa({ fecho }: { fecho: usecase.FechoSessao }) {
               <td>{ROTULO_METODO[l.Metodo] ?? l.Metodo}</td>
               <td className="num">{mt(l.Esperado)}</td>
               <td className="num">{mt(l.Contado)}</td>
-              <td className={`num${l.Diferenca < -0.005 ? " rest-dif-falta" : l.Diferenca > 0.005 ? " rest-dif-sobra" : ""}`}>{mt(l.Diferenca)}</td>
+              <td
+                className={`num${l.Diferenca < -0.005 ? " rest-dif-falta" : l.Diferenca > 0.005 ? " rest-dif-sobra" : ""}`}
+              >
+                {mt(l.Diferenca)}
+              </td>
             </tr>
           ))}
         </tbody>
         <tfoot>
           <tr>
             <td colSpan={3}>
-              <strong>{fecho.DiferencaTotal < -0.005 ? "Falta" : fecho.DiferencaTotal > 0.005 ? "Sobra" : "Certo"}</strong>
+              <strong>
+                {fecho.DiferencaTotal < -0.005
+                  ? "Falta"
+                  : fecho.DiferencaTotal > 0.005
+                    ? "Sobra"
+                    : "Certo"}
+              </strong>
             </td>
             <td className="num">
               <strong>{mt(fecho.DiferencaTotal)}</strong>
@@ -341,7 +391,9 @@ function Aparelhos() {
 
   if (!e) return erro ? <div className="bs-erro">{erro}</div> : null;
   if (!e.Disponivel) {
-    return <p className="rest-fraco">Os aparelhos ligam-se ao computador do balcão — configure-os lá.</p>;
+    return (
+      <p className="rest-fraco">Os aparelhos ligam-se ao computador do balcão — configure-os lá.</p>
+    );
   }
   const mudar = (ativo: boolean) =>
     DefinirServidorAparelhos(ativo, e.Config.Porta)
@@ -364,7 +416,8 @@ function Aparelhos() {
       <div className="rest-cartao">
         <h3>Aparelhos dos garçons</h3>
         <p className="rest-fraco">
-          Os aparelhos (Sunmi) ligam-se a este computador pela rede Wi-Fi da loja. Este PDV tem de estar aberto durante o serviço.
+          Os aparelhos (Sunmi) ligam-se a este computador pela rede Wi-Fi da loja. Este PDV tem de
+          estar aberto durante o serviço.
         </p>
         <div className="rest-linha">
           <strong>{e.Ligado ? "Ligado" : "Desligado"}</strong>
@@ -377,7 +430,10 @@ function Aparelhos() {
 
       <div className="rest-cartao">
         <h3>Para ligar um aparelho</h3>
-        <p className="rest-fraco">No aparelho: Administração → "Aparelho de garçom", ou o botão "Balcão" no ecrã do operador. Escreva:</p>
+        <p className="rest-fraco">
+          No aparelho: Administração → "Aparelho de garçom", ou o botão "Balcão" no ecrã do
+          operador. Escreva:
+        </p>
         <p>
           Endereço:{" "}
           {e.Enderecos.length > 0 ? (
@@ -397,7 +453,11 @@ function Aparelhos() {
         <button
           className="bs-btn-sec"
           onClick={() => {
-            if (window.confirm("Gerar uma chave nova? Todos os aparelhos têm de a escrever outra vez.")) {
+            if (
+              window.confirm(
+                "Gerar uma chave nova? Todos os aparelhos têm de a escrever outra vez.",
+              )
+            ) {
               NovaChaveServidor()
                 .then(setE)
                 .catch((x) => setErro(textoErro(x)));
@@ -423,7 +483,12 @@ function Aparelhos() {
               <tr key={a.ID}>
                 <td>{a.ID}</td>
                 <td>{a.Operador || <span className="rest-fraco">ninguém</span>}</td>
-                <td>{new Date(String(a.Visto)).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })}</td>
+                <td>
+                  {new Date(String(a.Visto)).toLocaleTimeString("pt-PT", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </td>
               </tr>
             ))}
             {e.Aparelhos.length === 0 && (
@@ -443,7 +508,13 @@ function Aparelhos() {
 // --- No aparelho: ligação ao computador do balcão ----------------------------------------
 
 /** Liga o aparelho (modo garçom) ao PDV do computador do balcão. Só Android. */
-export function LigacaoBalcao({ onFechar, onMudou }: { onFechar: () => void; onMudou: (e: EstadoLigacao) => void }) {
+export function LigacaoBalcao({
+  onFechar,
+  onMudou,
+}: {
+  onFechar: () => void;
+  onMudou: (e: EstadoLigacao) => void;
+}) {
   const [estado, setEstado] = useState<EstadoLigacao | null>(null);
   const [endereco, setEndereco] = useState("");
   const [chave, setChave] = useState("");
@@ -472,8 +543,9 @@ export function LigacaoBalcao({ onFechar, onMudou }: { onFechar: () => void; onM
   return (
     <Folha titulo="Computador do balcão" onFechar={onFechar}>
       <p className="bs-folha-texto">
-        Num restaurante, os aparelhos dos garçons usam as mesas, os pedidos e as impressoras do computador do balcão. O endereço e a chave
-        aparecem lá, no PDV, em <strong>Aparelhos</strong>.
+        Num restaurante, os aparelhos dos garçons usam as mesas, os pedidos e as impressoras do
+        computador do balcão. O endereço e a chave aparecem lá, no PDV, em{" "}
+        <strong>Aparelhos</strong>.
       </p>
       {estado?.ModoGarcom && (
         <div className="bs-aviso">
@@ -482,11 +554,21 @@ export function LigacaoBalcao({ onFechar, onMudou }: { onFechar: () => void; onM
       )}
       <label className="bs-campo">
         <span>Endereço do computador</span>
-        <input inputMode="decimal" placeholder="192.168.1.10" value={endereco} onChange={(e) => setEndereco(e.target.value)} />
+        <input
+          inputMode="decimal"
+          placeholder="192.168.1.10"
+          value={endereco}
+          onChange={(e) => setEndereco(e.target.value)}
+        />
       </label>
       <label className="bs-campo">
         <span>Chave da loja</span>
-        <input autoCapitalize="characters" placeholder="ABCD-EFGH" value={chave} onChange={(e) => setChave(e.target.value)} />
+        <input
+          autoCapitalize="characters"
+          placeholder="ABCD-EFGH"
+          value={chave}
+          onChange={(e) => setChave(e.target.value)}
+        />
       </label>
       {erro && <div className="bs-aviso erro">{erro}</div>}
       <div className="bs-folha-acoes">
@@ -507,7 +589,11 @@ export function LigacaoBalcao({ onFechar, onMudou }: { onFechar: () => void; onM
             Voltar
           </button>
         )}
-        <button className="bs-btn" disabled={!endereco.trim() || !chave.trim() || aLigar} onClick={ligar}>
+        <button
+          className="bs-btn"
+          disabled={!endereco.trim() || !chave.trim() || aLigar}
+          onClick={ligar}
+        >
           {aLigar ? "A ligar…" : "Ligar"}
         </button>
       </div>

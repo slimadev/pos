@@ -363,6 +363,7 @@ type Utilizadores struct {
 	PasswordHash string        `json:"password_hash"`
 	Role         string        `json:"role"`
 	Ativo        int64         `json:"ativo"`
+	Caixa        int64         `json:"caixa"`
 }
 
 type Vendas struct {

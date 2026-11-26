@@ -474,6 +474,12 @@ func (a *App) RegistarVendaDireta(p usecase.VendaDiretaParams) (usecase.VendaCom
 	if err := a.exigirTurno(); err != nil {
 		return usecase.VendaCompleta{}, err
 	}
+	// No restaurante só o caixa e o gerente recebem dinheiro.
+	if a.comMesas() {
+		if err := a.exigirCaixa(); err != nil {
+			return usecase.VendaCompleta{}, err
+		}
+	}
 	p.UtilizadorID = a.utilizadorAtual()
 	return a.VendaService.RegistarVendaDireta(a.ctx, p)
 }
@@ -612,6 +618,11 @@ type FecharContaResponse struct {
 func (a *App) FecharContaAberta(contaID int64, p usecase.FecharContaParams) (FecharContaResponse, error) {
 	if err := a.exigirTurno(); err != nil {
 		return FecharContaResponse{}, err
+	}
+	if a.comMesas() {
+		if err := a.exigirCaixa(); err != nil {
+			return FecharContaResponse{}, err
+		}
 	}
 	p.UtilizadorID = a.utilizadorAtual()
 	venda, alerta, err := a.ContaService.FecharConta(a.ctx, contaID, p)

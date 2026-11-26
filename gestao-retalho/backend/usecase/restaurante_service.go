@@ -63,6 +63,73 @@ func NewRestauranteService(
 	}
 }
 
+// --- Quem pode mexer em quê ---------------------------------------------------
+//
+// Cada garçom só mexe nas suas mesas. O caixa e o gerente mexem nas de
+// todos (anular, dividir, passar a outro garçom, juntar…) mas não lançam
+// pedidos nas mesas dos outros. Fechar contas, vender direto e abrir/fechar
+// o caixa é só do caixa e do gerente.
+
+type AcaoMesa int
+
+const (
+	// AcaoLancar: lançar itens — só o garçom da mesa.
+	AcaoLancar AcaoMesa = iota
+	// AcaoGerir: enviar, anular, dividir, passar, juntar, pessoas, conta…
+	// — o garçom da mesa, o caixa ou o gerente.
+	AcaoGerir
+	// AcaoFechar: receber a conta (e escolher o cliente do fiado) — só o
+	// caixa ou o gerente.
+	AcaoFechar
+)
+
+// ErrSoCaixa: a ação é do caixa ou do gerente.
+var ErrSoCaixa = errors.New("só o caixa ou o gerente pode fazer isto — quem é caixa marca-se na Administração, em Utilizadores")
+
+// ExigirCaixa: o operador é caixa ou gerente.
+func (s *RestauranteService) ExigirCaixa(ctx context.Context, utilizadorID int64) error {
+	u, err := s.utilizadores.Obter(ctx, utilizadorID)
+	if err != nil {
+		return err
+	}
+	if !u.PodeGerirMesas() {
+		return ErrSoCaixa
+	}
+	return nil
+}
+
+// ExigirPermissao verifica se o operador pode fazer a ação nesta mesa.
+func (s *RestauranteService) ExigirPermissao(ctx context.Context, contaID, utilizadorID int64, acao AcaoMesa) error {
+	m, err := s.obterMesa(ctx, contaID)
+	if err != nil {
+		return err
+	}
+	return s.exigirPermissao(ctx, m, utilizadorID, acao)
+}
+
+func (s *RestauranteService) exigirPermissao(ctx context.Context, m domain.MesaAberta, utilizadorID int64, acao AcaoMesa) error {
+	u, err := s.utilizadores.Obter(ctx, utilizadorID)
+	if err != nil {
+		return err
+	}
+	dono := m.GarcomID == utilizadorID
+	switch acao {
+	case AcaoLancar:
+		if !dono {
+			return fmt.Errorf("%s é de %s — só quem tem a mesa lança pedidos nela", rotuloMesa(m.Mesa), m.GarcomNome)
+		}
+	case AcaoGerir:
+		if !dono && !u.PodeGerirMesas() {
+			return fmt.Errorf("%s é de %s — só quem tem a mesa, o caixa ou o gerente podem mexer nela", rotuloMesa(m.Mesa), m.GarcomNome)
+		}
+	case AcaoFechar:
+		if !u.PodeGerirMesas() {
+			return ErrSoCaixa
+		}
+	}
+	return nil
+}
+
 // --- Mesas -------------------------------------------------------------------
 
 // ListarMesas devolve as mesas abertas; com garcomID, só as desse garçom.
@@ -260,6 +327,9 @@ func (s *RestauranteService) NovaConta(ctx context.Context, contaID int64, etiqu
 	if _, err := s.garcomAtivo(ctx, garcomID); err != nil {
 		return domain.MesaAberta{}, err
 	}
+	if err := s.exigirPermissao(ctx, m, garcomID, AcaoGerir); err != nil {
+		return domain.MesaAberta{}, err
+	}
 	abertas, err := s.rest.ListarMesasAbertas(ctx, domain.NegocioID)
 	if err != nil {
 		return domain.MesaAberta{}, err
@@ -344,6 +414,11 @@ func (s *RestauranteService) JuntarMesas(ctx context.Context, origemID, destinoI
 	destino, err := s.obterMesa(ctx, destinoID)
 	if err != nil {
 		return err
+	}
+	for _, m := range []domain.MesaAberta{origem, destino} {
+		if err := s.exigirPermissao(ctx, m, utilizadorID, AcaoGerir); err != nil {
+			return err
+		}
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -614,6 +689,13 @@ func (s *RestauranteService) AnularItem(ctx context.Context, p AnularItemParams)
 	if err != nil {
 		return ResultadoAnulacao{}, err
 	}
+	if err := s.exigirPermissao(ctx, m, p.GarcomID, AcaoGerir); err != nil {
+		return ResultadoAnulacao{}, err
+	}
+	quem, err := s.utilizadores.Obter(ctx, p.GarcomID)
+	if err != nil {
+		return ResultadoAnulacao{}, err
+	}
 	itens, err := s.rest.ListarItens(ctx, item.ContaID)
 	if err != nil {
 		return ResultadoAnulacao{}, err
@@ -634,14 +716,21 @@ func (s *RestauranteService) AnularItem(ctx context.Context, p AnularItemParams)
 	var autorizador *Operador
 	motivo := strings.TrimSpace(p.Motivo)
 	if anularEnviada > eps {
-		if p.PINGerente == "" || motivo == "" {
+		// O caixa e o gerente autorizam-se a si próprios; o garçom chama-os.
+		autoriza := quem.PodeGerirMesas() && quem.Role != domain.RoleAdmin
+		if motivo == "" || (!autoriza && p.PINGerente == "") {
 			return ResultadoAnulacao{PrecisaAutorizacao: true}, nil
 		}
-		g, err := s.operadores.AutorizarGerente(ctx, p.PINGerente)
-		if err != nil {
-			return ResultadoAnulacao{}, err
+		if autoriza {
+			o := operadorDe(quem)
+			autorizador = &o
+		} else {
+			g, err := s.operadores.AutorizarGerente(ctx, p.PINGerente)
+			if err != nil {
+				return ResultadoAnulacao{}, err
+			}
+			autorizador = &g
 		}
-		autorizador = &g
 	}
 
 	r, err := s.carregarRotas(ctx)

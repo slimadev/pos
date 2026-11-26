@@ -85,6 +85,11 @@ func (s *RestauranteService) DefinirGerente(ctx context.Context, id int64, geren
 	return err
 }
 
+func (s *RestauranteService) DefinirCaixa(ctx context.Context, id int64, caixa bool) error {
+	_, err := comLoja(ctx, s.lojas, func(a *api.App) (struct{}, error) { return struct{}{}, a.DefinirCaixa(id, caixa) })
+	return err
+}
+
 func (s *RestauranteService) HistoricoCaixa(ctx context.Context) ([]domain.SessaoCaixa, error) {
 	return comLoja(ctx, s.lojas, func(a *api.App) ([]domain.SessaoCaixa, error) { return a.HistoricoCaixa(60) })
 }

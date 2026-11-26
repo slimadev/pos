@@ -64,7 +64,7 @@ func (q *Queries) AtualizarUtilizadorAdmin(ctx context.Context, arg AtualizarUti
 const criarUtilizador = `-- name: CriarUtilizador :one
 INSERT INTO utilizadores (negocio_id, nome, username, password_hash, role, ativo)
 VALUES (?, ?, ?, ?, ?, 1)
-RETURNING id, negocio_id, nome, username, password_hash, role, ativo
+RETURNING id, negocio_id, nome, username, password_hash, role, ativo, caixa
 `
 
 type CriarUtilizadorParams struct {
@@ -92,6 +92,7 @@ func (q *Queries) CriarUtilizador(ctx context.Context, arg CriarUtilizadorParams
 		&i.PasswordHash,
 		&i.Role,
 		&i.Ativo,
+		&i.Caixa,
 	)
 	return i, err
 }
@@ -110,8 +111,22 @@ func (q *Queries) DefinirUtilizadorAtivo(ctx context.Context, arg DefinirUtiliza
 	return err
 }
 
+const definirUtilizadorCaixa = `-- name: DefinirUtilizadorCaixa :exec
+UPDATE utilizadores SET caixa = ? WHERE id = ?
+`
+
+type DefinirUtilizadorCaixaParams struct {
+	Caixa int64 `json:"caixa"`
+	ID    int64 `json:"id"`
+}
+
+func (q *Queries) DefinirUtilizadorCaixa(ctx context.Context, arg DefinirUtilizadorCaixaParams) error {
+	_, err := q.db.ExecContext(ctx, definirUtilizadorCaixa, arg.Caixa, arg.ID)
+	return err
+}
+
 const listarUtilizadores = `-- name: ListarUtilizadores :many
-SELECT id, negocio_id, nome, username, password_hash, role, ativo
+SELECT id, negocio_id, nome, username, password_hash, role, ativo, caixa
 FROM utilizadores
 ORDER BY nome
 `
@@ -133,6 +148,7 @@ func (q *Queries) ListarUtilizadores(ctx context.Context) ([]Utilizadores, error
 			&i.PasswordHash,
 			&i.Role,
 			&i.Ativo,
+			&i.Caixa,
 		); err != nil {
 			return nil, err
 		}
@@ -148,7 +164,7 @@ func (q *Queries) ListarUtilizadores(ctx context.Context) ([]Utilizadores, error
 }
 
 const obterUtilizador = `-- name: ObterUtilizador :one
-SELECT id, negocio_id, nome, username, password_hash, role, ativo
+SELECT id, negocio_id, nome, username, password_hash, role, ativo, caixa
 FROM utilizadores
 WHERE id = ?
 `
@@ -164,12 +180,13 @@ func (q *Queries) ObterUtilizador(ctx context.Context, id int64) (Utilizadores, 
 		&i.PasswordHash,
 		&i.Role,
 		&i.Ativo,
+		&i.Caixa,
 	)
 	return i, err
 }
 
 const obterUtilizadorPorUsername = `-- name: ObterUtilizadorPorUsername :one
-SELECT id, negocio_id, nome, username, password_hash, role, ativo
+SELECT id, negocio_id, nome, username, password_hash, role, ativo, caixa
 FROM utilizadores
 WHERE username = ?
 `
@@ -185,6 +202,7 @@ func (q *Queries) ObterUtilizadorPorUsername(ctx context.Context, username strin
 		&i.PasswordHash,
 		&i.Role,
 		&i.Ativo,
+		&i.Caixa,
 	)
 	return i, err
 }

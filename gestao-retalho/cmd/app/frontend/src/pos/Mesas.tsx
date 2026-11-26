@@ -60,7 +60,8 @@ const porEnviar = (i: domain.ItemMesa) => Math.max(0, i.Quantidade - i.Enviada);
 const rotuloMesa = (m: string) => (/^\d+( \(\d+\))?$/.test(m) ? `Mesa ${m}` : m);
 const baseMesa = (m: string) => m.replace(/\s*\(\d+\)$/, "");
 const mesmaMesa = (a: string, b: string) => baseMesa(a).toLowerCase() === baseMesa(b).toLowerCase();
-const ordemMesas = (a: domain.MesaAberta, b: domain.MesaAberta) => a.Mesa.localeCompare(b.Mesa, "pt", { numeric: true, sensitivity: "base" });
+const ordemMesas = (a: domain.MesaAberta, b: domain.MesaAberta) =>
+  a.Mesa.localeCompare(b.Mesa, "pt", { numeric: true, sensitivity: "base" });
 const MAX_ETIQUETA = 30;
 const CLIENTE_ANONIMO = 1; // domain.ClienteAnonimoID
 
@@ -85,9 +86,13 @@ export default function Mesas({
   const [selecionada, setSelecionada] = useState<number | null>(null);
   const [abrir, setAbrir] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
-  const [fechada, setFechada] = useState<{ id: number; identificador: string; total: number; troco: number; divida: number } | null>(
-    null,
-  );
+  const [fechada, setFechada] = useState<{
+    id: number;
+    identificador: string;
+    total: number;
+    troco: number;
+    divida: number;
+  } | null>(null);
   const [recibo, setRecibo] = useState<{ id: number; troco: number } | null>(null);
   const [, setRelogio] = useState(0);
 
@@ -113,7 +118,9 @@ export default function Mesas({
 
   const sobreposicoes = (
     <>
-      {recibo && <ReciboModal vendaId={recibo.id} troco={recibo.troco} onFechar={() => setRecibo(null)} />}
+      {recibo && (
+        <ReciboModal vendaId={recibo.id} troco={recibo.troco} onFechar={() => setRecibo(null)} />
+      )}
       {fechada && !recibo && (
         <ContaFechada
           {...fechada}
@@ -132,6 +139,7 @@ export default function Mesas({
           key={selecionada}
           contaID={selecionada}
           balcao={balcao}
+          operador={operador}
           outrasMesas={(mesas ?? []).filter((m) => m.ContaID !== selecionada)}
           onAbrirOutra={setSelecionada}
           onIrParaCaixa={onIrParaCaixa}
@@ -150,11 +158,17 @@ export default function Mesas({
   }
 
   const lista = mesas ?? [];
-  const garcons = Array.from(new Map(lista.map((m) => [m.GarcomID, m.GarcomNome])).entries()).sort((a, b) =>
-    a[1].localeCompare(b[1], "pt"),
+  const garcons = Array.from(new Map(lista.map((m) => [m.GarcomID, m.GarcomNome])).entries()).sort(
+    (a, b) => a[1].localeCompare(b[1], "pt"),
   );
   const visiveis = lista
-    .filter((m) => (garcom === "todos" ? true : garcom === "meus" ? m.GarcomID === operador.ID : m.GarcomID === garcom))
+    .filter((m) =>
+      garcom === "todos"
+        ? true
+        : garcom === "meus"
+          ? m.GarcomID === operador.ID
+          : m.GarcomID === garcom,
+    )
     .sort(ordemMesas);
   const total = visiveis.reduce((s, m) => s + m.Total, 0);
 
@@ -174,7 +188,9 @@ export default function Mesas({
         <div className="bs-kpis">
           <div>
             <span className="bs-kpi-valor">{visiveis.length}</span>
-            <span className="bs-kpi-label">{visiveis.length === 1 ? "mesa aberta" : "mesas abertas"}</span>
+            <span className="bs-kpi-label">
+              {visiveis.length === 1 ? "mesa aberta" : "mesas abertas"}
+            </span>
           </div>
           <div>
             <span className="bs-kpi-valor">{mt(total)}</span>
@@ -190,18 +206,36 @@ export default function Mesas({
       {/* No balcão escolhe-se o garçom; no aparelho, as minhas ou todas. */}
       <div className="mesas-garcons" role="tablist" aria-label="Garçom">
         {!balcao && (
-          <button role="tab" aria-selected={garcom === "meus"} className={garcom === "meus" ? "ativo" : ""} onClick={() => setGarcom("meus")}>
+          <button
+            role="tab"
+            aria-selected={garcom === "meus"}
+            className={garcom === "meus" ? "ativo" : ""}
+            onClick={() => setGarcom("meus")}
+          >
             As minhas
-            <span className="mesas-n">{lista.filter((m) => m.GarcomID === operador.ID).length}</span>
+            <span className="mesas-n">
+              {lista.filter((m) => m.GarcomID === operador.ID).length}
+            </span>
           </button>
         )}
-        <button role="tab" aria-selected={garcom === "todos"} className={garcom === "todos" ? "ativo" : ""} onClick={() => setGarcom("todos")}>
+        <button
+          role="tab"
+          aria-selected={garcom === "todos"}
+          className={garcom === "todos" ? "ativo" : ""}
+          onClick={() => setGarcom("todos")}
+        >
           Todas
           <span className="mesas-n">{lista.length}</span>
         </button>
         {balcao &&
           garcons.map(([id, nome]) => (
-            <button key={id} role="tab" aria-selected={garcom === id} className={garcom === id ? "ativo" : ""} onClick={() => setGarcom(id)}>
+            <button
+              key={id}
+              role="tab"
+              aria-selected={garcom === id}
+              className={garcom === id ? "ativo" : ""}
+              onClick={() => setGarcom(id)}
+            >
               {nome}
               <span className="mesas-n">{lista.filter((m) => m.GarcomID === id).length}</span>
             </button>
@@ -212,7 +246,11 @@ export default function Mesas({
         {visiveis.map((m) => {
           const tempo = tempoAberta(m.AbertaEm);
           return (
-            <button key={m.ContaID} className={`bs-card${tempo.longa ? " longa" : ""}`} onClick={() => setSelecionada(m.ContaID)}>
+            <button
+              key={m.ContaID}
+              className={`bs-card${tempo.longa ? " longa" : ""}`}
+              onClick={() => setSelecionada(m.ContaID)}
+            >
               <div className="bs-card-cabeca">
                 <span className="bs-card-id">{rotuloMesa(m.Mesa)}</span>
                 {tempo.texto && (
@@ -233,7 +271,9 @@ export default function Mesas({
               </div>
               <div className="bs-card-bottom">
                 <span className="bs-card-total">{mt(m.Total)}</span>
-                {m.PorEnviar > EPS && <span className="mesas-por-enviar">{qtd(m.PorEnviar)} por enviar</span>}
+                {m.PorEnviar > EPS && (
+                  <span className="mesas-por-enviar">{qtd(m.PorEnviar)} por enviar</span>
+                )}
               </div>
             </button>
           );
@@ -242,7 +282,10 @@ export default function Mesas({
           <div className="bs-vazio">
             <RectangleGroupIcon className="bs-vazio-icone" aria-hidden="true" />
             <strong>{garcom === "meus" ? "Não tem mesas abertas" : "Nenhuma mesa aberta"}</strong>
-            <span>Abra a mesa, lance o pedido e carregue em Enviar: sai logo impresso no balcão e na cozinha.</span>
+            <span>
+              Abra a mesa, lance o pedido e carregue em Enviar: sai logo impresso no balcão e na
+              cozinha.
+            </span>
             <button className="bs-abrir" onClick={() => setAbrir(true)}>
               <PlusIcon className="bs-icon" aria-hidden="true" />
               Abrir mesa
@@ -289,7 +332,9 @@ function AbrirMesaFolha({
   const numeros = Array.from({ length: 20 }, (_, i) => String(i + 1));
   const nome = mesa.trim();
   // A primeira conta da mesa (a "5", não a "5 (2)"), se já estiver aberta.
-  const jaAberta = nome ? abertas.find((m) => m.Mesa.toLowerCase() === nome.toLowerCase().replace(/\s+/g, " ")) : undefined;
+  const jaAberta = nome
+    ? abertas.find((m) => m.Mesa.toLowerCase() === nome.toLowerCase().replace(/\s+/g, " "))
+    : undefined;
   const contasDaMesa = nome ? abertas.filter((m) => mesmaMesa(m.Mesa, nome)).length : 0;
 
   function abrir() {
@@ -322,12 +367,17 @@ function AbrirMesaFolha({
       </div>
       <label className="bs-campo">
         <span>Ou escreva (ex: Varanda 2)</span>
-        <input value={mesa} onChange={(e) => setMesa(e.target.value)} onKeyDown={(e) => e.key === "Enter" && abrir()} />
+        <input
+          value={mesa}
+          onChange={(e) => setMesa(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && abrir()}
+        />
       </label>
       {jaAberta && (
         <div className="bs-aviso">
           {rotuloMesa(jaAberta.Mesa)} já está aberta ({jaAberta.GarcomNome}
-          {contasDaMesa > 1 ? `, ${contasDaMesa} contas` : ""}). Abre-se mais uma conta nela, que se paga à parte.
+          {contasDaMesa > 1 ? `, ${contasDaMesa} contas` : ""}). Abre-se mais uma conta nela, que se
+          paga à parte.
         </div>
       )}
       <CampoEtiqueta valor={etiqueta} onMudar={setEtiqueta} onEnter={abrir} />
@@ -338,7 +388,11 @@ function AbrirMesaFolha({
           Voltar
         </button>
         <button className="bs-btn" disabled={!nome || aAbrir} onClick={abrir}>
-          {aAbrir ? "A abrir…" : jaAberta ? "Abrir conta separada" : `Abrir ${nome ? rotuloMesa(nome) : "mesa"}`}
+          {aAbrir
+            ? "A abrir…"
+            : jaAberta
+              ? "Abrir conta separada"
+              : `Abrir ${nome ? rotuloMesa(nome) : "mesa"}`}
         </button>
       </div>
     </Folha>
@@ -346,7 +400,15 @@ function AbrirMesaFolha({
 }
 
 /** Etiqueta livre do garçom para não confundir as contas ("camisa azul"). */
-function CampoEtiqueta({ valor, onMudar, onEnter }: { valor: string; onMudar: (v: string) => void; onEnter?: () => void }) {
+function CampoEtiqueta({
+  valor,
+  onMudar,
+  onEnter,
+}: {
+  valor: string;
+  onMudar: (v: string) => void;
+  onEnter?: () => void;
+}) {
   return (
     <label className="bs-campo">
       <span>Etiqueta para não confundir (opcional — ex: camisa azul, aniversariante)</span>
@@ -398,6 +460,7 @@ type FolhaAberta =
 function MesaDetalhe({
   contaID,
   balcao,
+  operador,
   outrasMesas,
   onAbrirOutra,
   onVoltar,
@@ -406,10 +469,17 @@ function MesaDetalhe({
 }: {
   contaID: number;
   balcao: boolean;
+  operador: usecase.Operador;
   outrasMesas: domain.MesaAberta[];
   onAbrirOutra: (contaID: number) => void;
   onVoltar: () => void;
-  onFechada: (r: { id: number; identificador: string; total: number; troco: number; divida: number }) => void;
+  onFechada: (r: {
+    id: number;
+    identificador: string;
+    total: number;
+    troco: number;
+    divida: number;
+  }) => void;
   onIrParaCaixa?: () => void;
 }) {
   const [detalhe, setDetalhe] = useState<usecase.MesaDetalhe | null>(null);
@@ -529,30 +599,54 @@ function MesaDetalhe({
   }
 
   if (!mesa) {
-    return (
-      <div className="bs bs-detalhe">
-        {erro && <div className="bs-erro">{erro}</div>}
-      </div>
-    );
+    return <div className="bs bs-detalhe">{erro && <div className="bs-erro">{erro}</div>}</div>;
   }
   const tempo = tempoAberta(mesa.AbertaEm);
   const titulo = rotuloMesa(mesa.Mesa);
+  // Cada garçom só mexe nas suas mesas; o caixa e o gerente mexem em todas
+  // (anular, dividir, passar…) mas não lançam nas dos outros, e só eles
+  // fecham. O servidor confirma tudo isto — aqui só se escondem os botões.
+  const gere = operador.Gerente || operador.Caixa;
+  const minha = mesa.GarcomID === operador.ID;
+  const podeLancar = minha;
+  const podeGerir = minha || gere;
+  const podeFechar = balcao && gere;
   // As outras contas desta mesa, para saltar entre elas.
   const irmas = outrasMesas.filter((m) => mesmaMesa(m.Mesa, mesa.Mesa));
 
   const acoesComanda = (
     <>
-      <button className="bs-fechar mesas-enviar" disabled={pendente <= EPS || aEnviar} onClick={enviar}>
-        <PaperAirplaneIcon className="bs-icon" aria-hidden="true" />
-        {aEnviar ? "A enviar…" : pendente > EPS ? `Enviar pedido (${qtd(pendente)})` : "Tudo enviado"}
-      </button>
-      <div className="mesas-acoes-2">
-        <button className="bs-btn-sec" disabled={itens.length === 0} onClick={() => setFolha({ tipo: "conta" })}>
-          <PrinterIcon className="bs-icon" aria-hidden="true" />
-          Conta
+      {podeGerir && (
+        <button
+          className="bs-fechar mesas-enviar"
+          disabled={pendente <= EPS || aEnviar}
+          onClick={enviar}
+        >
+          <PaperAirplaneIcon className="bs-icon" aria-hidden="true" />
+          {aEnviar
+            ? "A enviar…"
+            : pendente > EPS
+              ? `Enviar pedido (${qtd(pendente)})`
+              : "Tudo enviado"}
         </button>
-        {balcao && (
-          <button className="bs-btn" disabled={itens.length === 0 || armazemID === null} onClick={fechar}>
+      )}
+      <div className="mesas-acoes-2">
+        {podeGerir && (
+          <button
+            className="bs-btn-sec"
+            disabled={itens.length === 0}
+            onClick={() => setFolha({ tipo: "conta" })}
+          >
+            <PrinterIcon className="bs-icon" aria-hidden="true" />
+            Conta
+          </button>
+        )}
+        {podeFechar && (
+          <button
+            className="bs-btn"
+            disabled={itens.length === 0 || armazemID === null}
+            onClick={fechar}
+          >
             <CheckCircleIcon className="bs-icon" aria-hidden="true" />
             Fechar
           </button>
@@ -571,7 +665,11 @@ function MesaDetalhe({
           <div className="bs-detalhe-nome">{titulo}</div>
           <div className="bs-detalhe-sub">
             {mesa.Etiqueta && (
-              <button className="mesas-etiqueta" onClick={() => setFolha({ tipo: "etiqueta" })} title="Mudar a etiqueta">
+              <button
+                className="mesas-etiqueta"
+                onClick={() => setFolha({ tipo: "etiqueta" })}
+                title="Mudar a etiqueta"
+              >
                 <TagIcon className="bs-icon-mini" aria-hidden="true" />
                 {mesa.Etiqueta}
               </button>
@@ -581,7 +679,11 @@ function MesaDetalhe({
           </div>
         </div>
         <div className="bs-menu">
-          <button className="bs-menu-botao" onClick={() => setMenu((v) => !v)} aria-label="Mais opções">
+          <button
+            className="bs-menu-botao"
+            onClick={() => setMenu((v) => !v)}
+            aria-label="Mais opções"
+          >
             <EllipsisVerticalIcon className="bs-icon-grande" aria-hidden="true" />
           </button>
           {menu && (
@@ -590,27 +692,34 @@ function MesaDetalhe({
               <div className="bs-menu-lista">
                 {(
                   [
-                    ["nova-conta", DocumentPlusIcon, "Nova conta nesta mesa"],
-                    ["etiqueta", TagIcon, mesa.Etiqueta ? "Mudar a etiqueta" : "Pôr uma etiqueta"],
-                    ["pessoas", UserGroupIcon, "Número de pessoas"],
-                    ["dividir", ScissorsIcon, "Dividir a conta"],
-                    ["transferir", ArrowsRightLeftIcon, "Passar a outro garçom"],
-                    ["juntar", RectangleGroupIcon, "Juntar a outra mesa"],
-                    ["pedidos", DocumentDuplicateIcon, "Pedidos enviados"],
+                    ["nova-conta", DocumentPlusIcon, "Nova conta nesta mesa", true],
+                    [
+                      "etiqueta",
+                      TagIcon,
+                      mesa.Etiqueta ? "Mudar a etiqueta" : "Pôr uma etiqueta",
+                      true,
+                    ],
+                    ["pessoas", UserGroupIcon, "Número de pessoas", true],
+                    ["dividir", ScissorsIcon, "Dividir a conta", true],
+                    ["transferir", ArrowsRightLeftIcon, "Passar a outro garçom", true],
+                    ["juntar", RectangleGroupIcon, "Juntar a outra mesa", true],
+                    ["pedidos", DocumentDuplicateIcon, "Pedidos enviados", false],
                   ] as const
-                ).map(([tipo, Icone, rotulo]) => (
-                  <button
-                    key={tipo}
-                    className="bs-menu-item"
-                    onClick={() => {
-                      setMenu(false);
-                      setFolha({ tipo });
-                    }}
-                  >
-                    <Icone className="bs-icon" aria-hidden="true" />
-                    {rotulo}
-                  </button>
-                ))}
+                )
+                  .filter(([, , , gerir]) => podeGerir || !gerir)
+                  .map(([tipo, Icone, rotulo]) => (
+                    <button
+                      key={tipo}
+                      className="bs-menu-item"
+                      onClick={() => {
+                        setMenu(false);
+                        setFolha({ tipo });
+                      }}
+                    >
+                      <Icone className="bs-icon" aria-hidden="true" />
+                      {rotulo}
+                    </button>
+                  ))}
               </div>
             </>
           )}
@@ -646,8 +755,23 @@ function MesaDetalhe({
 
       <div className="bs-detalhe-body">
         <div className="bs-catalogo">
-          {armazemID !== null && (
-            <Catalogo key={armazemID} armazemID={armazemID} IconeBusca={MagnifyingGlassIcon} onEscolher={adicionar} onErro={setErro} />
+          {!podeLancar && (
+            <div className="bs-aviso mesas-alheia">
+              {titulo} é de <strong>{mesa.GarcomNome}</strong>: só quem tem a mesa lança pedidos
+              nela.
+              {podeGerir
+                ? " Pode anular, dividir, passar a outro garçom ou fechar."
+                : " Aqui só pode consultar."}
+            </div>
+          )}
+          {podeLancar && armazemID !== null && (
+            <Catalogo
+              key={armazemID}
+              armazemID={armazemID}
+              IconeBusca={MagnifyingGlassIcon}
+              onEscolher={adicionar}
+              onErro={setErro}
+            />
           )}
           {ultimo && (
             <div className="bs-toast" role="status">
@@ -657,24 +781,42 @@ function MesaDetalhe({
         </div>
 
         <div className="bs-resumo-movel">
-          <button className="bs-resumo-ver" onClick={() => setComandaAberta(true)} disabled={itens.length === 0}>
+          <button
+            className="bs-resumo-ver"
+            onClick={() => setComandaAberta(true)}
+            disabled={itens.length === 0}
+          >
             <ChevronUpIcon className="bs-icon" aria-hidden="true" />
             <span>
               <span className="bs-resumo-total">{mt(total)}</span>
               <span className="bs-resumo-qtd">
-                {itens.length === 0 ? "Toque nos produtos para lançar" : pendente > EPS ? `${qtd(pendente)} por enviar · ver` : "ver o pedido"}
+                {itens.length === 0
+                  ? "Toque nos produtos para lançar"
+                  : pendente > EPS
+                    ? `${qtd(pendente)} por enviar · ver`
+                    : "ver o pedido"}
               </span>
             </span>
           </button>
-          <button className="bs-fechar mesas-enviar" disabled={pendente <= EPS || aEnviar} onClick={enviar}>
-            <PaperAirplaneIcon className="bs-icon" aria-hidden="true" />
-            {aEnviar ? "A enviar…" : "Enviar"}
-          </button>
+          {podeGerir && (
+            <button
+              className="bs-fechar mesas-enviar"
+              disabled={pendente <= EPS || aEnviar}
+              onClick={enviar}
+            >
+              <PaperAirplaneIcon className="bs-icon" aria-hidden="true" />
+              {aEnviar ? "A enviar…" : "Enviar"}
+            </button>
+          )}
         </div>
 
         <aside className={`bs-comanda${comandaAberta ? " aberta" : ""}`}>
           <div className="bs-comanda-header">
-            <button className="bs-comanda-fechar-movel" onClick={() => setComandaAberta(false)} aria-label="Voltar aos produtos">
+            <button
+              className="bs-comanda-fechar-movel"
+              onClick={() => setComandaAberta(false)}
+              aria-label="Voltar aos produtos"
+            >
               <ArrowLeftIcon className="bs-icon-grande" aria-hidden="true" />
             </button>
             <span className="bs-comanda-titulo">Pedido · {titulo}</span>
@@ -693,25 +835,38 @@ function MesaDetalhe({
                       {mt(i.PrecoUnitario)}
                       {i.Unidade && i.Unidade.toLowerCase() !== "unidade" ? ` · ${i.Unidade}` : ""}
                       {pend > EPS ? (
-                        <span className="mesas-estado por-enviar">{i.Enviada > EPS ? `${qtd(pend)} por enviar` : "por enviar"}</span>
+                        <span className="mesas-estado por-enviar">
+                          {i.Enviada > EPS ? `${qtd(pend)} por enviar` : "por enviar"}
+                        </span>
                       ) : (
                         <span className="mesas-estado enviado">enviado</span>
                       )}
                     </div>
                     <div className="bs-stepper">
-                      <button onClick={() => menos(i)} aria-label={`Tirar uma ${i.Produto}`}>
-                        <MinusIcon className="bs-icon" aria-hidden="true" />
-                      </button>
+                      {podeGerir && (
+                        <button onClick={() => menos(i)} aria-label={`Tirar uma ${i.Produto}`}>
+                          <MinusIcon className="bs-icon" aria-hidden="true" />
+                        </button>
+                      )}
                       <span>{qtd(i.Quantidade)}</span>
-                      <button onClick={() => lancar(i.ProdutoID, i.UnidadeProdutoID)} aria-label={`Mais uma ${i.Produto}`}>
-                        <PlusIcon className="bs-icon" aria-hidden="true" />
-                      </button>
+                      {podeLancar && (
+                        <button
+                          onClick={() => lancar(i.ProdutoID, i.UnidadeProdutoID)}
+                          aria-label={`Mais uma ${i.Produto}`}
+                        >
+                          <PlusIcon className="bs-icon" aria-hidden="true" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
               );
             })}
-            {itens.length === 0 && <div className="bs-comanda-vazia">Mesa vazia — toque nos produtos para lançar o pedido.</div>}
+            {itens.length === 0 && (
+              <div className="bs-comanda-vazia">
+                Mesa vazia — toque nos produtos para lançar o pedido.
+              </div>
+            )}
           </div>
           <div className="bs-comanda-footer">
             <div className="bs-comanda-total">
@@ -728,11 +883,21 @@ function MesaDetalhe({
         </aside>
       </div>
 
-      {folha?.tipo === "enviado" && <ResultadoEnvio res={folha.res} onFechar={() => setFolha(null)} />}
-      {folha?.tipo === "conta" && <ImprimirConta mesa={mesa} total={total} onFechar={() => setFolha(null)} onMudou={recarregar} />}
+      {folha?.tipo === "enviado" && (
+        <ResultadoEnvio res={folha.res} onFechar={() => setFolha(null)} />
+      )}
+      {folha?.tipo === "conta" && (
+        <ImprimirConta
+          mesa={mesa}
+          total={total}
+          onFechar={() => setFolha(null)}
+          onMudou={recarregar}
+        />
+      )}
       {folha?.tipo === "anular" && (
         <AnularFolha
           item={folha.item}
+          autoriza={gere}
           onCancelar={() => setFolha(null)}
           onAnular={(q, pin, motivo) => anular(folha.item, q, pin, motivo)}
         />
@@ -761,26 +926,38 @@ function MesaDetalhe({
       )}
       {folha?.tipo === "juntar" && (
         <Folha titulo={`Juntar ${titulo} a…`} onFechar={() => setFolha(null)}>
-          <p className="bs-folha-texto">Os itens passam para a outra mesa (o que já foi enviado continua enviado) e esta fecha.</p>
+          <p className="bs-folha-texto">
+            Os itens passam para a outra mesa (o que já foi enviado continua enviado) e esta fecha.
+          </p>
           <div className="bs-destinos">
-            {outrasMesas.map((m) => (
-              <button
-                key={m.ContaID}
-                onClick={() =>
-                  JuntarMesas(contaID, m.ContaID)
-                    .then(() => onAbrirOutra(m.ContaID))
-                    .catch((e) => setErro(textoErro(e)))
-                }
-              >
-                {rotuloMesa(m.Mesa)}
-                {m.Etiqueta && ` (${m.Etiqueta})`} · {m.GarcomNome}
-              </button>
-            ))}
-            {outrasMesas.length === 0 && <p className="bs-folha-texto">Não há outras mesas abertas.</p>}
+            {outrasMesas
+              .filter((m) => gere || m.GarcomID === operador.ID)
+              .map((m) => (
+                <button
+                  key={m.ContaID}
+                  onClick={() =>
+                    JuntarMesas(contaID, m.ContaID)
+                      .then(() => onAbrirOutra(m.ContaID))
+                      .catch((e) => setErro(textoErro(e)))
+                  }
+                >
+                  {rotuloMesa(m.Mesa)}
+                  {m.Etiqueta && ` (${m.Etiqueta})`} · {m.GarcomNome}
+                </button>
+              ))}
+            {outrasMesas.length === 0 && (
+              <p className="bs-folha-texto">Não há outras mesas abertas.</p>
+            )}
           </div>
         </Folha>
       )}
-      {folha?.tipo === "pedidos" && <PedidosFolha contaID={contaID} onFechar={() => setFolha(null)} onReimpresso={(res) => setFolha({ tipo: "enviado", res })} />}
+      {folha?.tipo === "pedidos" && (
+        <PedidosFolha
+          contaID={contaID}
+          onFechar={() => setFolha(null)}
+          onReimpresso={(res) => setFolha({ tipo: "enviado", res })}
+        />
+      )}
       {folha?.tipo === "pessoas" && (
         <PessoasFolha
           atual={mesa.Pessoas}
@@ -827,7 +1004,9 @@ function MesaDetalhe({
       )}
       {folha?.tipo === "caixa-fechado" && (
         <Folha titulo="O caixa está fechado" onFechar={() => setFolha(null)}>
-          <p className="bs-folha-texto">Para receber o dinheiro das mesas, abra primeiro o caixa com o fundo de troco.</p>
+          <p className="bs-folha-texto">
+            Para receber o dinheiro das mesas, abra primeiro o caixa com o fundo de troco.
+          </p>
           <div className="bs-folha-acoes">
             <button className="bs-btn-sec" onClick={() => setFolha(null)}>
               Voltar
@@ -901,24 +1080,37 @@ function ResultadoEnvio({ res, onFechar }: { res: usecase.ResultadoPedido; onFec
   }
 
   return (
-    <Folha titulo={anulacao ? "Anulação enviada" : `Pedido #${res.Pedido.ID} enviado`} onFechar={onFechar}>
+    <Folha
+      titulo={anulacao ? "Anulação enviada" : `Pedido #${res.Pedido.ID} enviado`}
+      onFechar={onFechar}
+    >
       <ul className="mesas-impressoes">
         {res.Impressoes.map((i) => (
           <li key={i.ImpressoraID} className={i.Erro ? "erro" : "ok"}>
-            {i.Erro ? <ExclamationTriangleIcon className="bs-icon" aria-hidden="true" /> : <CheckCircleIcon className="bs-icon" aria-hidden="true" />}
+            {i.Erro ? (
+              <ExclamationTriangleIcon className="bs-icon" aria-hidden="true" />
+            ) : (
+              <CheckCircleIcon className="bs-icon" aria-hidden="true" />
+            )}
             <span>
               <strong>{i.Nome}</strong>
               {i.Erro ? ` — ${i.Erro}` : " — impresso"}
             </span>
           </li>
         ))}
-        {res.Impressoes.length === 0 && <li className="erro">Não há impressoras de rede configuradas.</li>}
+        {res.Impressoes.length === 0 && (
+          <li className="erro">Não há impressoras de rede configuradas.</li>
+        )}
       </ul>
       <pre className="mesas-talao">{res.Texto}</pre>
       {aviso && <div className="bs-aviso">{aviso}</div>}
       <div className="bs-folha-acoes">
         {ponte && (
-          <button className={falhas.length > 0 || res.Impressoes.length === 0 ? "bs-btn" : "bs-btn-sec"} disabled={aImprimir} onClick={imprimirAqui}>
+          <button
+            className={falhas.length > 0 || res.Impressoes.length === 0 ? "bs-btn" : "bs-btn-sec"}
+            disabled={aImprimir}
+            onClick={imprimirAqui}
+          >
             <PrinterIcon className="bs-icon" aria-hidden="true" />
             {aImprimir ? "A imprimir…" : "Imprimir neste aparelho"}
           </button>
@@ -1001,21 +1193,38 @@ function ImprimirConta({
 
       <div className="bs-metodos mesas-destinos" role="radiogroup" aria-label="Impressora">
         {ponte && (
-          <button role="radio" aria-checked={destino === ESTE_APARELHO} className={destino === ESTE_APARELHO ? "ativo" : ""} onClick={() => setDestino(ESTE_APARELHO)}>
+          <button
+            role="radio"
+            aria-checked={destino === ESTE_APARELHO}
+            className={destino === ESTE_APARELHO ? "ativo" : ""}
+            onClick={() => setDestino(ESTE_APARELHO)}
+          >
             <PrinterIcon className="bs-icon" aria-hidden="true" />
             Este aparelho
           </button>
         )}
         {impressoras.map((i) => (
-          <button key={i.ID} role="radio" aria-checked={destino === i.ID} className={destino === i.ID ? "ativo" : ""} onClick={() => setDestino(i.ID)}>
+          <button
+            key={i.ID}
+            role="radio"
+            aria-checked={destino === i.ID}
+            className={destino === i.ID ? "ativo" : ""}
+            onClick={() => setDestino(i.ID)}
+          >
             <PrinterIcon className="bs-icon" aria-hidden="true" />
             {i.Nome}
           </button>
         ))}
-        {!ponte && impressoras.length === 0 && <p className="bs-folha-texto">Não há impressoras configuradas (Administração → Restaurante).</p>}
+        {!ponte && impressoras.length === 0 && (
+          <p className="bs-folha-texto">
+            Não há impressoras configuradas (Administração → Restaurante).
+          </p>
+        )}
       </div>
 
-      {resultado && <div className={`bs-aviso${resultado.ok ? "" : " erro"}`}>{resultado.texto}</div>}
+      {resultado && (
+        <div className={`bs-aviso${resultado.ok ? "" : " erro"}`}>{resultado.texto}</div>
+      )}
       {previa && <pre className="mesas-talao">{previa}</pre>}
       <div className="bs-folha-acoes">
         <button className="bs-btn-sec" onClick={onFechar}>
@@ -1030,7 +1239,15 @@ function ImprimirConta({
   );
 }
 
-function PessoasFolha({ atual, onCancelar, onGuardar }: { atual: number; onCancelar: () => void; onGuardar: (n: number) => void }) {
+function PessoasFolha({
+  atual,
+  onCancelar,
+  onGuardar,
+}: {
+  atual: number;
+  onCancelar: () => void;
+  onGuardar: (n: number) => void;
+}) {
   const [n, setN] = useState(atual);
   return (
     <Folha titulo="Número de pessoas" onFechar={onCancelar}>
@@ -1094,14 +1311,22 @@ function EtiquetaFolha({
 
 // --- Anular (com o gerente) ---------------------------------------------------------
 
-const MOTIVOS_ANULACAO = ["Cliente desistiu", "Engano no pedido", "Demorou demasiado", "Produto acabou"];
+const MOTIVOS_ANULACAO = [
+  "Cliente desistiu",
+  "Engano no pedido",
+  "Demorou demasiado",
+  "Produto acabou",
+];
 
 function AnularFolha({
   item,
+  autoriza,
   onCancelar,
   onAnular,
 }: {
   item: domain.ItemMesa;
+  // Caixa ou gerente: autoriza-se a si próprio, não pede PIN.
+  autoriza: boolean;
   onCancelar: () => void;
   onAnular: (quantidade: number, pin: string, motivo: string) => Promise<void>;
 }) {
@@ -1123,8 +1348,15 @@ function AnularFolha({
   return (
     <Folha titulo={`Anular ${item.Produto}`} onFechar={onCancelar}>
       <p className="bs-folha-texto">
-        Já foi enviado para preparação: precisa do <strong>PIN de um gerente</strong> e do motivo. Sai um talão "ANULADO" onde o pedido foi
-        impresso.
+        {autoriza ? (
+          <>Já foi enviado para preparação: diga o motivo.</>
+        ) : (
+          <>
+            Já foi enviado para preparação: precisa do <strong>PIN do caixa ou do gerente</strong> e
+            do motivo.
+          </>
+        )}{" "}
+        Sai um talão "ANULADO" onde o pedido foi impresso.
       </p>
       {item.Quantidade > 1 && (
         <div className="mesas-pessoas">
@@ -1134,7 +1366,10 @@ function AnularFolha({
               <MinusIcon className="bs-icon" aria-hidden="true" />
             </button>
             <span>{qtd(quantidade)}</span>
-            <button onClick={() => setQuantidade((q) => Math.min(item.Quantidade, q + 1))} aria-label="Mais">
+            <button
+              onClick={() => setQuantidade((q) => Math.min(item.Quantidade, q + 1))}
+              aria-label="Mais"
+            >
               <PlusIcon className="bs-icon" aria-hidden="true" />
             </button>
           </div>
@@ -1151,18 +1386,30 @@ function AnularFolha({
         <span>Motivo</span>
         <input value={motivo} onChange={(e) => setMotivo(e.target.value)} />
       </label>
-      <label className="bs-campo">
-        <span>
-          <ShieldCheckIcon className="bs-icon" aria-hidden="true" /> PIN do gerente
-        </span>
-        <input type="password" inputMode="numeric" autoComplete="off" value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))} />
-      </label>
+      {!autoriza && (
+        <label className="bs-campo">
+          <span>
+            <ShieldCheckIcon className="bs-icon" aria-hidden="true" /> PIN do caixa ou do gerente
+          </span>
+          <input
+            type="password"
+            inputMode="numeric"
+            autoComplete="off"
+            value={pin}
+            onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+          />
+        </label>
+      )}
       {erro && <div className="bs-aviso erro">{erro}</div>}
       <div className="bs-folha-acoes">
         <button className="bs-btn-sec" onClick={onCancelar}>
           Voltar
         </button>
-        <button className="bs-btn perigo" disabled={!motivo.trim() || pin.length < 4 || aAnular} onClick={confirmar}>
+        <button
+          className="bs-btn perigo"
+          disabled={!motivo.trim() || (!autoriza && pin.length < 4) || aAnular}
+          onClick={confirmar}
+        >
           {aAnular ? "A anular…" : `Anular ${qtd(quantidade)}`}
         </button>
       </div>
@@ -1191,7 +1438,10 @@ function DividirFolha({
   const algum = Object.values(partes).some((q) => q > 0);
 
   function mudar(i: domain.ItemMesa, delta: number) {
-    setPartes((p) => ({ ...p, [i.ID]: Math.min(i.Quantidade, Math.max(0, (p[i.ID] ?? 0) + delta)) }));
+    setPartes((p) => ({
+      ...p,
+      [i.ID]: Math.min(i.Quantidade, Math.max(0, (p[i.ID] ?? 0) + delta)),
+    }));
   }
 
   function dividir() {
@@ -1213,7 +1463,8 @@ function DividirFolha({
   return (
     <Folha titulo={`Dividir ${rotuloMesa(mesa.Mesa)}`} onFechar={onCancelar} larga>
       <p className="bs-folha-texto">
-        Escolha o que passa para uma conta à parte (paga-se separada). Para dividir em partes iguais, imprima a conta com o número de pessoas.
+        Escolha o que passa para uma conta à parte (paga-se separada). Para dividir em partes
+        iguais, imprima a conta com o número de pessoas.
       </p>
       <div className="mesas-dividir">
         {itens.map((i) => (
@@ -1322,10 +1573,16 @@ function PedidosFolha({
             }
           >
             {p.Tipo === "anulacao" ? "Anulação" : "Pedido"} #{p.ID} ·{" "}
-            {new Date(String(p.CriadoEm)).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })} — reimprimir
+            {new Date(String(p.CriadoEm)).toLocaleTimeString("pt-PT", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}{" "}
+            — reimprimir
           </button>
         ))}
-        {pedidos !== null && pedidos.length === 0 && <p className="bs-folha-texto">Ainda não foi enviado nenhum pedido.</p>}
+        {pedidos !== null && pedidos.length === 0 && (
+          <p className="bs-folha-texto">Ainda não foi enviado nenhum pedido.</p>
+        )}
       </div>
       {erro && <div className="bs-aviso erro">{erro}</div>}
     </Folha>

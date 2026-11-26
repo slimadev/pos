@@ -96,5 +96,10 @@ func utilizadorFromRow(row sqlcgen.Utilizadores) domain.Utilizador {
 		PasswordHash: row.PasswordHash,
 		Role:         domain.RoleUtilizador(row.Role),
 		Ativo:        int64ToBool(row.Ativo),
+		Caixa:        int64ToBool(row.Caixa),
 	}
+}
+
+func (r *UtilizadorRepository) DefinirCaixa(ctx context.Context, id int64, caixa bool) error {
+	return r.q.DefinirUtilizadorCaixa(ctx, sqlcgen.DefinirUtilizadorCaixaParams{Caixa: boolToInt64(caixa), ID: id})
 }

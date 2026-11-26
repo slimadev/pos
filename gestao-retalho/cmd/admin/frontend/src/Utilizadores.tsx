@@ -7,11 +7,12 @@ import {
   AtivarOperador,
   DesativarOperador,
   DefinirGerente,
+  DefinirCaixa,
 } from "../wailsjs/go/admin/AdminApp";
 import { usecase } from "../wailsjs/go/models";
 import Breadcrumb from "./Breadcrumb";
 import Modal from "./Modal";
-import { PlusIcon, PencilIcon, KeyIcon, XMarkIcon, PowerIcon, ShieldCheckIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, PencilIcon, KeyIcon, XMarkIcon, PowerIcon, ShieldCheckIcon, BanknotesIcon } from "@heroicons/react/24/outline";
 
 const PIN_VALIDO = /^[0-9]{4,6}$/;
 
@@ -129,8 +130,12 @@ export default function UtilizadoresScreen({
               <td>{op.Nome}</td>
               <td>
                 {op.Gerente ? (
-                  <span title="Autoriza anulações de itens já enviados para a cozinha">
+                  <span title="Fecha contas, mexe nas mesas de todos e autoriza anulações">
                     <ShieldCheckIcon className="admin-btn-icon-inline" aria-hidden="true" /> Gerente
+                  </span>
+                ) : op.Caixa ? (
+                  <span title="Fecha contas, vende direto, abre e fecha o caixa e mexe nas mesas de todos">
+                    <BanknotesIcon className="admin-btn-icon-inline" aria-hidden="true" /> Caixa
                   </span>
                 ) : (
                   "Operador"
@@ -162,6 +167,20 @@ export default function UtilizadoresScreen({
                   <ShieldCheckIcon className="btn-icone" aria-hidden="true" />
                   {op.Gerente ? "Tirar gerente" : "Tornar gerente"}
                 </button>
+                {!op.Gerente && (
+                  <button
+                    className="admin-btn-secundario"
+                    title="Restaurante: o caixa fecha as contas, vende direto, abre e fecha o caixa e mexe nas mesas de todos (mas não lança nelas). Os outros só abrem, lançam e imprimem as suas mesas."
+                    onClick={() =>
+                      DefinirCaixa(op.ID, !op.Caixa)
+                        .then(() => carregar())
+                        .catch((e) => onErro(String(e)))
+                    }
+                  >
+                    <BanknotesIcon className="btn-icone" aria-hidden="true" />
+                    {op.Caixa ? "Tirar caixa" : "Tornar caixa"}
+                  </button>
+                )}
                 <button className="admin-btn-secundario" onClick={() => alternar(op)}>
                   <PowerIcon className="btn-icone" aria-hidden="true" />
                   {op.Ativo ? "Desativar" : "Ativar"}
