@@ -41,6 +41,8 @@ import {
   ListarArmazens,
   FecharMesa,
   EstadoCaixa,
+  ListarClientes,
+  DefinirClienteMesa,
 } from "../../wailsjs/go/api/App";
 import { domain, usecase } from "../../wailsjs/go/models";
 import Catalogo from "./Catalogo";
@@ -60,6 +62,7 @@ const baseMesa = (m: string) => m.replace(/\s*\(\d+\)$/, "");
 const mesmaMesa = (a: string, b: string) => baseMesa(a).toLowerCase() === baseMesa(b).toLowerCase();
 const ordemMesas = (a: domain.MesaAberta, b: domain.MesaAberta) => a.Mesa.localeCompare(b.Mesa, "pt", { numeric: true, sensitivity: "base" });
 const MAX_ETIQUETA = 30;
+const CLIENTE_ANONIMO = 1; // domain.ClienteAnonimoID
 
 /**
  * Mesas do restaurante. No balcão (`balcao`) vê-se tudo por garçom e
@@ -417,6 +420,7 @@ function MesaDetalhe({
   const [aEnviar, setAEnviar] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [ultimo, setUltimo] = useState<{ nome: string; n: number } | null>(null);
+  const [clientes, setClientes] = useState<domain.Cliente[]>([]);
   const toastRef = useRef<number | undefined>(undefined);
 
   const recarregar = () =>
@@ -513,6 +517,9 @@ function MesaDetalhe({
   }
 
   function fechar() {
+    ListarClientes()
+      .then(setClientes)
+      .catch(() => {});
     EstadoCaixa()
       .then((c) => {
         if (!c.Aberto) setFolha({ tipo: "caixa-fechado" });
@@ -838,7 +845,30 @@ function MesaDetalhe({
           conta={{ ID: contaID, Identificador: titulo }}
           total={total}
           armazemId={folha.armazemID}
-          clienteIdentificado={false}
+          clienteIdentificado={mesa.ClienteID !== CLIENTE_ANONIMO}
+          nomeCliente={clientes.find((c) => c.ID === mesa.ClienteID)?.Nome}
+          cliente={
+            <label className="bs-campo">
+              <span>Cliente (para poder ficar em dívida / fiado)</span>
+              <select
+                value={mesa.ClienteID === CLIENTE_ANONIMO ? "" : mesa.ClienteID}
+                onChange={(e) =>
+                  DefinirClienteMesa(contaID, e.target.value ? Number(e.target.value) : null)
+                    .then(recarregar)
+                    .catch((err) => setErro(textoErro(err)))
+                }
+              >
+                <option value="">Anónimo (paga agora)</option>
+                {clientes
+                  .filter((c) => c.Ativo || c.ID === mesa.ClienteID)
+                  .map((c) => (
+                    <option key={c.ID} value={c.ID}>
+                      {c.Nome}
+                    </option>
+                  ))}
+              </select>
+            </label>
+          }
           fechar={FecharMesa}
           onCancelar={() => setFolha(null)}
           onFechada={(r) => {

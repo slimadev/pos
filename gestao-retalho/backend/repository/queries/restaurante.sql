@@ -9,7 +9,7 @@ UPDATE contas_mesa SET etiqueta = ? WHERE conta_id = ?;
 SELECT * FROM contas_mesa WHERE conta_id = ?;
 
 -- name: ListarMesasAbertas :many
-SELECT m.conta_id, m.mesa, m.etiqueta, m.garcom_id, m.pessoas, u.nome AS garcom_nome, c.aberta_em,
+SELECT m.conta_id, m.mesa, m.etiqueta, c.cliente_id, m.garcom_id, m.pessoas, u.nome AS garcom_nome, c.aberta_em,
        CAST(COALESCE((SELECT SUM(i.quantidade * i.preco_unitario_aplicado - i.desconto) FROM itens_conta i WHERE i.conta_id = c.id), 0) AS REAL) AS total,
        CAST(COALESCE((SELECT SUM(MAX(i.quantidade - COALESCE(e.quantidade, 0), 0)) FROM itens_conta i LEFT JOIN itens_conta_enviados e ON e.item_id = i.id WHERE i.conta_id = c.id), 0) AS REAL) AS por_enviar
 FROM contas_mesa m

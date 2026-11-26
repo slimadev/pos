@@ -59,6 +59,7 @@ type Querier interface {
 	DefinirCategoriaAtiva(ctx context.Context, arg DefinirCategoriaAtivaParams) error
 	DefinirCategoriaImpressora(ctx context.Context, arg DefinirCategoriaImpressoraParams) error
 	DefinirClienteAtivo(ctx context.Context, arg DefinirClienteAtivoParams) error
+	DefinirClienteConta(ctx context.Context, arg DefinirClienteContaParams) (int64, error)
 	DefinirConfiguracao(ctx context.Context, arg DefinirConfiguracaoParams) error
 	DefinirContaMesa(ctx context.Context, arg DefinirContaMesaParams) error
 	DefinirCustoMedioProdutoArmazem(ctx context.Context, arg DefinirCustoMedioProdutoArmazemParams) error

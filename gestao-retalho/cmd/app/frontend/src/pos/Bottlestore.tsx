@@ -762,6 +762,7 @@ export function FechoConta({
   onCancelar,
   onFechada,
   fechar = FecharContaAberta,
+  cliente,
 }: {
   conta: { ID: number; Identificador: string };
   total: number;
@@ -773,6 +774,8 @@ export function FechoConta({
   onFechada: (r: { id: number; total: number; troco: number; divida: number }) => void;
   // Quem fecha: a conta do bar (por omissão) ou a mesa (exige caixa aberto).
   fechar?: (contaID: number, p: usecase.FecharContaParams) => Promise<api.FecharContaResponse>;
+  // Escolha do cliente dentro do fecho (mesas: a conta nasce anónima).
+  cliente?: React.ReactNode;
 }) {
   const [modo, setModo] = useState<ModoPagamento>("dinheiro");
   const [recebido, setRecebido] = useState("");
@@ -840,6 +843,8 @@ export function FechoConta({
         <strong>{mt(total)}</strong>
         {valorDesconto > 0 && <small>{mt(totalBruto)} − desconto {mt(valorDesconto)}</small>}
       </div>
+
+      {cliente}
 
       <div className="bs-metodos" role="radiogroup" aria-label="Forma de pagamento">
         {opcoes.map((o) => (

@@ -148,6 +148,19 @@ func (r *VendaRepository) ListarContasAbertas(ctx context.Context, negocioID int
 	return out, nil
 }
 
+// DefinirClienteConta muda o cliente de uma conta aberta (para poder ficar
+// em dívida ao fechar).
+func (r *VendaRepository) DefinirClienteConta(ctx context.Context, contaID, clienteID int64) error {
+	n, err := r.q.DefinirClienteConta(ctx, sqlcgen.DefinirClienteContaParams{ClienteID: clienteID, ID: contaID})
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return domain.ErrContaNaoAberta
+	}
+	return nil
+}
+
 func (r *VendaRepository) CancelarConta(ctx context.Context, contaID, utilizadorFechoID int64, motivo string) (domain.Conta, error) {
 	row, err := r.q.CancelarConta(ctx, sqlcgen.CancelarContaParams{
 		UtilizadorFechoID:  sql.NullInt64{Int64: utilizadorFechoID, Valid: true},

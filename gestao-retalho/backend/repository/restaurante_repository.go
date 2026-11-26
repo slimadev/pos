@@ -57,7 +57,7 @@ func (r *RestauranteRepository) ListarMesasAbertas(ctx context.Context, negocioI
 	out := make([]domain.MesaAberta, 0, len(rows))
 	for _, m := range rows {
 		out = append(out, domain.MesaAberta{
-			ContaID: m.ContaID, Mesa: m.Mesa, Etiqueta: m.Etiqueta, GarcomID: m.GarcomID, GarcomNome: m.GarcomNome, Pessoas: m.Pessoas,
+			ContaID: m.ContaID, Mesa: m.Mesa, Etiqueta: m.Etiqueta, ClienteID: m.ClienteID, GarcomID: m.GarcomID, GarcomNome: m.GarcomNome, Pessoas: m.Pessoas,
 			AbertaEm: parseTimestamp(m.AbertaEm), Total: m.Total, PorEnviar: m.PorEnviar,
 		})
 	}

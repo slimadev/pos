@@ -132,6 +132,23 @@ func (q *Queries) CriarItemConta(ctx context.Context, arg CriarItemContaParams) 
 	return i, err
 }
 
+const definirClienteConta = `-- name: DefinirClienteConta :execrows
+UPDATE contas SET cliente_id = ? WHERE id = ? AND status = 'aberta'
+`
+
+type DefinirClienteContaParams struct {
+	ClienteID int64 `json:"cliente_id"`
+	ID        int64 `json:"id"`
+}
+
+func (q *Queries) DefinirClienteConta(ctx context.Context, arg DefinirClienteContaParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, definirClienteConta, arg.ClienteID, arg.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const fecharConta = `-- name: FecharConta :one
 UPDATE contas
 SET status = 'fechada', fechada_em = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), utilizador_fecho_id = ?

@@ -111,6 +111,12 @@ func (a *App) ImprimirContaMesa(contaID, pessoas int64, impressoraID *int64) (us
 	return a.RestauranteService.ImprimirConta(a.ctx, contaID, pessoas, impressoraID)
 }
 
+// DefinirClienteMesa: de quem é a conta (nil = anónimo). Só com cliente o
+// fecho pode deixar o resto em dívida. Só no balcão (não é dos aparelhos).
+func (a *App) DefinirClienteMesa(contaID int64, clienteID *int64) error {
+	return a.RestauranteService.DefinirCliente(a.ctx, contaID, clienteID)
+}
+
 func (a *App) FecharMesa(contaID int64, p usecase.FecharContaParams) (FecharContaResponse, error) {
 	if err := a.exigirTurno(); err != nil {
 		return FecharContaResponse{}, err

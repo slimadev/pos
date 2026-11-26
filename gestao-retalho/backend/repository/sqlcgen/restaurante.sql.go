@@ -411,7 +411,7 @@ func (q *Queries) ListarItensComEnvio(ctx context.Context, contaID int64) ([]Lis
 }
 
 const listarMesasAbertas = `-- name: ListarMesasAbertas :many
-SELECT m.conta_id, m.mesa, m.etiqueta, m.garcom_id, m.pessoas, u.nome AS garcom_nome, c.aberta_em,
+SELECT m.conta_id, m.mesa, m.etiqueta, c.cliente_id, m.garcom_id, m.pessoas, u.nome AS garcom_nome, c.aberta_em,
        CAST(COALESCE((SELECT SUM(i.quantidade * i.preco_unitario_aplicado - i.desconto) FROM itens_conta i WHERE i.conta_id = c.id), 0) AS REAL) AS total,
        CAST(COALESCE((SELECT SUM(MAX(i.quantidade - COALESCE(e.quantidade, 0), 0)) FROM itens_conta i LEFT JOIN itens_conta_enviados e ON e.item_id = i.id WHERE i.conta_id = c.id), 0) AS REAL) AS por_enviar
 FROM contas_mesa m
@@ -425,6 +425,7 @@ type ListarMesasAbertasRow struct {
 	ContaID    int64   `json:"conta_id"`
 	Mesa       string  `json:"mesa"`
 	Etiqueta   string  `json:"etiqueta"`
+	ClienteID  int64   `json:"cliente_id"`
 	GarcomID   int64   `json:"garcom_id"`
 	Pessoas    int64   `json:"pessoas"`
 	GarcomNome string  `json:"garcom_nome"`
@@ -446,6 +447,7 @@ func (q *Queries) ListarMesasAbertas(ctx context.Context, negocioID int64) ([]Li
 			&i.ContaID,
 			&i.Mesa,
 			&i.Etiqueta,
+			&i.ClienteID,
 			&i.GarcomID,
 			&i.Pessoas,
 			&i.GarcomNome,

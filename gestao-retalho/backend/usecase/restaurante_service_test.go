@@ -49,6 +49,8 @@ type cenarioRestaurante struct {
 	feijoada  domain.UnidadeProduto
 	balcao    domain.Impressora
 	cozinha   domain.Impressora
+	clientes  *usecase.ClienteService
+	dividas   *usecase.DividaService
 }
 
 func novoCenarioRestaurante(t *testing.T) *cenarioRestaurante {
@@ -80,10 +82,12 @@ func novoCenarioRestaurante(t *testing.T) *cenarioRestaurante {
 	imp := &impressorFalso{recebido: map[string][]string{}, falhar: map[string]bool{}}
 	c := &cenarioRestaurante{
 		rest: usecase.NewRestauranteService(restRepo, vendaRepo, contaSvc, operadorSvc, utilRepo,
-			repository.NewNegocioRepository(db), repository.NewConfigRepository(db), imp),
+			repository.NewNegocioRepository(db), repository.NewConfigRepository(db), imp, clienteRepo),
 		caixa:     usecase.NewCaixaService(restRepo, relatorioSvc, utilRepo),
 		operador:  operadorSvc,
 		impressor: imp,
+		clientes:  usecase.NewClienteService(clienteRepo),
+		dividas:   dividaSvc,
 	}
 
 	var err error
@@ -549,5 +553,43 @@ func TestNovaConta_MesmaMesaContasSeparadasComEtiqueta(t *testing.T) {
 	}
 	if !strings.Contains(conta.Texto, "MESA 8 (3)") || !strings.Contains(conta.Texto, "senhora de óculos") {
 		t.Errorf("conta impressa:\n%s", conta.Texto)
+	}
+}
+
+func TestFecharMesa_ACreditoPrecisaDeCliente(t *testing.T) {
+	ctx := context.Background()
+	c := novoCenarioRestaurante(t)
+	if _, err := c.caixa.Abrir(ctx, c.ana.ID, 0); err != nil {
+		t.Fatal(err)
+	}
+	mesa, _ := c.rest.AbrirMesa(ctx, "4", "", c.lima.ID, 2)
+	c.lancar(t, mesa.ContaID, c.feijoada, 1, c.lima.ID)
+	soParte := usecase.FecharContaParams{
+		ArmazemID: c.armazem.ID, UtilizadorID: c.ana.ID,
+		Pagamentos: []usecase.PagamentoVendaParams{{Metodo: domain.MetodoDinheiro, Valor: 100}},
+	}
+	if _, _, err := c.rest.FecharMesa(ctx, mesa.ContaID, soParte); err == nil {
+		t.Fatal("cliente anónimo não pode ficar a dever")
+	}
+
+	joao, err := c.clientes.Criar(ctx, domain.Cliente{NegocioID: domain.NegocioID, Nome: "João", Ativo: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := c.rest.DefinirCliente(ctx, mesa.ContaID, &joao.ID); err != nil {
+		t.Fatal(err)
+	}
+	if m, _ := c.rest.ObterMesa(ctx, mesa.ContaID); m.Mesa.ClienteID != joao.ID {
+		t.Fatalf("cliente da mesa = %d", m.Mesa.ClienteID)
+	}
+	if _, _, err := c.rest.FecharMesa(ctx, mesa.ContaID, soParte); err != nil {
+		t.Fatal(err)
+	}
+	dividas, err := c.dividas.ListarPorCliente(ctx, joao.ID)
+	if err != nil || len(dividas) != 1 {
+		t.Fatalf("dívidas do João = %+v, %v", dividas, err)
+	}
+	if err := c.rest.DefinirCliente(ctx, mesa.ContaID, nil); err == nil {
+		t.Error("mudou o cliente de uma mesa já fechada")
 	}
 }

@@ -39,6 +39,7 @@ type RestauranteService struct {
 	negocio      *repository.NegocioRepository
 	configs      *repository.ConfigRepository
 	impressor    impressao.Impressor
+	clientes     *repository.ClienteRepository
 
 	// Um envio de cada vez: dois aparelhos a enviar a mesma mesa ao mesmo
 	// tempo não podem imprimir os mesmos itens duas vezes.
@@ -54,10 +55,11 @@ func NewRestauranteService(
 	negocio *repository.NegocioRepository,
 	configs *repository.ConfigRepository,
 	impressor impressao.Impressor,
+	clientes *repository.ClienteRepository,
 ) *RestauranteService {
 	return &RestauranteService{
 		rest: rest, vendas: vendas, contas: contas, operadores: operadores, utilizadores: utilizadores,
-		negocio: negocio, configs: configs, impressor: impressor,
+		negocio: negocio, configs: configs, impressor: impressor, clientes: clientes,
 	}
 }
 
@@ -291,6 +293,27 @@ func (s *RestauranteService) DefinirEtiqueta(ctx context.Context, contaID int64,
 		return err
 	}
 	return s.rest.DefinirEtiquetaMesa(ctx, contaID, etiqueta)
+}
+
+// DefinirCliente diz de quem é a conta da mesa — só com um cliente
+// identificado o fecho pode deixar o resto em dívida (fiado). nil volta ao
+// cliente anónimo.
+func (s *RestauranteService) DefinirCliente(ctx context.Context, contaID int64, clienteID *int64) error {
+	if _, err := s.obterMesa(ctx, contaID); err != nil {
+		return err
+	}
+	id := domain.ClienteAnonimoID
+	if clienteID != nil && *clienteID != domain.ClienteAnonimoID {
+		c, err := s.clientes.Obter(ctx, *clienteID)
+		if err != nil {
+			return fmt.Errorf("cliente não encontrado")
+		}
+		if !c.Ativo {
+			return fmt.Errorf("o cliente %s está inativo", c.Nome)
+		}
+		id = c.ID
+	}
+	return s.vendas.DefinirClienteConta(ctx, contaID, id)
 }
 
 // TransferirMesa passa a mesa (com tudo o que já tem) para outro garçom.

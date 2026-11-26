@@ -15,6 +15,9 @@ SET status = 'cancelada', fechada_em = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), ut
 WHERE id = ?
 RETURNING id, negocio_id, cliente_id, identificador, status, aberta_em, fechada_em, utilizador_abertura_id, utilizador_fecho_id, motivo_cancelamento;
 
+-- name: DefinirClienteConta :execrows
+UPDATE contas SET cliente_id = ? WHERE id = ? AND status = 'aberta';
+
 -- name: ObterConta :one
 SELECT id, negocio_id, cliente_id, identificador, status, aberta_em, fechada_em, utilizador_abertura_id, utilizador_fecho_id, motivo_cancelamento
 FROM contas

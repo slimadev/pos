@@ -8,6 +8,7 @@ type MesaAberta struct {
 	ContaID    int64
 	Mesa       string
 	Etiqueta   string // palavra do garçom para não confundir contas ("camisa azul")
+	ClienteID  int64  // ClienteAnonimoID até o caixa escolher quem fica a dever
 	GarcomID   int64
 	GarcomNome string
 	Pessoas    int64
