@@ -11,6 +11,7 @@ import (
 	"go.uber.org/fx"
 
 	"gestao-retalho/backend/api"
+	"gestao-retalho/backend/impressao"
 	"gestao-retalho/backend/repository"
 	"gestao-retalho/backend/usecase"
 )
@@ -42,6 +43,7 @@ var CoreModule = fx.Options(
 	fx.Provide(repository.NewCotacaoRepository),
 	fx.Provide(repository.NewDocumentoFiscalRepository),
 	fx.Provide(repository.NewImportacaoRepository),
+	fx.Provide(repository.NewRestauranteRepository),
 
 	fx.Provide(usecase.NewProdutoService),
 	fx.Provide(usecase.NewCategoriaService),
@@ -61,6 +63,10 @@ var CoreModule = fx.Options(
 	fx.Provide(usecase.NewCotacaoService),
 	fx.Provide(usecase.NewFaturacaoService),
 	fx.Provide(usecase.NewImportacaoService),
+	// Impressoras térmicas de rede (pedidos da cozinha, contas das mesas).
+	fx.Provide(func() impressao.Impressor { return impressao.ImpressoraRede{} }),
+	fx.Provide(usecase.NewRestauranteService),
+	fx.Provide(usecase.NewCaixaService),
 	// A emissão de documentos fiscais entra por setter: o FaturacaoService
 	// lê vendas através do VendaService, por isso não pode ir no construtor.
 	fx.Invoke(func(v *usecase.VendaService, c *usecase.ContaService, d *usecase.DividaService, f *usecase.FaturacaoService) {

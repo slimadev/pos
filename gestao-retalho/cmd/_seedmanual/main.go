@@ -36,7 +36,7 @@ func main() {
 		admin.NewLojasService(repo), admin.NewDashboardService(repo), admin.NewAuthService(repository.NewAdministradorRepository(adb)),
 		admin.NewCategoriasService(repo), admin.NewProdutosService(repo), admin.NewArmazensService(repo), admin.NewStockService(repo),
 		admin.NewFarmaciaService(repo), admin.NewInventarioService(repo), admin.NewVendasService(repo), admin.NewRelatoriosService(repo),
-		admin.NewClientesService(repo), admin.NewFichasService(repo), admin.NewUtilizadoresService(repo), admin.NewPDVService(repo),
+		admin.NewClientesService(repo), admin.NewFichasService(repo), admin.NewUtilizadoresService(repo), admin.NewPDVService(repo), admin.NewRestauranteService(repo),
 	)
 	adm.OnStartup(ctx)
 	_, err = adm.ConfigurarPrimeiroArranque(admin.ConfigurarPrimeiroArranqueParams{

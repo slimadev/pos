@@ -53,6 +53,8 @@
   window.go = {
     admin: { AdminApp: criarAlvo("admin.AdminApp") },
     api: { App: criarAlvo("api.App") },
+    // Só no Android: ligação ao computador do balcão e impressora do aparelho.
+    ponte: { Ponte: criarAlvo("ponte") },
   };
 
   // Leitor de códigos em modo "teclado" (alternativa ao broadcast, que o

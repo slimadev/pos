@@ -40,6 +40,9 @@ const (
 	ModuloReceitasMedicas Modulo = "receitas_medicas"
 	ModuloVendaGranel     Modulo = "venda_granel"
 	ModuloDividas         Modulo = "dividas"
+	// ModuloMesas: restaurante — mesas, garçons com aparelhos, pedidos
+	// impressos na cozinha, fecho no caixa.
+	ModuloMesas Modulo = "mesas"
 )
 
 // Tema identifica qual ficheiro CSS de tema (frontend/src/themes) aplicar —
@@ -109,4 +112,5 @@ var TodosModulos = []Modulo{
 	ModuloReceitasMedicas,
 	ModuloVendaGranel,
 	ModuloDividas,
+	ModuloMesas,
 }

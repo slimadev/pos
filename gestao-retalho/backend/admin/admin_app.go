@@ -40,11 +40,12 @@ type AdminApp struct {
 	Clientes     *ClientesService
 	Fichas       *FichasService
 	Utilizadores *UtilizadoresService
+	Restaurante  *RestauranteService
 	PDV          *PDVService
 }
 
-func NewAdminApp(lojas *LojasService, dashboard *DashboardService, auth *AuthService, categorias *CategoriasService, produtos *ProdutosService, armazens *ArmazensService, stock *StockService, farmacia *FarmaciaService, inventario *InventarioService, vendas *VendasService, relatorios *RelatoriosService, clientes *ClientesService, fichas *FichasService, utilizadores *UtilizadoresService, pdv *PDVService) *AdminApp {
-	return &AdminApp{Lojas: lojas, Dashboard: dashboard, Auth: auth, Categorias: categorias, Produtos: produtos, Armazens: armazens, Stock: stock, Farmacia: farmacia, Inventario: inventario, Vendas: vendas, Relatorios: relatorios, Clientes: clientes, Fichas: fichas, Utilizadores: utilizadores, PDV: pdv}
+func NewAdminApp(lojas *LojasService, dashboard *DashboardService, auth *AuthService, categorias *CategoriasService, produtos *ProdutosService, armazens *ArmazensService, stock *StockService, farmacia *FarmaciaService, inventario *InventarioService, vendas *VendasService, relatorios *RelatoriosService, clientes *ClientesService, fichas *FichasService, utilizadores *UtilizadoresService, pdv *PDVService, restaurante *RestauranteService) *AdminApp {
+	return &AdminApp{Restaurante: restaurante, Lojas: lojas, Dashboard: dashboard, Auth: auth, Categorias: categorias, Produtos: produtos, Armazens: armazens, Stock: stock, Farmacia: farmacia, Inventario: inventario, Vendas: vendas, Relatorios: relatorios, Clientes: clientes, Fichas: fichas, Utilizadores: utilizadores, PDV: pdv}
 }
 
 func (a *AdminApp) OnStartup(ctx context.Context) {
@@ -1001,4 +1002,70 @@ func (a *AdminApp) AbrirModeloImportacao() (string, error) {
 		return "", err
 	}
 	return a.Produtos.AbrirModeloImportacao(a.ctx)
+}
+
+// --- Restaurante (mesas, impressoras, caixa) -------------------------------------
+
+func (a *AdminApp) ObterConfigRestaurante() (ConfigRestaurante, error) {
+	if err := a.exigirSessao(); err != nil {
+		return ConfigRestaurante{}, err
+	}
+	return a.Restaurante.Obter(a.ctx)
+}
+
+func (a *AdminApp) DefinirModoRestaurante(ativo bool) error {
+	if err := a.exigirSessao(); err != nil {
+		return err
+	}
+	return a.Restaurante.DefinirAtivo(a.ctx, ativo)
+}
+
+func (a *AdminApp) GuardarImpressora(i domain.Impressora) (domain.Impressora, error) {
+	if err := a.exigirSessao(); err != nil {
+		return domain.Impressora{}, err
+	}
+	return a.Restaurante.GuardarImpressora(a.ctx, i)
+}
+
+func (a *AdminApp) TestarImpressora(id int64) error {
+	if err := a.exigirSessao(); err != nil {
+		return err
+	}
+	return a.Restaurante.TestarImpressora(a.ctx, id)
+}
+
+// DefinirRotaCategoria: impressoraID nil = a categoria só sai no balcão.
+func (a *AdminApp) DefinirRotaCategoria(categoriaID int64, impressoraID *int64) error {
+	if err := a.exigirSessao(); err != nil {
+		return err
+	}
+	return a.Restaurante.DefinirRota(a.ctx, categoriaID, impressoraID)
+}
+
+func (a *AdminApp) DefinirGerente(operadorID int64, gerente bool) error {
+	if err := a.exigirSessao(); err != nil {
+		return err
+	}
+	return a.Restaurante.DefinirGerente(a.ctx, operadorID, gerente)
+}
+
+func (a *AdminApp) HistoricoCaixa() ([]domain.SessaoCaixa, error) {
+	if err := a.exigirSessao(); err != nil {
+		return nil, err
+	}
+	return a.Restaurante.HistoricoCaixa(a.ctx)
+}
+
+func (a *AdminApp) ObterFechoCaixa(id int64) (usecase.FechoSessao, error) {
+	if err := a.exigirSessao(); err != nil {
+		return usecase.FechoSessao{}, err
+	}
+	return a.Restaurante.ObterFechoCaixa(a.ctx, id)
+}
+
+func (a *AdminApp) NovaChaveServidor() (usecase.ServidorAparelhos, error) {
+	if err := a.exigirSessao(); err != nil {
+		return usecase.ServidorAparelhos{}, err
+	}
+	return a.Restaurante.NovaChaveServidor(a.ctx)
 }

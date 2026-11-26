@@ -268,7 +268,7 @@ func TestTodosOsMetodosSaoChamaveisPelaPonte(t *testing.T) {
 					t.Errorf("%s.%s: parâmetro %d (%s) não passa por JSON", tipo, m.Name, j, ft.In(j))
 				}
 			}
-			if ft.NumOut() > 0 && ft.Out(0) != tipoErro && !serializavel(ft.Out(0)) {
+			if ft.NumOut() > 0 && ft.Out(0) != reflect.TypeOf((*error)(nil)).Elem() && !serializavel(ft.Out(0)) {
 				t.Errorf("%s.%s: resultado (%s) não passa por JSON", tipo, m.Name, ft.Out(0))
 			}
 		}

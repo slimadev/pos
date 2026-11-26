@@ -34,9 +34,10 @@ type App struct {
 	ctx context.Context
 	db  *sql.DB
 
-	// operadorID é o operador do turno no PDV (0 = ninguém identificado);
-	// só o cmd/app o define, via IniciarTurno. Ver utilizadorAtual.
-	operadorID atomic.Int64
+	// turno guarda o operador do turno no PDV (0 = ninguém identificado);
+	// só o cmd/app o define, via IniciarTurno. Ver utilizadorAtual. Cada
+	// aparelho ligado ao servidor tem o seu (ParaDispositivo).
+	turno *atomic.Int64
 
 	ProdutoService      *usecase.ProdutoService
 	CategoriaService    *usecase.CategoriaService
@@ -56,6 +57,11 @@ type App struct {
 	CotacaoService      *usecase.CotacaoService
 	FaturacaoService    *usecase.FaturacaoService
 	ImportacaoService   *usecase.ImportacaoService
+	RestauranteService  *usecase.RestauranteService
+	CaixaService        *usecase.CaixaService
+
+	// Servidor para os aparelhos dos garçons; só o PDV do desktop o liga.
+	Servidor GestorServidor
 }
 
 func NewApp(
@@ -78,9 +84,12 @@ func NewApp(
 	cotacoes *usecase.CotacaoService,
 	faturacao *usecase.FaturacaoService,
 	importacao *usecase.ImportacaoService,
+	restaurante *usecase.RestauranteService,
+	caixa *usecase.CaixaService,
 ) *App {
 	return &App{
 		db:                  db,
+		turno:               new(atomic.Int64),
 		ProdutoService:      produto,
 		CategoriaService:    categoria,
 		ArmazemService:      armazem,
@@ -99,14 +108,25 @@ func NewApp(
 		CotacaoService:      cotacoes,
 		FaturacaoService:    faturacao,
 		ImportacaoService:   importacao,
+		RestauranteService:  restaurante,
+		CaixaService:        caixa,
 	}
+}
+
+// ParaDispositivo devolve um App com os mesmos serviços e a mesma base, mas
+// com o seu próprio turno — o aparelho de cada garçom identifica-se com o
+// seu PIN sem mexer no turno do caixa nem no dos outros aparelhos.
+func (a *App) ParaDispositivo() *App {
+	n := *a
+	n.turno = new(atomic.Int64)
+	return &n
 }
 
 // utilizadorAtual é a quem fica atribuída cada venda/movimento: o operador
 // do turno no PDV, ou o administrador quando não há ninguém identificado
 // (lojas sem operadores, e tudo o que o cmd/admin faz através de AbrirLoja).
 func (a *App) utilizadorAtual() int64 {
-	if id := a.operadorID.Load(); id != 0 {
+	if id := a.turno.Load(); id != 0 {
 		return id
 	}
 	return UtilizadorAdminID
@@ -117,7 +137,7 @@ func (a *App) utilizadorAtual() int64 {
 // operadores não vende — cada venda fica sempre com quem a fez, e o admin
 // é obrigado a criar operadores antes de abrir o PDV.
 func (a *App) exigirTurno() error {
-	if a.operadorID.Load() != 0 {
+	if a.turno.Load() != 0 {
 		return nil
 	}
 	ativos, err := a.OperadorService.ListarAtivos(a.ctx)
@@ -143,18 +163,18 @@ func (a *App) IniciarTurno(operadorID int64, pin string) (usecase.Operador, erro
 	if err != nil {
 		return usecase.Operador{}, err
 	}
-	a.operadorID.Store(op.ID)
+	a.turno.Store(op.ID)
 	return op, nil
 }
 
 func (a *App) TerminarTurno() {
-	a.operadorID.Store(0)
+	a.turno.Store(0)
 }
 
 // ObterOperadorAtual devolve o operador do turno, ou ID 0 se ninguém se
 // identificou.
 func (a *App) ObterOperadorAtual() (usecase.Operador, error) {
-	id := a.operadorID.Load()
+	id := a.turno.Load()
 	if id == 0 {
 		return usecase.Operador{}, nil
 	}
@@ -168,7 +188,7 @@ func (a *App) ObterOperadorAtual() (usecase.Operador, error) {
 		}
 	}
 	// Desativado no admin a meio do turno: o turno acaba.
-	a.operadorID.Store(0)
+	a.turno.Store(0)
 	return usecase.Operador{}, nil
 }
 

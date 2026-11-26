@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"strconv"
 	"strings"
@@ -323,4 +324,84 @@ func taxaIVA(valor string) float64 {
 		return TaxaIVAPorOmissao
 	}
 	return t
+}
+
+// --- Servidor para os aparelhos dos garçons ------------------------------------
+
+// PortaServidorPadrao é a porta em que o PC do balcão atende os aparelhos.
+const PortaServidorPadrao = 8765
+
+// ServidorAparelhos: se o PDV deste PC atende os aparelhos dos garçons
+// (Sunmi…) na rede local, em que porta, e a chave que cada aparelho tem de
+// apresentar — escreve-se uma vez em cada aparelho.
+type ServidorAparelhos struct {
+	Ativo bool
+	Porta int
+	Chave string
+}
+
+func (s *ConfigService) ObterServidorAparelhos(ctx context.Context) (ServidorAparelhos, error) {
+	todas, err := s.configs.Listar(ctx)
+	if err != nil {
+		return ServidorAparelhos{}, err
+	}
+	sa := ServidorAparelhos{Ativo: todas["servidor_ativo"] == "1", Porta: PortaServidorPadrao, Chave: todas["servidor_chave"]}
+	if p, err := strconv.Atoi(todas["servidor_porta"]); err == nil && p > 0 && p < 65536 {
+		sa.Porta = p
+	}
+	if sa.Chave == "" {
+		if sa.Chave, err = s.NovaChaveServidor(ctx); err != nil {
+			return ServidorAparelhos{}, err
+		}
+	}
+	return sa, nil
+}
+
+func (s *ConfigService) DefinirServidorAparelhos(ctx context.Context, ativo bool, porta int) error {
+	if porta == 0 {
+		porta = PortaServidorPadrao
+	}
+	if porta < 1024 || porta > 65535 {
+		return fmt.Errorf("porta inválida (use entre 1024 e 65535)")
+	}
+	v := "0"
+	if ativo {
+		v = "1"
+	}
+	if err := s.configs.Definir(ctx, "servidor_ativo", v); err != nil {
+		return err
+	}
+	return s.configs.Definir(ctx, "servidor_porta", strconv.Itoa(porta))
+}
+
+// NovaChaveServidor gera outra chave — os aparelhos com a antiga deixam de
+// ligar (ex: um aparelho perdido).
+func (s *ConfigService) NovaChaveServidor(ctx context.Context) (string, error) {
+	const letras = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" // sem 0/O nem 1/I
+	b := make([]byte, 8)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	for i := range b {
+		b[i] = letras[int(b[i])%len(letras)]
+	}
+	chave := string(b[:4]) + "-" + string(b[4:])
+	return chave, s.configs.Definir(ctx, "servidor_chave", chave)
+}
+
+// DefinirModulo liga ou desliga um módulo numa loja já configurada (ex: o
+// modo restaurante, que se liga depois do wizard).
+func (s *ConfigService) DefinirModulo(ctx context.Context, m domain.Modulo, ativo bool) error {
+	conhecido := false
+	for _, x := range domain.TodosModulos {
+		conhecido = conhecido || x == m
+	}
+	if !conhecido {
+		return fmt.Errorf("módulo desconhecido: %q", m)
+	}
+	v := "false"
+	if ativo {
+		v = "true"
+	}
+	return s.configs.Definir(ctx, "modulo_"+string(m), v)
 }

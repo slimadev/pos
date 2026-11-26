@@ -1,4 +1,8 @@
-package gobridge
+// Package despacho chama métodos de um objeto (api.App, admin.AdminApp) a
+// partir do nome e de argumentos JSON, com a mesma semântica dos bindings
+// do Wails. Usado pela app Android (gobridge) e pelo servidor que o PC do
+// balcão abre para os aparelhos dos garçons.
+package despacho
 
 import (
 	"encoding/json"
@@ -10,11 +14,11 @@ import (
 
 var tipoErro = reflect.TypeOf((*error)(nil)).Elem()
 
-// despachar chama o método exportado `metodo` de `alvo` por reflexão, com a
+// Chamar chama o método exportado `metodo` de `alvo` por reflexão, com a
 // mesma semântica dos bindings do Wails: argumentos JSON posicionais (os
 // que faltarem ficam com o valor zero), resultado = 1.º valor de retorno em
 // JSON, erro = último valor de retorno quando é `error`.
-func despachar(alvo any, metodo, argsJSON string) (resultado string, err error) {
+func Chamar(alvo any, metodo, argsJSON string) (resultado string, err error) {
 	if !token.IsExported(metodo) || metodo == "OnStartup" {
 		return "", fmt.Errorf("método não disponível: %q", metodo)
 	}

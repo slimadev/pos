@@ -8,6 +8,7 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"flag"
 	"log"
@@ -21,6 +22,7 @@ import (
 	"gestao-retalho/backend/api"
 	"gestao-retalho/backend/config"
 	"gestao-retalho/backend/di"
+	"gestao-retalho/backend/servidor"
 )
 
 //go:embed all:frontend/dist
@@ -48,6 +50,11 @@ func main() {
 		log.Fatalf("wire dependencies: %v", err)
 	}
 
+	// O PC do balcão atende os aparelhos dos garçons na rede local (se a
+	// loja o tiver ligado em "Aparelhos").
+	gestor := servidor.NovoGestor(wailsApp)
+	wailsApp.Servidor = gestor
+
 	err := wails.Run(&options.App{
 		Title:            "Gestão de Retalho",
 		Width:            1280,
@@ -57,7 +64,13 @@ func main() {
 			Assets: assets,
 		},
 		BackgroundColour: &options.RGBA{R: 20, G: 18, B: 26, A: 1},
-		OnStartup:        wailsApp.OnStartup,
+		OnStartup: func(ctx context.Context) {
+			wailsApp.OnStartup(ctx)
+			if err := wailsApp.IniciarServidorAparelhos(); err != nil {
+				log.Printf("servidor para aparelhos: %v", err)
+			}
+		},
+		OnShutdown: func(context.Context) { gestor.Parar() },
 		Bind: []interface{}{
 			wailsApp,
 		},

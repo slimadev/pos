@@ -92,6 +92,8 @@ tasks.matching { it.name == "assembleRelease" }.configureEach {
 dependencies {
     implementation("androidx.webkit:webkit:1.12.1")
     implementation("androidx.core:core:1.13.1")
+    // Impressora embutida do Sunmi (pedidos e contas impressos no aparelho).
+    implementation("com.sunmi:printerlibrary:1.0.24")
     // Backend Go (gomobile bind), gerado por scripts/build-go.sh.
     implementation(files("libs/gobridge.aar"))
 }

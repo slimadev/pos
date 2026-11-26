@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Modo garçom: o aparelho fala com o PDV do computador do balcão. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:name=".RetalhoApp"
         android:allowBackup="false"

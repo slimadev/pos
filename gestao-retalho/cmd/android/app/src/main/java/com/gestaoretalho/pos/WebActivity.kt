@@ -351,6 +351,9 @@ class MainActivity : WebActivity() {
     private fun prontoParaVender(): Boolean {
         if (RetalhoApp.erroArranque != null) return false
         return try {
+            // Aparelho de garçom: a loja está no computador do balcão.
+            val ligacao = JSONObject(Gobridge.chamar("ponte", "EstadoLigacao", "[]"))
+            if (ligacao.optBoolean("ModoGarcom", false)) return true
             val e = JSONObject(Gobridge.chamar("admin.AdminApp", "ObterEstadoArranque", "[]"))
             !e.optBoolean("PrecisaConfigurar", true) && e.optInt("OperadoresAtivos", 0) > 0
         } catch (e: Exception) {

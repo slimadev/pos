@@ -22,6 +22,7 @@ import (
 	"gestao-retalho/backend/api"
 	"gestao-retalho/backend/config"
 	"gestao-retalho/backend/copias"
+	"gestao-retalho/backend/despacho"
 	"gestao-retalho/backend/export"
 	"gestao-retalho/backend/repository"
 )
@@ -35,6 +36,9 @@ type Plataforma interface {
 	// cópia local do ficheiro escolhido, ou "" se o utilizador cancelar.
 	// `extensoes` vem como "xlsx;xlsm".
 	EscolherFicheiro(titulo, extensoes string) (string, error)
+	// ImprimirTexto imprime na impressora embutida do aparelho (Sunmi),
+	// linha a linha, e avança o papel no fim. Erro se não houver impressora.
+	ImprimirTexto(texto string) error
 }
 
 var (
@@ -42,6 +46,7 @@ var (
 	adminApp *admin.AdminApp
 	lojas    *repository.LojaRepository
 	pdvApp   *api.App
+	plataf   Plataforma
 )
 
 // Iniciar arranca o backend com os dados em `dirDados` (a pasta privada da
@@ -74,6 +79,10 @@ func Iniciar(dirDados, fusoHorario string, p Plataforma) error {
 	// antes de qualquer base estar aberta.
 	if _, err := copias.AplicarRestauroPendente(); err != nil {
 		return fmt.Errorf("restaurar cópia de segurança: %w", err)
+	}
+	plataf = p
+	if err := carregarLigacao(dirDados); err != nil {
+		return fmt.Errorf("ligação ao computador do balcão: %w", err)
 	}
 	if p != nil {
 		export.DefinirAbridor(p.AbrirFicheiro)
@@ -111,11 +120,17 @@ func Chamar(alvo, metodo, argsJSON string) (string, error) {
 		}
 		return despachar(a, metodo, argsJSON)
 	case "api.App":
+		// Modo garçom: as chamadas vão para o computador do balcão.
+		if l := ligacaoAtual(); l != nil {
+			return chamarServidor(l, metodo, argsJSON)
+		}
 		p, err := appDaLoja()
 		if err != nil {
 			return "", err
 		}
 		return despachar(p, metodo, argsJSON)
+	case "ponte":
+		return despachar(ponte{}, metodo, argsJSON)
 	default:
 		return "", fmt.Errorf("alvo desconhecido: %q", alvo)
 	}
@@ -146,4 +161,8 @@ func appDaLoja() (*api.App, error) {
 	}
 	pdvApp = app
 	return pdvApp, nil
+}
+
+func despachar(alvo any, metodo, argsJSON string) (string, error) {
+	return despacho.Chamar(alvo, metodo, argsJSON)
 }

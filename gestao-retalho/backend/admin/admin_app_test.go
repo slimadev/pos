@@ -29,6 +29,7 @@ func novoAdminAppTeste(t *testing.T) *admin.AdminApp {
 		admin.NewFichasService(repo),
 		admin.NewUtilizadoresService(repo),
 		admin.NewPDVServiceComExecutavel(repo, func() (string, error) { return "/bin/echo", nil }),
+		admin.NewRestauranteService(repo),
 	)
 	app.OnStartup(context.Background())
 	return app

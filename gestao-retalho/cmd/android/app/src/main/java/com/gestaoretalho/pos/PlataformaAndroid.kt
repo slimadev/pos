@@ -12,8 +12,8 @@ import java.util.concurrent.TimeUnit
 
 /**
  * O que no desktop o sistema operativo/Wails fazem e no Android tem de ser a
- * app nativa: abrir um PDF/Excel gerado e escolher um ficheiro (importação
- * de produtos). Chamado pelo Go, numa thread de fundo.
+ * app nativa: abrir um PDF/Excel gerado, escolher um ficheiro (importação
+ * de produtos) e imprimir na impressora do próprio aparelho. Chamado pelo Go, numa thread de fundo.
  */
 class PlataformaAndroid(private val contexto: Context) : Plataforma {
 
@@ -51,5 +51,9 @@ class PlataformaAndroid(private val contexto: Context) : Plataforma {
         // O Go espera (numa thread de fundo) até o utilizador escolher ou cancelar.
         fim.await(10, TimeUnit.MINUTES)
         return resultado
+    }
+
+    override fun imprimirTexto(texto: String) {
+        ImpressoraSunmi.imprimir(contexto, texto)
     }
 }
