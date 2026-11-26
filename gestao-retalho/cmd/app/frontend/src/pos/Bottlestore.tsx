@@ -34,21 +34,10 @@ import VendaDireta from "./VendaDireta";
 import { METODOS, ROTULO_METODO, lerNumero, mt, qtd, normalizar } from "./formato";
 import { calcularTroco } from "./troco";
 import ReciboModal from "./ReciboModal";
+import { tempoAberta, textoErro } from "./comum";
 import "./Bottlestore.css";
 
 // --- Utilitários -------------------------------------------------------------
-
-/** Há quanto tempo a conta está aberta ("2h 14m"); em aviso a partir das 3h. */
-function tempoAberta(abertaEm: unknown): { texto: string; longa: boolean } {
-  const inicio = new Date(String(abertaEm)).getTime();
-  if (!inicio) return { texto: "", longa: false };
-  const minutos = Math.max(0, Math.round((Date.now() - inicio) / 60000));
-  const horas = Math.floor(minutos / 60);
-  return {
-    texto: horas > 0 ? `${horas}h ${String(minutos % 60).padStart(2, "0")}m` : `${minutos}m`,
-    longa: horas >= 3,
-  };
-}
 
 const totalItem = (i: domain.ItemConta) => i.Quantidade * i.PrecoUnitarioAplicado - i.Desconto;
 const somaTotal = (itens: domain.ItemConta[]) => itens.reduce((s, i) => s + totalItem(i), 0);
@@ -118,7 +107,6 @@ function lerModo(): Modo {
   }
 }
 
-const textoErro = (e: unknown) => String(e).replace(/^Error:\s*/, "");
 
 // --- Ecrã principal ----------------------------------------------------------
 
@@ -764,7 +752,7 @@ function CancelarContaFolha({
 
 type ModoPagamento = string | "dividir" | "fiado";
 
-function FechoConta({
+export function FechoConta({
   conta,
   total: totalBruto,
   armazemId,
@@ -773,8 +761,9 @@ function FechoConta({
   nomeCliente,
   onCancelar,
   onFechada,
+  fechar = FecharContaAberta,
 }: {
-  conta: domain.Conta;
+  conta: { ID: number; Identificador: string };
   total: number;
   armazemId: number;
   nomeArmazem?: string;
@@ -782,6 +771,8 @@ function FechoConta({
   nomeCliente?: string;
   onCancelar: () => void;
   onFechada: (r: { id: number; total: number; troco: number; divida: number }) => void;
+  // Quem fecha: a conta do bar (por omissão) ou a mesa (exige caixa aberto).
+  fechar?: (contaID: number, p: usecase.FecharContaParams) => Promise<api.FecharContaResponse>;
 }) {
   const [modo, setModo] = useState<ModoPagamento>("dinheiro");
   const [recebido, setRecebido] = useState("");
@@ -823,7 +814,7 @@ function FechoConta({
     });
     setAFechar(true);
     setErro(null);
-    FecharContaAberta(conta.ID, p)
+    fechar(conta.ID, p)
       .then((r) => {
         if (r.Alerta?.Excedido) {
           window.alert(
@@ -974,7 +965,7 @@ function FechoConta({
 
 // --- Conta fechada -----------------------------------------------------------
 
-function ContaFechada({
+export function ContaFechada({
   identificador,
   total,
   troco,
@@ -1019,7 +1010,7 @@ function ContaFechada({
 
 // --- Folha (sobe do fundo no telemóvel, janela no desktop) -------------------
 
-function Folha({
+export function Folha({
   titulo,
   onFechar,
   larga,

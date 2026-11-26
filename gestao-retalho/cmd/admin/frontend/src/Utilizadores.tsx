@@ -6,11 +6,12 @@ import {
   RedefinirPINOperador,
   AtivarOperador,
   DesativarOperador,
+  DefinirGerente,
 } from "../wailsjs/go/admin/AdminApp";
 import { usecase } from "../wailsjs/go/models";
 import Breadcrumb from "./Breadcrumb";
 import Modal from "./Modal";
-import { PlusIcon, PencilIcon, KeyIcon, XMarkIcon, PowerIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, PencilIcon, KeyIcon, XMarkIcon, PowerIcon, ShieldCheckIcon } from "@heroicons/react/24/outline";
 
 const PIN_VALIDO = /^[0-9]{4,6}$/;
 
@@ -107,6 +108,7 @@ export default function UtilizadoresScreen({
         <thead>
           <tr>
             <th>Operador</th>
+            <th>Função</th>
             <th>Estado</th>
             <th></th>
           </tr>
@@ -114,17 +116,26 @@ export default function UtilizadoresScreen({
         <tbody>
           {operadores === null && (
             <tr>
-              <td colSpan={3}>A carregar…</td>
+              <td colSpan={4}>A carregar…</td>
             </tr>
           )}
           {operadores !== null && lista.length === 0 && (
             <tr>
-              <td colSpan={3}>Ainda não há operadores.</td>
+              <td colSpan={4}>Ainda não há operadores.</td>
             </tr>
           )}
           {lista.map((op) => (
             <tr key={op.ID}>
               <td>{op.Nome}</td>
+              <td>
+                {op.Gerente ? (
+                  <span title="Autoriza anulações de itens já enviados para a cozinha">
+                    <ShieldCheckIcon className="admin-btn-icon-inline" aria-hidden="true" /> Gerente
+                  </span>
+                ) : (
+                  "Operador"
+                )}
+              </td>
               <td>
                 <span className={`admin-inventario-estado ${op.Ativo ? "fechado" : "aberto"}`}>
                   {op.Ativo ? "Ativo" : "Inativo"}
@@ -138,6 +149,18 @@ export default function UtilizadoresScreen({
                 <button className="admin-btn-secundario" onClick={() => setModal({ tipo: "pin", operador: op })}>
                   <KeyIcon className="btn-icone" aria-hidden="true" />
                   Novo PIN
+                </button>
+                <button
+                  className="admin-btn-secundario"
+                  title="O gerente autoriza com o seu PIN as anulações de pedidos já enviados (restaurante)"
+                  onClick={() =>
+                    DefinirGerente(op.ID, !op.Gerente)
+                      .then(() => carregar())
+                      .catch((e) => onErro(String(e)))
+                  }
+                >
+                  <ShieldCheckIcon className="btn-icone" aria-hidden="true" />
+                  {op.Gerente ? "Tirar gerente" : "Tornar gerente"}
                 </button>
                 <button className="admin-btn-secundario" onClick={() => alternar(op)}>
                   <PowerIcon className="btn-icone" aria-hidden="true" />

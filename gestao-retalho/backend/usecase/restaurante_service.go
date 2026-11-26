@@ -777,7 +777,7 @@ func talaoConta(loja export.DadosRecibo, m domain.MesaAberta, itens []domain.Ite
 		t.Par(fmt.Sprintf("%d pessoas · cada", c.Pessoas), export.FormatarValor(c.PorPessoa), true)
 	}
 	t.Separador()
-	t.Centro("Consulta de mesa — não serve de recibo")
+	t.Centro("Consulta — não serve de recibo")
 	return t
 }
 

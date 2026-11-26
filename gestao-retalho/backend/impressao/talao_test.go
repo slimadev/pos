@@ -66,3 +66,19 @@ func TestImpressoraRedeEnvia(t *testing.T) {
 		t.Fatalf("recebido %q", got)
 	}
 }
+
+func TestGrandePartePelaLarguraDoDestino(t *testing.T) {
+	tl := NovoTalao(32).Grande("1 x Frango à zambeziana")
+	if got := strings.TrimRight(tl.TextoSimples(), "\n"); got != "1 x Frango à zambeziana" {
+		t.Errorf("texto simples partiu a linha: %q", got)
+	}
+	if n := strings.Count(string(tl.ESCPOS()), "\n"); n != 2 {
+		t.Errorf("em ESC/POS a letra grande (16 colunas) devia dar 2 linhas, deu %d", n)
+	}
+}
+
+func TestRecuoMantido(t *testing.T) {
+	if got := NovoTalao(32).Texto("   150,00 cada").TextoSimples(); got != "   150,00 cada\n" {
+		t.Errorf("recuo perdido: %q", got)
+	}
+}

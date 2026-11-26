@@ -21,6 +21,7 @@ import {
   Bars3Icon,
   ShieldCheckIcon,
   UserPlusIcon,
+  RectangleGroupIcon,
 } from "@heroicons/react/24/outline";
 import {
   PrecisaConfigurarAdmin,
@@ -47,6 +48,7 @@ import ClientesScreen from "./Clientes";
 import VendaCreditoScreen from "./VendaCredito";
 import CotacoesScreen from "./Cotacoes";
 import FaturasScreen from "./Faturas";
+import RestauranteScreen from "./Restaurante";
 import FichasScreen from "./Fichas";
 import UtilizadoresScreen from "./Utilizadores";
 import CopiasSegurancaScreen from "./CopiasSeguranca";
@@ -54,7 +56,7 @@ import ConfiguracoesLoja from "./ConfiguracoesLoja";
 import Modal from "./Modal";
 import { rotuloTipoNegocio } from "./formato";
 
-type Ecra = "dashboard" | "produtos" | "categorias" | "armazens" | "stock" | "inventario" | "vendas" | "cotacoes" | "faturas" | "relatorios" | "clientes" | "credito" | "fichas" | "utilizadores" | "farmacia" | "copias" | "stub";
+type Ecra = "dashboard" | "produtos" | "categorias" | "armazens" | "stock" | "inventario" | "vendas" | "cotacoes" | "faturas" | "relatorios" | "clientes" | "credito" | "fichas" | "utilizadores" | "farmacia" | "copias" | "restaurante" | "stub";
 type IconeSvg = ComponentType<SVGProps<SVGSVGElement>>;
 
 /** Destino de navegação entre ecrãs (ex: "Vendas" → "Fecho de caixa"). */
@@ -107,6 +109,7 @@ const NAV: { grupo?: string; itens: ItemNav[] }[] = [
     itens: [
       { chave: "relatorios", nome: "Relatórios", Icone: ChartBarIcon },
       { chave: "utilizadores", nome: "Utilizadores", Icone: UserCircleIcon },
+      { chave: "restaurante", nome: "Restaurante", Icone: RectangleGroupIcon },
       { chave: "copias", nome: "Cópias de segurança", Icone: ShieldCheckIcon },
     ],
   },
@@ -346,6 +349,7 @@ function AdminPrincipal({
           {ecra === "vendas" && <VendasScreen onNavegar={navegar} onErro={setErro} />}
           {ecra === "cotacoes" && <CotacoesScreen onNavegar={navegar} onErro={setErro} />}
           {ecra === "faturas" && <FaturasScreen onErro={setErro} />}
+          {ecra === "restaurante" && <RestauranteScreen onErro={setErro} />}
           {ecra === "clientes" && <ClientesScreen cliente={destino.cliente} onNavegar={navegar} onErro={setErro} />}
           {ecra === "credito" && (
             <VendaCreditoScreen

@@ -15,6 +15,7 @@ const ROTULO_MODULO: Record<string, string> = {
   receitas_medicas: "Receitas médicas",
   venda_granel: "Venda a granel/peso",
   dividas: "Gestão de dívidas de clientes",
+  mesas: "Mesas e garçons (restaurante: cozinha e caixa)",
 };
 
 /**

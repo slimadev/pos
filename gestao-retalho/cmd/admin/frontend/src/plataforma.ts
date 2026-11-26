@@ -10,8 +10,13 @@ declare global {
       reiniciarApp(): void;
       guardarCopia(nome: string): void;
     };
+    go?: { ponte?: { Ponte?: Ponte } };
   }
 }
+
+type Ponte = {
+  LigarAoBalcao(endereco: string, chave: string): Promise<{ ModoGarcom: boolean }>;
+};
 
 export const noAndroid = window.__PLATAFORMA === "android";
 
@@ -24,3 +29,6 @@ export function guardarCopiaEm(nome: string) {
 export function reiniciarApp() {
   window.Nativo?.reiniciarApp();
 }
+
+/** Chamadas à app Android que não vão para a loja (só existe no Android). */
+export const ponte: Ponte | null = (noAndroid && window.go?.ponte?.Ponte) || null;

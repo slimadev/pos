@@ -12,10 +12,12 @@ import Wizard from "./wizard/Wizard";
 import VendaDireta from "./pos/VendaDireta";
 import Bottlestore from "./pos/Bottlestore";
 import EscolherOperador, { SemOperadores } from "./pos/Turno";
-import { abrirAdministracao, noAndroid } from "./plataforma";
+import Mesas from "./pos/Mesas";
+import Restaurante, { LigacaoBalcao } from "./pos/Restaurante";
+import { abrirAdministracao, noAndroid, ponte, type EstadoLigacao } from "./plataforma";
 import { rotuloTipoNegocio } from "./pos/formato";
 import "./App.css";
-import { ArrowsRightLeftIcon, LockClosedIcon } from "@heroicons/react/24/outline";
+import { ArrowsRightLeftIcon, LockClosedIcon, ComputerDesktopIcon } from "@heroicons/react/24/outline";
 
 type Estado = { tipo: "a-carregar" } | { tipo: "wizard" } | { tipo: "pronto"; config: usecase.EstadoConfig };
 
@@ -27,8 +29,14 @@ type Estado = { tipo: "a-carregar" } | { tipo: "wizard" } | { tipo: "pronto"; co
  */
 function App() {
   const [estado, setEstado] = useState<Estado>({ tipo: "a-carregar" });
+  const [ligacao, setLigacao] = useState<EstadoLigacao | null>(null);
 
   const verificar = () => {
+    // No aparelho do garçom a loja está no computador do balcão (ponte).
+    ponte
+      ?.EstadoLigacao()
+      .then(setLigacao)
+      .catch(() => {});
     EstaConfigurado()
       .then((configurado) => {
         if (!configurado) {
@@ -48,7 +56,7 @@ function App() {
   if (estado.tipo === "wizard") {
     return <Wizard onConcluido={verificar} />;
   }
-  return <AppPrincipal config={estado.config} />;
+  return <AppPrincipal config={estado.config} modoGarcom={ligacao?.ModoGarcom ?? false} />;
 }
 
 /**
@@ -102,10 +110,19 @@ function useTurno() {
   return { turno, setTurno, trocar };
 }
 
-function AppPrincipal({ config }: { config: usecase.EstadoConfig }) {
+function AppPrincipal({ config, modoGarcom }: { config: usecase.EstadoConfig; modoGarcom: boolean }) {
   useTheme(config.Tema as Theme);
-  const temVenda = config.ModulosAtivos.includes("pos_direto") || config.ModulosAtivos.includes("contas_abertas");
+  const comMesas = config.ModulosAtivos.includes("mesas");
+  const temVenda = comMesas || config.ModulosAtivos.includes("pos_direto") || config.ModulosAtivos.includes("contas_abertas");
   const { turno, setTurno, trocar } = useTurno();
+  const [verLigacao, setVerLigacao] = useState(false);
+
+  const vendaDoBalcao = (config.ModulosAtivos.includes("pos_direto") || config.ModulosAtivos.includes("contas_abertas")) && (
+    <>
+      {config.ModulosAtivos.includes("pos_direto") && <VendaDireta tipoNegocio={config.Negocio.TipoNegocio} />}
+      {config.ModulosAtivos.includes("contas_abertas") && <Bottlestore />}
+    </>
+  );
 
   return (
     <div id="App">
@@ -117,7 +134,7 @@ function AppPrincipal({ config }: { config: usecase.EstadoConfig }) {
         {turno.tipo === "ativo" && (
           <div className="app-turno">
             <span>
-              A vender: <strong>{turno.operador.Nome}</strong>
+              {modoGarcom || comMesas ? "Garçom" : "A vender"}: <strong>{turno.operador.Nome}</strong>
             </span>
             <button onClick={trocar}>
               <ArrowsRightLeftIcon className="btn-icone" aria-hidden="true" />
@@ -128,12 +145,25 @@ function AppPrincipal({ config }: { config: usecase.EstadoConfig }) {
         {/* No terminal o PDV é o ecrã principal; a administração fica atrás
             deste botão e pede sempre a password. No desktop é outra janela. */}
         {noAndroid && turno.tipo === "escolher" && (
+          <button className="app-admin" onClick={() => setVerLigacao(true)}>
+            <ComputerDesktopIcon className="btn-icone" aria-hidden="true" />
+            Balcão
+          </button>
+        )}
+        {noAndroid && turno.tipo === "escolher" && !modoGarcom && (
           <button className="app-admin" onClick={abrirAdministracao}>
             <LockClosedIcon className="btn-icone" aria-hidden="true" />
             Administração
           </button>
         )}
       </div>
+      {verLigacao && (
+        <LigacaoBalcao
+          onFechar={() => setVerLigacao(false)}
+          // Outra loja por trás: recomeça tudo (tema, operadores, mesas).
+          onMudou={() => window.location.reload()}
+        />
+      )}
 
       {turno.tipo === "a-carregar" ? null : turno.tipo === "sem-operadores" ? (
         <SemOperadores />
@@ -142,11 +172,12 @@ function AppPrincipal({ config }: { config: usecase.EstadoConfig }) {
           operadores={turno.operadores}
           onIniciado={(operador) => setTurno({ tipo: "ativo", operador })}
         />
+      ) : modoGarcom ? (
+        <Mesas balcao={false} operador={turno.operador} />
+      ) : comMesas ? (
+        <Restaurante operador={turno.operador} venda={vendaDoBalcao || undefined} />
       ) : temVenda ? (
-        <>
-          {config.ModulosAtivos.includes("pos_direto") && <VendaDireta tipoNegocio={config.Negocio.TipoNegocio} />}
-          {config.ModulosAtivos.includes("contas_abertas") && <Bottlestore />}
-        </>
+        vendaDoBalcao
       ) : (
         <p className="app-sem-venda">Nenhum módulo de venda ativo configurado para esta loja.</p>
       )}

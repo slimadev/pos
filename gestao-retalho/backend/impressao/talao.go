@@ -44,10 +44,10 @@ func (t *Talao) larg(grande bool) int {
 	return t.Colunas
 }
 
+// add guarda o texto inteiro; parte-se em linhas só ao imprimir, porque a
+// letra grande só existe em ESC/POS (em texto simples cabe o dobro).
 func (t *Talao) add(texto string, negrito, grande bool, a alinhamento) *Talao {
-	for _, l := range partir(texto, t.larg(grande)) {
-		t.linhas = append(t.linhas, linha{texto: l, negrito: negrito, grande: grande, alinh: a})
-	}
+	t.linhas = append(t.linhas, linha{texto: texto, negrito: negrito, grande: grande, alinh: a})
 	return t
 }
 
@@ -99,31 +99,34 @@ func (t *Talao) Vazio() *Talao {
 func (t *Talao) TextoSimples() string {
 	var b strings.Builder
 	for _, l := range t.linhas {
-		b.WriteString(t.renderizar(l, false))
-		b.WriteByte('\n')
+		for _, r := range t.renderizar(l, false) {
+			b.WriteString(r)
+			b.WriteByte('\n')
+		}
 	}
 	return b.String()
 }
 
-func (t *Talao) renderizar(l linha, escpos bool) string {
+// renderizar parte a linha à largura do destino e centra-a se for caso
+// disso. Em ESC/POS a letra grande ocupa duas colunas por carácter; em
+// texto simples não há letra grande e usa-se a largura toda.
+func (t *Talao) renderizar(l linha, escpos bool) []string {
 	if l.sep {
-		return strings.Repeat("-", t.Colunas)
+		return []string{strings.Repeat("-", t.Colunas)}
 	}
-	texto := l.texto
-	// Em ESC/POS a letra grande ocupa duas colunas por carácter: o
-	// centrado faz-se na largura reduzida. Em texto simples não há letra
-	// grande, centra-se na largura toda.
 	w := t.Colunas
 	if escpos && l.grande {
-		w = t.Colunas / 2
+		w = t.larg(true)
 	}
+	partes := partir(l.texto, w)
 	if l.alinh == centro {
-		n := utf8.RuneCountInString(texto)
-		if n < w {
-			texto = strings.Repeat(" ", (w-n)/2) + texto
+		for i, p := range partes {
+			if n := utf8.RuneCountInString(p); n < w {
+				partes[i] = strings.Repeat(" ", (w-n)/2) + p
+			}
 		}
 	}
-	return texto
+	return partes
 }
 
 // partir divide o texto em linhas de no máximo w caracteres, cortando nos
@@ -134,7 +137,12 @@ func partir(s string, w int) []string {
 	}
 	var out []string
 	for _, paragrafo := range strings.Split(s, "\n") {
-		atual := ""
+		// O recuo do início (ex: "   150,00 cada") mantém-se na 1.ª linha.
+		recuo := paragrafo[:len(paragrafo)-len(strings.TrimLeft(paragrafo, " "))]
+		if len(recuo) >= w {
+			recuo = ""
+		}
+		atual := recuo
 		for _, palavra := range strings.Fields(paragrafo) {
 			for utf8.RuneCountInString(palavra) > w {
 				if atual != "" {
@@ -146,6 +154,8 @@ func partir(s string, w int) []string {
 				palavra = string(r[w:])
 			}
 			switch {
+			case atual == recuo && utf8.RuneCountInString(recuo+palavra) <= w:
+				atual += palavra // 1.ª palavra (depois do recuo, se houver)
 			case atual == "":
 				atual = palavra
 			case utf8.RuneCountInString(atual)+1+utf8.RuneCountInString(palavra) <= w:

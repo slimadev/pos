@@ -8,7 +8,7 @@ import {
 } from "../wailsjs/go/admin/AdminApp";
 import { admin, domain } from "../wailsjs/go/models";
 import { FolderOpenIcon, CheckIcon, ArrowUturnLeftIcon } from "@heroicons/react/24/outline";
-import { noAndroid, reiniciarApp } from "./plataforma";
+import { noAndroid, ponte, reiniciarApp } from "./plataforma";
 
 const TAMANHO_MAXIMO_LOGO = 1.5 * 1024 * 1024;
 
@@ -212,7 +212,60 @@ export default function Configurar({ onConcluido }: { onConcluido: () => void })
             </>
           )}
         </div>
+        {ponte && <LigarAoBalcao />}
       </form>
     </div>
+  );
+}
+
+/**
+ * Aparelho de garçom (restaurante): não tem loja própria — usa a do
+ * computador do balcão pela rede. Depois de ligar, abre logo o PDV.
+ */
+function LigarAoBalcao() {
+  const [aberto, setAberto] = useState(false);
+  const [endereco, setEndereco] = useState("");
+  const [chave, setChave] = useState("");
+  const [erro, setErro] = useState<string | null>(null);
+  const [aLigar, setALigar] = useState(false);
+
+  if (!aberto) {
+    return (
+      <div className="config-restaurar">
+        Aparelho de garçom num restaurante?{" "}
+        <button type="button" className="config-restaurar-link" onClick={() => setAberto(true)}>
+          Ligar ao computador do balcão
+        </button>
+      </div>
+    );
+  }
+
+  function ligar() {
+    setALigar(true);
+    setErro(null);
+    ponte!
+      .LigarAoBalcao(endereco, chave)
+      .then(() => window.Nativo?.abrirPDV())
+      .catch((e) => setErro(String(e)))
+      .finally(() => setALigar(false));
+  }
+
+  return (
+    <>
+      <div className="config-secao">Computador do balcão</div>
+      <p className="login-sub">O endereço e a chave aparecem no PDV do computador do balcão, em Aparelhos.</p>
+      {erro && <div className="login-erro">{erro}</div>}
+      <label className="login-campo">
+        Endereço
+        <input inputMode="decimal" placeholder="192.168.1.10" value={endereco} onChange={(e) => setEndereco(e.target.value)} />
+      </label>
+      <label className="login-campo">
+        Chave da loja
+        <input autoCapitalize="characters" placeholder="ABCD-EFGH" value={chave} onChange={(e) => setChave(e.target.value)} />
+      </label>
+      <button type="button" className="login-botao" disabled={!endereco.trim() || !chave.trim() || aLigar} onClick={ligar}>
+        {aLigar ? "A ligar…" : "Ligar"}
+      </button>
+    </>
   );
 }

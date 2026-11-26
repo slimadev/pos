@@ -31,13 +31,14 @@ func (t *Talao) ESCPOS() []byte {
 		if l.grande {
 			b.Write(cmdGrandeOn)
 		}
-		texto := t.renderizar(l, true)
-		cod, err := enc.String(texto)
-		if err != nil {
-			cod = paraASCII(texto)
+		for _, texto := range t.renderizar(l, true) {
+			cod, err := enc.String(texto)
+			if err != nil {
+				cod = paraASCII(texto)
+			}
+			b.WriteString(cod)
+			b.WriteByte('\n')
 		}
-		b.WriteString(cod)
-		b.WriteByte('\n')
 		if l.grande {
 			b.Write(cmdGrandeOff)
 		}
