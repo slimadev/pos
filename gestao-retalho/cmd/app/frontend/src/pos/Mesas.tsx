@@ -692,7 +692,7 @@ function MesaDetalhe({
               <div className="bs-menu-lista">
                 {(
                   [
-                    ["nova-conta", DocumentPlusIcon, "Nova conta nesta mesa", true],
+                    ["nova-conta", DocumentPlusIcon, "Nova conta nesta mesa", false],
                     [
                       "etiqueta",
                       TagIcon,
@@ -701,12 +701,12 @@ function MesaDetalhe({
                     ],
                     ["pessoas", UserGroupIcon, "Número de pessoas", true],
                     ["dividir", ScissorsIcon, "Dividir a conta", true],
-                    ["transferir", ArrowsRightLeftIcon, "Passar a outro garçom", true],
+                    ["transferir", ArrowsRightLeftIcon, "Passar a outro garçom", "gere"],
                     ["juntar", RectangleGroupIcon, "Juntar a outra mesa", true],
                     ["pedidos", DocumentDuplicateIcon, "Pedidos enviados", false],
                   ] as const
                 )
-                  .filter(([, , , gerir]) => podeGerir || !gerir)
+                  .filter(([, , , quem]) => (quem === "gere" ? gere : quem ? podeGerir : true))
                   .map(([tipo, Icone, rotulo]) => (
                     <button
                       key={tipo}
@@ -761,7 +761,7 @@ function MesaDetalhe({
               nela.
               {podeGerir
                 ? " Pode anular, dividir, passar a outro garçom ou fechar."
-                : " Aqui só pode consultar."}
+                : " Para lançar para outras pessoas desta mesa, abra uma conta sua nela (menu ⋮ → Nova conta nesta mesa)."}
             </div>
           )}
           {podeLancar && armazemID !== null && (

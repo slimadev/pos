@@ -70,7 +70,7 @@ func (a *App) AbrirMesa(mesa, etiqueta string, pessoas int64) (domain.MesaAberta
 
 // NovaContaMesa abre mais uma conta na mesma mesa, para pagarem à parte.
 func (a *App) NovaContaMesa(contaID int64, etiqueta string) (domain.MesaAberta, error) {
-	if err := a.podeMesa(contaID, usecase.AcaoGerir); err != nil {
+	if err := a.exigirTurno(); err != nil {
 		return domain.MesaAberta{}, err
 	}
 	return a.RestauranteService.NovaConta(a.ctx, contaID, etiqueta, a.utilizadorAtual())
@@ -133,7 +133,7 @@ func (a *App) DividirMesa(contaID int64, partes []usecase.ParteDivisao, etiqueta
 }
 
 func (a *App) TransferirMesa(contaID, novoGarcomID int64) error {
-	if err := a.podeMesa(contaID, usecase.AcaoGerir); err != nil {
+	if err := a.podeMesa(contaID, usecase.AcaoTransferir); err != nil {
 		return err
 	}
 	return a.RestauranteService.TransferirMesa(a.ctx, contaID, novoGarcomID)

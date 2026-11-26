@@ -519,9 +519,6 @@ func TestNovaConta_MesmaMesaContasSeparadasComEtiqueta(t *testing.T) {
 	if a.Etiqueta != "camisa azul" {
 		t.Errorf("etiqueta = %q", a.Etiqueta)
 	}
-	if _, err := c.rest.NovaConta(ctx, a.ContaID, "", c.ana.ID); err == nil {
-		t.Fatal("a Ana abriu conta numa mesa do Lima")
-	}
 	b, err := c.rest.NovaConta(ctx, a.ContaID, "aniversariante", c.lima.ID)
 	if err != nil {
 		t.Fatal(err)
@@ -536,6 +533,11 @@ func TestNovaConta_MesmaMesaContasSeparadasComEtiqueta(t *testing.T) {
 	}
 	if d.Mesa != "8 (3)" {
 		t.Errorf("terceira conta = %q", d.Mesa)
+	}
+	// Outro garçom também pode abrir uma conta nesta mesa — fica dele.
+	e, err := c.rest.NovaConta(ctx, a.ContaID, "", c.ana.ID)
+	if err != nil || e.Mesa != "8 (4)" || e.GarcomID != c.ana.ID {
+		t.Fatalf("conta da Ana na mesa do Lima = %+v, %v", e, err)
 	}
 	if _, err := c.rest.NovaConta(ctx, a.ContaID, strings.Repeat("x", usecase.MaxEtiqueta+1), c.lima.ID); err == nil {
 		t.Error("aceitou etiqueta comprida")
@@ -622,8 +624,11 @@ func TestPermissoes_GarcomSoNasSuasCaixaGereMasNaoLanca(t *testing.T) {
 	for _, k := range []caso{
 		{c.lima.ID, usecase.AcaoLancar, true},
 		{c.lima.ID, usecase.AcaoGerir, true},
-		{c.lima.ID, usecase.AcaoFechar, false}, // o garçom não fecha
-		{c.ana.ID, usecase.AcaoLancar, false},  // mesa de outro
+		{c.lima.ID, usecase.AcaoFechar, false},     // o garçom não fecha
+		{c.lima.ID, usecase.AcaoTransferir, false}, // nem passa a própria mesa
+		{rita.ID, usecase.AcaoTransferir, true},
+		{c.gerente.ID, usecase.AcaoTransferir, true},
+		{c.ana.ID, usecase.AcaoLancar, false}, // mesa de outro
 		{c.ana.ID, usecase.AcaoGerir, false},
 		{rita.ID, usecase.AcaoLancar, false}, // o caixa não lança nas mesas dos outros
 		{rita.ID, usecase.AcaoGerir, true},

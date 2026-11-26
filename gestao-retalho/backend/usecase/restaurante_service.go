@@ -75,9 +75,12 @@ type AcaoMesa int
 const (
 	// AcaoLancar: lançar itens — só o garçom da mesa.
 	AcaoLancar AcaoMesa = iota
-	// AcaoGerir: enviar, anular, dividir, passar, juntar, pessoas, conta…
-	// — o garçom da mesa, o caixa ou o gerente.
+	// AcaoGerir: enviar, anular, dividir, juntar, pessoas, conta… — o
+	// garçom da mesa, o caixa ou o gerente.
 	AcaoGerir
+	// AcaoTransferir: passar a mesa a outro garçom — só o caixa ou o
+	// gerente (nem o próprio garçom).
+	AcaoTransferir
 	// AcaoFechar: receber a conta (e escolher o cliente do fiado) — só o
 	// caixa ou o gerente.
 	AcaoFechar
@@ -122,7 +125,7 @@ func (s *RestauranteService) exigirPermissao(ctx context.Context, m domain.MesaA
 		if !dono && !u.PodeGerirMesas() {
 			return fmt.Errorf("%s é de %s — só quem tem a mesa, o caixa ou o gerente podem mexer nela", rotuloMesa(m.Mesa), m.GarcomNome)
 		}
-	case AcaoFechar:
+	case AcaoFechar, AcaoTransferir:
 		if !u.PodeGerirMesas() {
 			return ErrSoCaixa
 		}
@@ -312,7 +315,8 @@ func (s *RestauranteService) DefinirPessoas(ctx context.Context, contaID, pessoa
 }
 
 // NovaConta abre mais uma conta na mesma mesa ("5 (2)"), para quem quer
-// pagar à parte desde o início. Fica com o garçom que a abre.
+// pagar à parte desde o início. Fica com o garçom que a abre — qualquer
+// garçom pode, mesmo numa mesa de outro (a conta nova é dele).
 func (s *RestauranteService) NovaConta(ctx context.Context, contaID int64, etiqueta string, garcomID int64) (domain.MesaAberta, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -325,9 +329,6 @@ func (s *RestauranteService) NovaConta(ctx context.Context, contaID int64, etiqu
 		return domain.MesaAberta{}, err
 	}
 	if _, err := s.garcomAtivo(ctx, garcomID); err != nil {
-		return domain.MesaAberta{}, err
-	}
-	if err := s.exigirPermissao(ctx, m, garcomID, AcaoGerir); err != nil {
 		return domain.MesaAberta{}, err
 	}
 	abertas, err := s.rest.ListarMesasAbertas(ctx, domain.NegocioID)
