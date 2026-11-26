@@ -82,6 +82,11 @@ func (r *UtilizadorRepository) DefinirAtivo(ctx context.Context, id int64, ativo
 	return r.q.DefinirUtilizadorAtivo(ctx, sqlcgen.DefinirUtilizadorAtivoParams{Ativo: boolToInt64(ativo), ID: id})
 }
 
+// AtualizarRole muda a função de um utilizador (operador ↔ gerente).
+func (r *UtilizadorRepository) AtualizarRole(ctx context.Context, id int64, role domain.RoleUtilizador) error {
+	return r.q.AtualizarRoleUtilizador(ctx, sqlcgen.AtualizarRoleUtilizadorParams{Role: string(role), ID: id})
+}
+
 func utilizadorFromRow(row sqlcgen.Utilizadores) domain.Utilizador {
 	return domain.Utilizador{
 		ID:           row.ID,

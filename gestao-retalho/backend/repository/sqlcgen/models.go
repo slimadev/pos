@@ -17,6 +17,11 @@ type Armazens struct {
 	ForaDeVenda int64  `json:"fora_de_venda"`
 }
 
+type CategoriaImpressora struct {
+	CategoriaID  int64 `json:"categoria_id"`
+	ImpressoraID int64 `json:"impressora_id"`
+}
+
 type Categorias struct {
 	ID             int64         `json:"id"`
 	NegocioID      int64         `json:"negocio_id"`
@@ -56,6 +61,13 @@ type Contas struct {
 	UtilizadorAberturaID int64          `json:"utilizador_abertura_id"`
 	UtilizadorFechoID    sql.NullInt64  `json:"utilizador_fecho_id"`
 	MotivoCancelamento   sql.NullString `json:"motivo_cancelamento"`
+}
+
+type ContasMesa struct {
+	ContaID  int64  `json:"conta_id"`
+	Mesa     string `json:"mesa"`
+	GarcomID int64  `json:"garcom_id"`
+	Pessoas  int64  `json:"pessoas"`
 }
 
 type CotacaoItens struct {
@@ -150,6 +162,17 @@ type FichasTecnicas struct {
 	PerdaPercentual      float64 `json:"perda_percentual"`
 }
 
+type Impressoras struct {
+	ID        int64  `json:"id"`
+	NegocioID int64  `json:"negocio_id"`
+	Nome      string `json:"nome"`
+	Endereco  string `json:"endereco"`
+	Porta     int64  `json:"porta"`
+	Colunas   int64  `json:"colunas"`
+	Funcao    string `json:"funcao"`
+	Ativa     int64  `json:"ativa"`
+}
+
 type InventarioItens struct {
 	ID                int64           `json:"id"`
 	InventarioID      int64           `json:"inventario_id"`
@@ -179,6 +202,11 @@ type ItensConta struct {
 	Desconto              float64 `json:"desconto"`
 	CriadoEm              string  `json:"criado_em"`
 	UtilizadorID          int64   `json:"utilizador_id"`
+}
+
+type ItensContaEnviados struct {
+	ItemID     int64   `json:"item_id"`
+	Quantidade float64 `json:"quantidade"`
 }
 
 type ItensVenda struct {
@@ -242,6 +270,28 @@ type PagamentosDivida struct {
 	UtilizadorID int64   `json:"utilizador_id"`
 }
 
+type PedidoLinhas struct {
+	ID           int64         `json:"id"`
+	PedidoID     int64         `json:"pedido_id"`
+	ProdutoID    int64         `json:"produto_id"`
+	Descricao    string        `json:"descricao"`
+	Unidade      string        `json:"unidade"`
+	Quantidade   float64       `json:"quantidade"`
+	ImpressoraID sql.NullInt64 `json:"impressora_id"`
+}
+
+type Pedidos struct {
+	ID            int64          `json:"id"`
+	NegocioID     int64          `json:"negocio_id"`
+	ContaID       int64          `json:"conta_id"`
+	Tipo          string         `json:"tipo"`
+	Mesa          string         `json:"mesa"`
+	GarcomID      int64          `json:"garcom_id"`
+	Motivo        sql.NullString `json:"motivo"`
+	AutorizadoPor sql.NullInt64  `json:"autorizado_por"`
+	CriadoEm      string         `json:"criado_em"`
+}
+
 type ProdutoCustoMedio struct {
 	ProdutoID           int64   `json:"produto_id"`
 	ArmazemID           int64   `json:"armazem_id"`
@@ -271,6 +321,18 @@ type ReceitasMedicas struct {
 	NumeroReceita string `json:"numero_receita"`
 	ValidadoPor   int64  `json:"validado_por"`
 	CriadoEm      string `json:"criado_em"`
+}
+
+type SessoesCaixa struct {
+	ID                   int64          `json:"id"`
+	NegocioID            int64          `json:"negocio_id"`
+	AbertaEm             string         `json:"aberta_em"`
+	UtilizadorAberturaID int64          `json:"utilizador_abertura_id"`
+	FundoInicial         float64        `json:"fundo_inicial"`
+	FechadaEm            sql.NullString `json:"fechada_em"`
+	UtilizadorFechoID    sql.NullInt64  `json:"utilizador_fecho_id"`
+	Contagem             sql.NullString `json:"contagem"`
+	Observacoes          sql.NullString `json:"observacoes"`
 }
 
 type StockAtual struct {

@@ -21,6 +21,18 @@ type Operador struct {
 	ID    int64
 	Nome  string
 	Ativo bool
+	// Gerente autoriza o que o garçom não pode fazer sozinho: anular itens
+	// já enviados para a cozinha, transferir mesas, reabrir o caixa.
+	Gerente bool
+}
+
+func operadorDe(u domain.Utilizador) Operador {
+	return Operador{ID: u.ID, Nome: u.Nome, Ativo: u.Ativo, Gerente: u.Role == domain.RoleGerente}
+}
+
+// eOperador: operadores do PDV e gerentes (que também trabalham no PDV).
+func eOperador(u domain.Utilizador) bool {
+	return u.Role == domain.RoleOperadorPOS || u.Role == domain.RoleGerente
 }
 
 var (
@@ -60,8 +72,8 @@ func (s *OperadorService) Listar(ctx context.Context) ([]Operador, error) {
 	}
 	out := make([]Operador, 0, len(todos))
 	for _, u := range todos {
-		if u.Role == domain.RoleOperadorPOS {
-			out = append(out, Operador{ID: u.ID, Nome: u.Nome, Ativo: u.Ativo})
+		if eOperador(u) {
+			out = append(out, operadorDe(u))
 		}
 	}
 	return out, nil
@@ -179,7 +191,58 @@ func (s *OperadorService) Autenticar(ctx context.Context, id int64, pin string) 
 	delete(s.falhas, id)
 	delete(s.bloqueados, id)
 	s.mu.Unlock()
-	return Operador{ID: u.ID, Nome: u.Nome, Ativo: u.Ativo}, nil
+	return operadorDe(u), nil
+}
+
+// DefinirGerente promove um operador a gerente ou volta a pô-lo como
+// operador simples.
+func (s *OperadorService) DefinirGerente(ctx context.Context, id int64, gerente bool) error {
+	if _, err := s.obterOperador(ctx, id); err != nil {
+		return err
+	}
+	role := domain.RoleOperadorPOS
+	if gerente {
+		role = domain.RoleGerente
+	}
+	return s.repo.AtualizarRole(ctx, id, role)
+}
+
+// ErrSemAutorizacao: o PIN não é de nenhum gerente ativo.
+var ErrSemAutorizacao = errors.New("PIN de gerente inválido")
+
+// AutorizarGerente procura o gerente ativo dono deste PIN — é o "chame o
+// gerente" do restaurante: ele digita o PIN no aparelho do garçom. As falhas
+// contam para um bloqueio comum (id 0), para não se adivinhar o PIN.
+func (s *OperadorService) AutorizarGerente(ctx context.Context, pin string) (Operador, error) {
+	s.mu.Lock()
+	ate, bloqueado := s.bloqueados[0]
+	if bloqueado && s.agora().Before(ate) {
+		s.mu.Unlock()
+		segundos := int(ate.Sub(s.agora()).Seconds()) + 1
+		return Operador{}, fmt.Errorf("demasiadas tentativas erradas — tente de novo daqui a %d s", segundos)
+	}
+	s.mu.Unlock()
+
+	todos, err := s.repo.Listar(ctx)
+	if err != nil {
+		return Operador{}, err
+	}
+	for _, u := range todos {
+		if u.Role == domain.RoleGerente && u.Ativo && bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(pin)) == nil {
+			s.mu.Lock()
+			delete(s.falhas, 0)
+			s.mu.Unlock()
+			return operadorDe(u), nil
+		}
+	}
+	s.mu.Lock()
+	s.falhas[0]++
+	if s.falhas[0] >= maxTentativasPIN {
+		s.bloqueados[0] = s.agora().Add(bloqueioPIN)
+		s.falhas[0] = 0
+	}
+	s.mu.Unlock()
+	return Operador{}, ErrSemAutorizacao
 }
 
 func (s *OperadorService) obterOperador(ctx context.Context, id int64) (domain.Utilizador, error) {
@@ -187,7 +250,7 @@ func (s *OperadorService) obterOperador(ctx context.Context, id int64) (domain.U
 	if err != nil {
 		return domain.Utilizador{}, err
 	}
-	if u.Role != domain.RoleOperadorPOS {
+	if !eOperador(u) {
 		return domain.Utilizador{}, ErrNaoEOperador
 	}
 	return u, nil

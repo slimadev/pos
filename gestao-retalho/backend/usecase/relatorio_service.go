@@ -367,6 +367,17 @@ func (s *RelatorioService) FechoCaixaDiario(ctx context.Context, dia time.Time) 
 	dia = dia.Local()
 	inicio := time.Date(dia.Year(), dia.Month(), dia.Day(), 0, 0, 0, 0, time.Local)
 	fim := inicio.Add(24 * time.Hour)
+	fecho, err := s.RecebidoNoPeriodo(ctx, inicio, fim)
+	if err != nil {
+		return FechoCaixa{}, err
+	}
+	fecho.Dia = inicio.Format("2006-01-02")
+	return fecho, nil
+}
+
+// RecebidoNoPeriodo soma, por método, o recebido de vendas e de dívidas em
+// [inicio, fim) — o fecho do dia e o fecho de uma sessão de caixa.
+func (s *RelatorioService) RecebidoNoPeriodo(ctx context.Context, inicio, fim time.Time) (FechoCaixa, error) {
 	vendas, err := s.VendasPorMetodoPagamento(ctx, FiltroPeriodo{Desde: inicio, Ate: fim})
 	if err != nil {
 		return FechoCaixa{}, err
@@ -376,7 +387,7 @@ func (s *RelatorioService) FechoCaixaDiario(ctx context.Context, dia time.Time) 
 		return FechoCaixa{}, err
 	}
 
-	fecho := FechoCaixa{Dia: inicio.Format("2006-01-02")}
+	fecho := FechoCaixa{}
 	porMetodo := map[domain.MetodoPagamento]*LinhaFechoMetodo{}
 	linha := func(m domain.MetodoPagamento) *LinhaFechoMetodo {
 		if l, ok := porMetodo[m]; ok {
